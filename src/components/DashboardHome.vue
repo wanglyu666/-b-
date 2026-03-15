@@ -120,8 +120,10 @@ const distributionOption = {
 </script>
 
 <template>
-  <div class="p-8 space-y-6 max-w-[1600px] mx-auto">
-    <header class="flex justify-between items-center mb-8">
+  <div class="relative min-h-screen bg-transparent overflow-x-hidden">
+    <!-- Content Area -->
+    <div class="relative z-10 p-8 space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-700">
+      <header class="flex justify-between items-center mb-8">
       <div>
         <h1 class="text-3xl font-bold text-gray-800">欢迎回来，JustPai！</h1>
         <p class="text-gray-500 mt-1">这是您目前的销售概览</p>
@@ -197,4 +199,5 @@ const distributionOption = {
       </div>
     </div>
   </div>
+</div>
 </template>

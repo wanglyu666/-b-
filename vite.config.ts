@@ -1,12 +1,17 @@
 import tailwindcss from '@tailwindcss/vite';
-import vue from '@vitejs/plugin-vue';
+import veauryVitePlugins from 'veaury/vite/index.js';
 import path from 'path';
 import {defineConfig, loadEnv} from 'vite';
 
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
-    plugins: [vue(), tailwindcss()],
+    plugins: [
+      veauryVitePlugins({
+        type: 'vue'
+      }),
+      tailwindcss()
+    ],
     define: {
       'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
     },

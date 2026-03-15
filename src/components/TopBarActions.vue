@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Search, ShoppingBag, Heart, Bell } from 'lucide-vue-next';
+import { Search, ShoppingBag, Heart } from 'lucide-vue-next';
 
 withDefaults(defineProps<{
   isShop?: boolean;
@@ -37,14 +37,6 @@ defineEmits(['cartClick', 'wishlistClick', 'messageClick']);
       >
         <Heart :size="20" class="text-gray-600" />
         <span v-if="wishlistCount > 0" class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
-      </div>
-
-      <div 
-        @click="$emit('messageClick')"
-        class="relative cursor-pointer hover:text-black transition-colors"
-      >
-        <Bell :size="20" class="text-gray-600" />
-        <span v-if="messageCount > 0" class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
       </div>
 
     </div>

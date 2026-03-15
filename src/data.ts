@@ -1,4 +1,4 @@
-import { Product, Notification, Contract, Bill, Member } from './types';
+import { Product, Notification, Contract, Bill, Member, EngineeringProject } from './types';
 
 export const chartData = [
   { name: '1月', value: 4000 },
@@ -78,6 +78,358 @@ export const billData: Bill[] = [
   { id: 7, status: 'paid', no: 'ORD-2024007', prjNo: 'PRJ-002', name: '消防水泵更换', amount: '¥85,000' },
   { id: 8, status: 'paid', no: 'ORD-2024008', prjNo: 'PRJ-006', name: '监控探头加装', amount: '¥22,500' },
   { id: 9, status: 'paid', no: 'ORD-2024009', prjNo: 'PRJ-011', name: '门禁系统升级', amount: '¥41,000' },
+];
+
+export const engineeringProjects: EngineeringProject[] = [
+  // 待开工
+  {
+    id: '2',
+    no: 'PRJ-2023-002',
+    name: '绿地中心 45 层办公区装修',
+    address: '绿地中心 4501-4508',
+    amount: '¥ 1,200,000',
+    manager: '李志强',
+    contact: '139-1234-5678',
+    status: '待开工',
+    startDate: '2023-11-20'
+  },
+  {
+    id: '8',
+    no: 'PRJ-2023-006',
+    name: '云端咖啡厅整体软装',
+    address: '云端大厦 12 层',
+    amount: '¥ 150,000',
+    manager: '李志强',
+    contact: '139-1234-5678',
+    status: '待开工',
+    startDate: '2023-12-01'
+  },
+  {
+    id: '9',
+    no: 'PRJ-2023-007',
+    name: '高新科技园 A 栋大堂改造',
+    address: '高新科技园 A 栋',
+    amount: '¥ 450,000',
+    manager: '张伟',
+    contact: '137-9876-5432',
+    status: '待开工',
+    startDate: '2023-12-15'
+  },
+  {
+    id: '10',
+    no: 'PRJ-2023-008',
+    name: '城市书房室内设计与施工',
+    address: '文化广场 1 号',
+    amount: '¥ 280,000',
+    manager: '刘洋',
+    contact: '136-5555-6666',
+    status: '待开工',
+    startDate: '2024-01-10'
+  },
+  // 施工中
+  {
+    id: '1',
+    no: 'PRJ-2023-001',
+    name: '星海湾一号别墅全屋定制',
+    address: '星海湾一号 32 栋',
+    amount: '¥ 350,000',
+    manager: '王建国',
+    contact: '138-0013-8001',
+    status: '施工中',
+    startDate: '2023-10-15'
+  },
+  {
+    id: '7',
+    no: 'PRJ-2023-005',
+    name: '金融中心 VIP 接待室升级',
+    address: '金融中心 A 座 50 层',
+    amount: '¥ 220,000',
+    manager: '王建国',
+    contact: '138-0013-8001',
+    status: '施工中',
+    startDate: '2023-11-05'
+  },
+  {
+    id: '11',
+    no: 'PRJ-2023-009',
+    name: '国际会展中心展厅搭建',
+    address: '国际会展中心 3 号馆',
+    amount: '¥ 850,000',
+    manager: '陈明',
+    contact: '135-8888-9999',
+    status: '施工中',
+    startDate: '2023-11-10'
+  },
+  {
+    id: '12',
+    no: 'PRJ-2023-010',
+    name: '滨海商业街外立面改造',
+    address: '滨海商业街 1-15 号',
+    amount: '¥ 1,500,000',
+    manager: '赵强',
+    contact: '133-2222-3333',
+    status: '施工中',
+    startDate: '2023-10-20'
+  },
+  // 已完工
+  {
+    id: '3',
+    no: 'PRJ-2023-003',
+    name: '万科城 3 期精装房改造',
+    address: '万科城 3 期 12 栋 1502',
+    amount: '¥ 180,000',
+    manager: '张伟',
+    contact: '137-9876-5432',
+    status: '已完工',
+    startDate: '2023-08-01',
+    endDate: '2023-10-30'
+  },
+  {
+    id: '13',
+    no: 'PRJ-2023-011',
+    name: '青年公寓样板间装修',
+    address: '青年路 88 号',
+    amount: '¥ 120,000',
+    manager: '李志强',
+    contact: '139-1234-5678',
+    status: '已完工',
+    startDate: '2023-09-01',
+    endDate: '2023-10-15'
+  },
+  {
+    id: '14',
+    no: 'PRJ-2023-012',
+    name: '社区医疗中心内部装修',
+    address: '健康路 12 号',
+    amount: '¥ 560,000',
+    manager: '王建国',
+    contact: '138-0013-8001',
+    status: '已完工',
+    startDate: '2023-07-15',
+    endDate: '2023-11-01'
+  },
+  // 已结算
+  {
+    id: '4',
+    no: 'PRJ-2023-004',
+    name: '时代广场商铺软装陈设',
+    address: '时代广场 1 层 A-05',
+    amount: '¥ 85,000',
+    manager: '刘洋',
+    contact: '136-5555-6666',
+    status: '已结算',
+    startDate: '2023-07-10',
+    endDate: '2023-08-15'
+  },
+  {
+    id: '15',
+    no: 'PRJ-2023-013',
+    name: '创意产业园办公室装修',
+    address: '创意园 B 区 3 栋',
+    amount: '¥ 320,000',
+    manager: '陈明',
+    contact: '135-8888-9999',
+    status: '已结算',
+    startDate: '2023-05-10',
+    endDate: '2023-07-20'
+  },
+  {
+    id: '16',
+    no: 'PRJ-2023-014',
+    name: '连锁超市货架及照明安装',
+    address: '全市 5 家分店',
+    amount: '¥ 480,000',
+    manager: '赵强',
+    contact: '133-2222-3333',
+    status: '已结算',
+    startDate: '2023-06-01',
+    endDate: '2023-08-30'
+  },
+  // 保修中
+  {
+    id: '5',
+    no: 'PRJ-2022-089',
+    name: '阳光海岸度假酒店大堂家具',
+    address: '阳光海岸大道 88 号',
+    amount: '¥ 2,500,000',
+    manager: '陈明',
+    contact: '135-8888-9999',
+    status: '保修中',
+    startDate: '2022-05-01',
+    endDate: '2022-12-20'
+  },
+  {
+    id: '17',
+    no: 'PRJ-2022-090',
+    name: '市图书馆阅览室升级',
+    address: '学府路 100 号',
+    amount: '¥ 890,000',
+    manager: '张伟',
+    contact: '137-9876-5432',
+    status: '保修中',
+    startDate: '2022-08-15',
+    endDate: '2023-01-10'
+  },
+  {
+    id: '18',
+    no: 'PRJ-2022-091',
+    name: '实验小学多功能厅改造',
+    address: '教育路 5 号',
+    amount: '¥ 650,000',
+    manager: '刘洋',
+    contact: '136-5555-6666',
+    status: '保修中',
+    startDate: '2022-07-01',
+    endDate: '2022-08-25'
+  },
+  // 保修外
+  {
+    id: '6',
+    no: 'PRJ-2021-045',
+    name: '蓝天科技园员工餐厅配套',
+    address: '高新园区蓝天路 1 号',
+    amount: '¥ 450,000',
+    manager: '赵强',
+    contact: '133-2222-3333',
+    status: '保修外',
+    startDate: '2021-03-15',
+    endDate: '2021-05-30'
+  },
+  {
+    id: '19',
+    no: 'PRJ-2021-046',
+    name: '老旧小区外墙翻新工程',
+    address: '和平区幸福里小区',
+    amount: '¥ 1,100,000',
+    manager: '王建国',
+    contact: '138-0013-8001',
+    status: '保修外',
+    startDate: '2021-04-10',
+    endDate: '2021-09-15'
+  },
+  {
+    id: '20',
+    no: 'PRJ-2020-022',
+    name: '地铁 2 号线站点标识安装',
+    address: '地铁 2 号线全线',
+    amount: '¥ 780,000',
+    manager: '李志强',
+    contact: '139-1234-5678',
+    status: '保修外',
+    startDate: '2020-05-01',
+    endDate: '2020-11-30'
+  },
+  // 额外添加的项目以演示分页
+  {
+    id: '21',
+    no: 'PRJ-2024-001',
+    name: '未来科技城研发中心装修',
+    address: '未来路 1 号',
+    amount: '¥ 2,800,000',
+    manager: '王建国',
+    contact: '138-0013-8001',
+    status: '施工中',
+    startDate: '2024-02-01'
+  },
+  {
+    id: '22',
+    no: 'PRJ-2024-002',
+    name: '智慧园区监控系统集成',
+    address: '智慧大道 88 号',
+    amount: '¥ 450,000',
+    manager: '陈明',
+    contact: '135-8888-9999',
+    status: '施工中',
+    startDate: '2024-02-15'
+  },
+  {
+    id: '23',
+    no: 'PRJ-2024-003',
+    name: '滨江花园景观亮化工程',
+    address: '滨江路 200 号',
+    amount: '¥ 1,200,000',
+    manager: '赵强',
+    contact: '133-2222-3333',
+    status: '施工中',
+    startDate: '2024-03-01'
+  },
+  {
+    id: '24',
+    no: 'PRJ-2024-004',
+    name: '新华书店旗舰店软装',
+    address: '解放路 10 号',
+    amount: '¥ 320,000',
+    manager: '刘洋',
+    contact: '136-5555-6666',
+    status: '施工中',
+    startDate: '2024-03-10'
+  },
+  {
+    id: '25',
+    no: 'PRJ-2024-005',
+    name: '奥体中心体育馆翻新',
+    address: '奥体路 1 号',
+    amount: '¥ 5,600,000',
+    manager: '李志强',
+    contact: '139-1234-5678',
+    status: '施工中',
+    startDate: '2024-01-20'
+  },
+  {
+    id: '26',
+    no: 'PRJ-2024-006',
+    name: '万象城精品店整体装修',
+    address: '万象城 2 层',
+    amount: '¥ 880,000',
+    manager: '张伟',
+    contact: '137-9876-5432',
+    status: '施工中',
+    startDate: '2024-02-20'
+  },
+  {
+    id: '27',
+    no: 'PRJ-2024-007',
+    name: '希尔顿酒店宴会厅改造',
+    address: '滨海大道 1 号',
+    amount: '¥ 1,500,000',
+    manager: '王建国',
+    contact: '138-0013-8001',
+    status: '施工中',
+    startDate: '2024-03-05'
+  },
+  {
+    id: '28',
+    no: 'PRJ-2024-008',
+    name: '数字图书馆多媒体室',
+    address: '文化路 50 号',
+    amount: '¥ 420,000',
+    manager: '陈明',
+    contact: '135-8888-9999',
+    status: '施工中',
+    startDate: '2024-03-15'
+  },
+  {
+    id: '29',
+    no: 'PRJ-2024-009',
+    name: '软件园 B 区外墙清洗',
+    address: '软件园 B 区',
+    amount: '¥ 150,000',
+    manager: '赵强',
+    contact: '133-2222-3333',
+    status: '施工中',
+    startDate: '2024-03-20'
+  },
+  {
+    id: '30',
+    no: 'PRJ-2024-010',
+    name: '实验中学实验室升级',
+    address: '实验路 10 号',
+    amount: '¥ 680,000',
+    manager: '刘洋',
+    contact: '136-5555-6666',
+    status: '施工中',
+    startDate: '2024-02-10'
+  }
 ];
 
 export const members: Member[] = [

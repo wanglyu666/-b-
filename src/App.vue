@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Settings } from 'lucide-vue-next';
 import Sidebar from './components/Sidebar.vue';
 import DashboardHome from './components/DashboardHome.vue';
 import ShopView from './components/ShopView.vue';
+import Grainient from './components/Grainient.vue';
 import ProductDetailView from './components/ProductDetailView.vue';
 import CartView from './components/CartView.vue';
 import WishlistView from './components/WishlistView.vue';
 import MessageView from './components/MessageView.vue';
 import ManagementView from './components/ManagementView.vue';
 import ContractAndSettlementView from './components/ContractAndSettlementView.vue';
+import EngineeringProjectsView from './components/EngineeringProjectsView.vue';
 import type { Product, CartItem } from './types';
 
 const activeTab = ref('home');
@@ -21,6 +23,8 @@ const messageCount = ref(2);
 
 const shopPage = ref(1);
 const shopScrollTop = ref(0);
+
+const activeProjectStatus = ref('施工中');
 
 const addToCart = (product: Product, count = 1) => {
   const existingItem = cart.value.find(item => item.id === product.id);
@@ -81,6 +85,15 @@ const handleGoToMessages = () => {
   activeTab.value = 'messages';
 };
 
+const handleViewProjects = (status: string) => {
+  activeProjectStatus.value = status;
+  activeTab.value = 'engineering-projects';
+};
+
+const handleBackToManagement = () => {
+  activeTab.value = 'management';
+};
+
 const handleBack = () => {
   if (activeTab.value === 'messages' || activeTab.value === 'contracts') {
     activeTab.value = 'home';
@@ -88,13 +101,60 @@ const handleBack = () => {
     handleBackToShop();
   }
 };
+
+const backgroundConfig = computed(() => {
+  const shopTabs = ['home', 'shop', 'wishlist', 'cart', 'messages', 'product-detail'];
+  const managementTabs = ['management', 'engineering-projects', 'contracts'];
+
+  if (shopTabs.includes(activeTab.value)) {
+    return {
+      color1: '#A1D573',
+      color2: '#ff9ffc',
+      color3: '#b19eef',
+      timeSpeed: 0.8
+    };
+  }
+  if (managementTabs.includes(activeTab.value)) {
+    return {
+      color1: '#FFEB69',
+      color2: '#E2943A',
+      color3: '#DDBDDF',
+      timeSpeed: 0.8
+    };
+  }
+  return null;
+});
+
+const showBackground = computed(() => !!backgroundConfig.value);
+
+const rootBgColor = computed(() => {
+  if (['management', 'engineering-projects', 'contracts'].includes(activeTab.value)) {
+    return 'bg-[#f1f3f0]';
+  }
+  return 'bg-[#f8fafc]';
+});
 </script>
 
 <template>
-  <div class="flex h-screen bg-[#F9FAFB] font-sans text-gray-900 selection:bg-[#A1D573] selection:text-white">
-    <Sidebar :activeTab="activeTab" @update:activeTab="activeTab = $event" />
+  <div :class="['flex h-screen font-sans text-gray-900 selection:bg-[#A1D573] selection:text-white relative overflow-hidden', rootBgColor]">
+    <!-- Persistent Background Layer -->
+    <div 
+      v-if="showBackground"
+      class="absolute top-0 left-0 w-full h-[70vh] overflow-hidden pointer-events-none z-0"
+      style="mask-image: linear-gradient(to bottom, black 0%, black 20%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 0%, black 20%, transparent 100%);"
+    >
+      <Grainient 
+        v-bind="backgroundConfig"
+        :zoom="0.8"
+        :noiseScale="1.5"
+      />
+      <!-- Frosted Glass Overlay -->
+      <div class="absolute inset-0 backdrop-blur-[40px] bg-white/10"></div>
+    </div>
 
-    <main id="main-content" class="flex-1 overflow-y-auto h-full">
+    <Sidebar :activeTab="activeTab" @update:activeTab="activeTab = $event" class="relative z-10" />
+
+    <main id="main-content" class="flex-1 overflow-y-auto h-full relative z-10">
       <DashboardHome 
         v-if="activeTab === 'home'"
         :cartCount="cart.length" 
@@ -105,7 +165,16 @@ const handleBack = () => {
         :messageCount="messageCount" 
       />
       
-      <ManagementView v-if="activeTab === 'management'" />
+      <ManagementView 
+        v-if="activeTab === 'management'" 
+        @viewProjects="handleViewProjects"
+      />
+
+      <EngineeringProjectsView 
+        v-if="activeTab === 'engineering-projects'"
+        :initialStatus="activeProjectStatus"
+        @back="handleBackToManagement"
+      />
 
       <ContractAndSettlementView v-if="activeTab === 'contracts'" />
 
@@ -176,3 +245,7 @@ const handleBack = () => {
     </div>
   </div>
 </template>
+
+<style>
+/* 可以在这里添加全局样式 */
+</style>

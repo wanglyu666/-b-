@@ -12,8 +12,10 @@ const filteredBills = computed(() => {
 </script>
 
 <template>
-  <div class="p-8 space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-500">
-    <header class="flex justify-between items-center mb-8">
+  <div class="min-h-screen bg-transparent relative overflow-x-hidden">
+    <!-- Content Area -->
+    <div class="relative z-10 p-8 space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-500">
+      <header class="flex justify-between items-center mb-8">
       <div>
         <h1 class="text-3xl font-bold text-gray-800">合同与结算</h1>
         <p class="text-gray-500 mt-1">管理所有合同文档及相关账单结算</p>
@@ -183,4 +185,5 @@ const filteredBills = computed(() => {
 
     </div>
   </div>
+</div>
 </template>

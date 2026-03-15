@@ -12,6 +12,19 @@ export interface CartItem extends Product {
   quantity: number;
 }
 
+export interface EngineeringProject {
+  id: string;
+  no: string;
+  name: string;
+  address: string;
+  amount: string;
+  manager: string;
+  contact: string;
+  status: '待开工' | '施工中' | '已完工' | '已结算' | '保修中' | '保修外';
+  startDate?: string;
+  endDate?: string;
+}
+
 export interface Notification {
   id: number;
   title: string;
