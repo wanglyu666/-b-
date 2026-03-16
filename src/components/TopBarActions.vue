@@ -1,19 +1,21 @@
 <script setup lang="ts">
-import { Search, ShoppingBag, Heart } from 'lucide-vue-next';
+import { Search, ShoppingBag, Heart, Bell } from 'lucide-vue-next';
 
-withDefaults(defineProps<{
+const props = withDefaults(defineProps<{
   isShop?: boolean;
   cartCount?: number;
   wishlistCount?: number;
   messageCount?: number;
+  showBell?: boolean;
 }>(), {
   isShop: false,
   cartCount: 0,
   wishlistCount: 0,
-  messageCount: 0
+  messageCount: 0,
+  showBell: false
 });
 
-defineEmits(['cartClick', 'wishlistClick', 'messageClick']);
+defineEmits(['cartClick', 'wishlistClick', 'messageClick', 'bellClick']);
 </script>
 
 <template>
@@ -29,7 +31,13 @@ defineEmits(['cartClick', 'wishlistClick', 'messageClick']);
             {{ cartCount > 9 ? '9+' : cartCount }}
         </span>
       </div>
-      <Search v-else :size="20" class="text-gray-600 cursor-pointer hover:text-black transition-colors" />
+      <div v-else class="flex items-center space-x-4">
+        <Search :size="20" class="text-gray-600 cursor-pointer hover:text-black transition-colors" />
+        <div v-if="showBell" @click="$emit('bellClick')" class="relative cursor-pointer hover:text-black transition-colors">
+          <Bell :size="20" class="text-gray-600" />
+          <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
+        </div>
+      </div>
       
       <div v-if="isShop"
         @click="$emit('wishlistClick')"

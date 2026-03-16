@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { TrendingUp, Package, MoreHorizontal } from 'lucide-vue-next';
-import CalendarWidget from './CalendarWidget.vue';
+import { TrendingUp, Package, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { ref, onMounted, onUnmounted } from 'vue';
 import TopBarActions from './TopBarActions.vue';
 import { 
   chartData, 
@@ -32,6 +32,31 @@ defineProps<{
 }>();
 
 defineEmits(['cartClick', 'wishlistClick', 'messageClick']);
+
+const currentSlide = ref(0);
+const slides = [
+  {
+    title: '智能维保系统',
+    subtitle: '全方位保障您的设备安全',
+    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800',
+  },
+  {
+    title: '高效订单管理',
+    subtitle: '实时追踪，精准把控',
+    image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800',
+  }
+];
+
+let interval: any;
+onMounted(() => {
+  interval = setInterval(() => {
+    currentSlide.value = (currentSlide.value + 1) % slides.length;
+  }, 5000);
+});
+
+onUnmounted(() => {
+  clearInterval(interval);
+});
 
 const statusOption = {
   tooltip: { trigger: 'item' },
@@ -130,6 +155,7 @@ const distributionOption = {
       </div>
       <TopBarActions 
         :isShop="false" 
+        :showBell="true"
         :cartCount="cartCount" 
         @cartClick="$emit('cartClick')" 
         @wishlistClick="$emit('wishlistClick')" 
@@ -139,20 +165,50 @@ const distributionOption = {
       />
     </header>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <div class="lg:col-span-3 h-[340px]"><CalendarWidget /></div>
-      <div class="lg:col-span-9 h-[340px] flex flex-col gap-6">
-          <div class="flex-1 bg-[#A1D573] rounded-3xl px-8 py-6 relative overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex items-center justify-between">
-              <div class="relative z-10 flex flex-col justify-center h-full">
-                   <div class="flex items-center space-x-3 mb-2"><div class="p-2 bg-white/30 rounded-lg backdrop-blur-sm"><TrendingUp :size="20" class="text-gray-800" /></div><span class="bg-white/30 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm text-gray-900">+12.5%</span></div>
-                   <p class="text-gray-800 font-medium text-base opacity-80 mb-1">总收入</p>
-                   <h3 class="text-4xl font-bold tracking-tight text-gray-900">¥128,430</h3>
-              </div>
-              <div class="hidden sm:block absolute -bottom-10 -right-10 w-64 h-64 bg-white/20 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700"></div>
+      <!-- Carousel Card -->
+      <div class="lg:col-span-8 h-[340px] relative overflow-hidden rounded-3xl shadow-sm group">
+        <div class="absolute inset-0 transition-transform duration-700 ease-in-out flex" :style="{ transform: `translateX(-${currentSlide * 100}%)` }">
+          <div v-for="(slide, index) in slides" :key="index" class="min-w-full h-full relative">
+            <img :src="slide.image" class="w-full h-full object-cover" alt="Slide" />
+            <div class="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent flex flex-col justify-center px-12">
+              <h2 class="text-4xl font-bold text-white mb-2">{{ slide.title }}</h2>
+              <p class="text-white/80 text-lg">{{ slide.subtitle }}</p>
+              <button class="mt-6 bg-white text-gray-900 px-6 py-2 rounded-full font-bold w-fit hover:bg-gray-100 transition-colors">了解更多</button>
+            </div>
           </div>
-          <div class="flex-1 bg-white rounded-3xl px-8 py-6 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow">
+        </div>
+        
+        <!-- Controls -->
+        <div class="absolute bottom-6 left-12 flex space-x-2">
+          <div v-for="(_, index) in slides" :key="index" 
+            @click="currentSlide = index"
+            class="w-2 h-2 rounded-full cursor-pointer transition-all duration-300"
+            :class="currentSlide === index ? 'bg-white w-6' : 'bg-white/40'"
+          ></div>
+        </div>
+        
+        <button @click="currentSlide = (currentSlide - 1 + slides.length) % slides.length" class="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+          <ChevronLeft :size="24" />
+        </button>
+        <button @click="currentSlide = (currentSlide + 1) % slides.length" class="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+          <ChevronRight :size="24" />
+        </button>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="lg:col-span-4 h-[340px] flex flex-col gap-6">
+          <div class="flex-1 bg-[#A1D573] rounded-3xl px-6 py-5 relative overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex items-center justify-between">
+              <div class="relative z-10 flex flex-col justify-center h-full">
+                   <div class="flex items-center space-x-3 mb-2"><div class="p-2 bg-white/30 rounded-lg backdrop-blur-sm"><TrendingUp :size="18" class="text-gray-800" /></div><span class="bg-white/30 px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-sm text-gray-900">+12.5%</span></div>
+                   <p class="text-gray-800 font-medium text-sm opacity-80 mb-1">总收入</p>
+                   <h3 class="text-2xl font-bold tracking-tight text-gray-900">¥128,430</h3>
+              </div>
+              <div class="hidden sm:block absolute -bottom-10 -right-10 w-48 h-48 bg-white/20 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700"></div>
+          </div>
+          <div class="flex-1 bg-white rounded-3xl px-6 py-5 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow">
                <div class="flex flex-col justify-center h-full">
-                   <div class="flex items-center space-x-3 mb-2"><div class="p-2 bg-gray-50 rounded-lg"><Package :size="20" class="text-gray-400" /></div><span class="text-gray-500 font-medium">总订单数</span></div>
-                   <div class="flex items-end space-x-4"><h3 class="text-3xl font-bold text-gray-800">2,219</h3><p class="text-[#A1D573] font-bold flex items-center bg-[#A1D573]/10 px-2 py-1 rounded-lg text-sm mb-1"><TrendingUp :size="14" class="mr-1" /> +1.18%</p></div>
+                   <div class="flex items-center space-x-3 mb-2"><div class="p-2 bg-gray-50 rounded-lg"><Package :size="18" class="text-gray-400" /></div><span class="text-gray-500 font-medium text-sm">总订单数</span></div>
+                   <div class="flex items-end space-x-3"><h3 class="text-2xl font-bold text-gray-800">2,219</h3><p class="text-[#A1D573] font-bold flex items-center bg-[#A1D573]/10 px-2 py-0.5 rounded-lg text-xs mb-0.5"><TrendingUp :size="12" class="mr-1" /> +1.18%</p></div>
                </div>
           </div>
       </div>

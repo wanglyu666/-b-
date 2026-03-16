@@ -119,18 +119,26 @@ defineEmits(['viewProjects']);
                 <Users :size="18" class="text-gray-400" />
              </div>
              
-             <div class="flex-1 flex flex-col justify-between mb-2">
-                <div v-for="member in members" :key="member.id" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
-                   <div class="flex items-center space-x-3">
-                      <div :class="['w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs', member.bgColor]">
-                         {{ member.initial }}
-                      </div>
-                      <div class="flex flex-col">
-                         <span class="font-bold text-gray-900 text-xs">{{ member.name }}</span>
-                         <span class="text-[10px] text-gray-500">{{ member.role }}</span>
+             <div class="flex-1 flex flex-col">
+                <!-- 占位图 -->
+                <div class="flex justify-center mb-2">
+                   <div class="w-24 h-24 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100 flex items-center justify-center">
+                      <span class="text-gray-300 font-medium text-[10px]">占位图</span>
+                   </div>
+                </div>
+
+                <div class="mt-auto flex flex-col gap-0.5 mb-2">
+                   <div v-for="member in members" :key="member.id" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
+                      <div class="flex items-center space-x-3">
+                         <div :class="['w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs', member.bgColor]">
+                            {{ member.initial }}
+                         </div>
+                         <div class="flex flex-col">
+                            <span class="font-bold text-gray-900 text-xs">{{ member.name }}</span>
+                            <span class="text-[10px] text-gray-500">{{ member.role }}</span>
+                         </div>
                       </div>
                    </div>
-                   <div :class="['w-2 h-2 rounded-full', member.online ? 'bg-[#A1D573]' : 'bg-gray-300']"></div>
                 </div>
              </div>
              <button class="text-xs font-medium text-gray-400 hover:text-gray-800 transition-colors py-1.5 flex justify-center items-center gap-1 w-full border-t border-gray-50 pt-2">
@@ -142,29 +150,6 @@ defineEmits(['viewProjects']);
 
       <!-- 右侧列 (独立堆叠) -->
       <div class="flex flex-col gap-6">
-        <!-- 维保报修管理 (黄色框) -->
-        <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-between h-[220px]">
-           <div class="flex justify-between items-center mb-4">
-              <div class="flex items-center space-x-2">
-                 <div class="w-1 h-5 bg-[#A1D573] rounded-full"></div>
-                 <h3 class="font-bold text-lg text-gray-800">维保报修管理</h3>
-              </div>
-              <AlertCircle :size="18" class="text-gray-400" />
-           </div>
-           <div class="flex-1 flex flex-col justify-center space-y-3">
-              <div class="flex items-center justify-between px-2">
-                  <div class="flex items-center space-x-3 text-gray-600">
-                     <ClipboardList :size="18" class="text-[#163300]" />
-                     <span class="font-medium text-sm">项目数量</span>
-                  </div>
-                  <span class="font-bold text-3xl text-gray-900">42</span>
-              </div>
-              <button class="w-full py-2.5 bg-[#A1D573] text-[#163300] font-bold rounded-2xl shadow-sm hover:bg-[#8ec260] transition-colors">
-                 新增
-              </button>
-           </div>
-        </div>
-
         <!-- 订单管理 (蓝色框) -->
         <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-[460px]">
            <div class="flex justify-between items-center mb-4">
@@ -184,6 +169,29 @@ defineEmits(['viewProjects']);
                  <span class="text-gray-500 font-medium mb-1 text-sm">总订单数</span>
                  <span class="font-bold text-5xl text-gray-900">156</span>
               </div>
+           </div>
+        </div>
+
+        <!-- 维保报修管理 (黄色框) -->
+        <div class="bg-white/50 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-white/20 flex flex-col justify-between h-[220px]">
+           <div class="flex justify-between items-center mb-4">
+              <div class="flex items-center space-x-2">
+                 <div class="w-1 h-5 bg-[#A1D573] rounded-full"></div>
+                 <h3 class="font-bold text-lg text-gray-800">维保报修管理</h3>
+              </div>
+              <AlertCircle :size="18" class="text-gray-400" />
+           </div>
+           <div class="flex-1 flex flex-col justify-center space-y-3">
+              <div class="flex items-center justify-between px-2">
+                  <div class="flex items-center space-x-3 text-gray-600">
+                     <ClipboardList :size="18" class="text-[#163300]" />
+                     <span class="font-medium text-sm">项目数量</span>
+                  </div>
+                  <span class="font-bold text-3xl text-gray-900">42</span>
+              </div>
+              <button class="w-full py-2.5 bg-[#A1D573] text-[#163300] font-bold rounded-2xl shadow-sm hover:bg-[#8ec260] transition-colors">
+                 新增
+              </button>
            </div>
         </div>
       </div>
