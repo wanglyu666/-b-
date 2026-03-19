@@ -47,11 +47,11 @@
           <div class="text-orange-400 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(251,146,60,0.5)] transition-all"><ClipboardCheck :size="20" /></div>
           <span class="tracking-wide">过程验收</span>
         </button>
-        <button class="py-4 px-4 bg-white/5 backdrop-blur-lg border border-white/10 hover:bg-white/15 text-white font-bold text-sm rounded-2xl transition-all flex flex-col items-center justify-center gap-3 group">
+        <button @click="$emit('enterAfterSales')" class="py-4 px-4 bg-white/5 backdrop-blur-lg border border-white/10 hover:bg-white/15 text-white font-bold text-sm rounded-2xl transition-all flex flex-col items-center justify-center gap-3 group">
           <div class="text-pink-400 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(244,114,182,0.5)] transition-all"><Headset :size="20" /></div>
           <span class="tracking-wide">售后计划</span>
         </button>
-        <button class="py-4 px-4 bg-white/5 backdrop-blur-lg border border-white/10 hover:bg-white/15 text-white font-bold text-sm rounded-2xl transition-all flex flex-col items-center justify-center gap-3 group">
+        <button @click="$emit('enterCompletion')" class="py-4 px-4 bg-white/5 backdrop-blur-lg border border-white/10 hover:bg-white/15 text-white font-bold text-sm rounded-2xl transition-all flex flex-col items-center justify-center gap-3 group">
           <div class="text-indigo-400 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(129,140,248,0.5)] transition-all"><FolderCheck :size="20" /></div>
           <span class="tracking-wide">竣工资料</span>
         </button>
@@ -61,7 +61,7 @@
           <div class="text-rose-400 group-hover:scale-110 transition-all"><AlertTriangle :size="20" /></div>
           <span class="tracking-wide">缺陷汇报</span>
         </button>
-        <button class="py-4 px-4 bg-white/5 backdrop-blur-lg border border-white/10 hover:bg-white/15 text-white font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-4 group">
+        <button @click="$emit('enterEvaluation')" class="py-4 px-4 bg-white/5 backdrop-blur-lg border border-white/10 hover:bg-white/15 text-white font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-4 group">
           <div class="text-yellow-400 group-hover:scale-110 transition-all"><Star :size="20" /></div>
           <span class="tracking-wide">项目评价</span>
         </button>
@@ -82,5 +82,5 @@ defineProps<{
   project: EngineeringProject;
 }>();
 
-defineEmits(['enterAcceptance', 'enterDefects']);
+defineEmits(['enterAcceptance', 'enterDefects', 'enterAfterSales', 'enterEvaluation', 'enterCompletion']);
 </script>

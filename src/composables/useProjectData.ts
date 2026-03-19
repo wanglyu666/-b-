@@ -68,11 +68,18 @@ const defaultProgressData = [
   { node: '放线验收', planDate: '2026-01-19', appointmentDate: '2026-03-13', type: '现场验收', status: '已通过' },
 ];
 
+const defaultAfterSalesData = [
+  { planName: '第1次售后计划', planDate: '2026-07-11', startDate: '', endDate: '', canAccept: false },
+  { planName: '第2次售后计划', planDate: '2027-01-11', startDate: '', endDate: '', canAccept: true },
+  { planName: '第3次售后计划', planDate: '2027-07-11', startDate: '', endDate: '', canAccept: false },
+];
+
 export interface ProjectData {
   defects: any[];
   reportDefects: any[];
   materialData: any[];
   progressData: any[];
+  afterSalesData: any[];
   submittedMaterials: string[];
   submittedProgressItems: string[];
 }
@@ -98,6 +105,7 @@ export const getProjectData = (projectId: string) => {
         code: `${m.code}-${seedSuffix}`
       })),
       progressData: JSON.parse(JSON.stringify(defaultProgressData)),
+      afterSalesData: JSON.parse(JSON.stringify(defaultAfterSalesData)),
       submittedMaterials: [],
       submittedProgressItems: []
     };
@@ -127,6 +135,7 @@ export function useProjectData(selectedProjectId: Ref<string | undefined>) {
 
   const materialData = computed(() => currentProjectData.value?.materialData || []);
   const progressData = computed(() => currentProjectData.value?.progressData || []);
+  const afterSalesData = computed(() => currentProjectData.value?.afterSalesData || []);
 
   const submittedMaterials = computed({
     get: () => currentProjectData.value?.submittedMaterials || [],
@@ -147,6 +156,7 @@ export function useProjectData(selectedProjectId: Ref<string | undefined>) {
     reportDefects,
     materialData,
     progressData,
+    afterSalesData,
     submittedMaterials,
     submittedProgressItems
   };

@@ -20,6 +20,12 @@ import DefectForm from './engineering/DefectForm.vue';
 import ProcessAcceptance from './engineering/ProcessAcceptance.vue';
 import MaterialDetail from './engineering/MaterialDetail.vue';
 import ProgressDetail from './engineering/ProgressDetail.vue';
+import AfterSalesPlan from './engineering/AfterSalesPlan.vue';
+import AfterSalesSchedule from './engineering/AfterSalesSchedule.vue';
+import AfterSalesSuccess from './engineering/AfterSalesSuccess.vue';
+import ProjectEvaluation from './engineering/ProjectEvaluation.vue';
+import ProjectEvaluationSuccess from './engineering/ProjectEvaluationSuccess.vue';
+import CompletionMaterials from './engineering/CompletionMaterials.vue';
 
 const props = defineProps<{
   initialStatus?: string;
@@ -32,7 +38,7 @@ const activeStatus = ref(props.initialStatus || '施工中');
 const selectedProject = ref<EngineeringProject | null>(null);
 const selectedProjectId = computed(() => selectedProject.value?.id);
 
-const viewMode = ref<'details' | 'acceptance' | 'material_detail' | 'progress_detail' | 'defect_report' | 'defect_detail' | 'defect_add'>('details');
+const viewMode = ref<'details' | 'acceptance' | 'material_detail' | 'progress_detail' | 'defect_report' | 'defect_detail' | 'defect_add' | 'after_sales' | 'after_sales_schedule' | 'after_sales_success' | 'evaluation' | 'evaluation_success' | 'completion'>('details');
 const lastViewMode = ref<string>('');
 
 const {
@@ -40,6 +46,7 @@ const {
   reportDefects,
   materialData,
   progressData,
+  afterSalesData,
   submittedMaterials,
   submittedProgressItems
 } = useProjectData(selectedProjectId);
@@ -63,6 +70,15 @@ const modalDimensions = computed(() => {
   if (viewMode.value === 'details') {
     return { width: '768px', height: '760px', radius: '40px', scale: 1 };
   }
+  if (viewMode.value === 'after_sales' || viewMode.value === 'after_sales_schedule' || viewMode.value === 'after_sales_success') {
+    return { width: '800px', height: '700px', radius: '32px', scale: 1.02 };
+  }
+  if (viewMode.value === 'evaluation' || viewMode.value === 'evaluation_success') {
+    return { width: '800px', height: '700px', radius: '32px', scale: 1.02 };
+  }
+  if (viewMode.value === 'completion') {
+    return { width: '900px', height: '800px', radius: '32px', scale: 1.02 };
+  }
   if (viewMode.value === 'defect_report' || viewMode.value === 'defect_detail' || viewMode.value === 'defect_add') {
     if (lastViewMode.value === 'progress_detail' || lastViewMode.value === 'acceptance' || lastViewMode.value === 'material_detail') {
       const w = Math.round(windowSize.value.width * 0.95);
@@ -79,6 +95,9 @@ const modalDimensions = computed(() => {
 const headerTitle = computed(() => {
   if (viewMode.value === 'details') return '项目详情';
   if (viewMode.value === 'acceptance' || viewMode.value === 'progress_detail' || viewMode.value === 'material_detail') return '过程验收';
+  if (viewMode.value === 'after_sales' || viewMode.value === 'after_sales_schedule' || viewMode.value === 'after_sales_success') return '售后计划';
+  if (viewMode.value === 'evaluation' || viewMode.value === 'evaluation_success') return '项目评价';
+  if (viewMode.value === 'completion') return '竣工资料';
   if (viewMode.value === 'defect_report') return '缺陷汇报';
   if (viewMode.value === 'defect_add' || viewMode.value === 'defect_detail') {
     if (lastViewMode.value === 'defect_report') return '缺陷汇报';
@@ -129,6 +148,47 @@ const closeModal = () => {
 
 const enterAcceptance = () => {
   viewMode.value = 'acceptance';
+};
+
+const selectedAfterSalesPlan = ref<any>(null);
+
+const enterAfterSales = () => {
+  viewMode.value = 'after_sales';
+};
+
+const handleScheduleAcceptance = (plan: any) => {
+  selectedAfterSalesPlan.value = plan;
+  viewMode.value = 'after_sales_schedule';
+};
+
+const handleScheduleSubmit = (formData: any) => {
+  console.log('Submitting schedule:', formData);
+  // Here you would typically make an API call to save the schedule
+  // For now, we'll just simulate success and update the local state
+  
+  if (selectedAfterSalesPlan.value) {
+    selectedAfterSalesPlan.value.isConfirmed = true;
+    selectedAfterSalesPlan.value.scheduledTime = formData.scheduledDate;
+  }
+  
+  viewMode.value = 'after_sales_success';
+};
+
+const projectEvaluations = ref<Record<string, { rating: number; feedback: string }>>({});
+
+const enterEvaluation = () => {
+  viewMode.value = 'evaluation';
+};
+
+const enterCompletion = () => {
+  viewMode.value = 'completion';
+};
+
+const handleEvaluationSubmit = (data: { rating: number; feedback: string }) => {
+  if (selectedProjectId.value) {
+    projectEvaluations.value[selectedProjectId.value] = data;
+  }
+  viewMode.value = 'evaluation_success';
 };
 
 const enterDefects = () => {
@@ -194,6 +254,8 @@ const handleProgressSubmit = (node: string) => {
   submittedProgressItems.value.push(node);
 };
 
+
+
 const goBack = () => {
   if (viewMode.value === 'defect_detail' || viewMode.value === 'defect_add') {
     viewMode.value = lastViewMode.value as any;
@@ -202,8 +264,10 @@ const goBack = () => {
   
   if (viewMode.value === 'material_detail' || viewMode.value === 'progress_detail') {
     viewMode.value = 'acceptance';
-  } else if (viewMode.value === 'acceptance' || viewMode.value === 'defect_report') {
+  } else if (viewMode.value === 'acceptance' || viewMode.value === 'defect_report' || viewMode.value === 'after_sales' || viewMode.value === 'evaluation' || viewMode.value === 'evaluation_success' || viewMode.value === 'completion') {
     viewMode.value = 'details';
+  } else if (viewMode.value === 'after_sales_schedule' || viewMode.value === 'after_sales_success') {
+    viewMode.value = 'after_sales';
   }
 };
 
@@ -348,6 +412,9 @@ const zoomImage = (url: string) => {
                 :project="selectedProject" 
                 @enterAcceptance="enterAcceptance" 
                 @enterDefects="enterDefects" 
+                @enterAfterSales="enterAfterSales"
+                @enterEvaluation="enterEvaluation"
+                @enterCompletion="enterCompletion"
               />
 
               <!-- Defect Report Mode -->
@@ -409,6 +476,53 @@ const zoomImage = (url: string) => {
                     @submit="handleProgressSubmit"
                     @addDefect="addDefect"
                     @viewDefectDetail="viewDefectDetail"
+                  />
+                </div>
+
+                <!-- After Sales Plan Mode -->
+                <div v-else-if="viewMode === 'after_sales'" :key="'after_sales'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
+                  <AfterSalesPlan
+                    :afterSalesData="afterSalesData"
+                    @scheduleAcceptance="handleScheduleAcceptance"
+                  />
+                </div>
+
+                <!-- After Sales Schedule Mode -->
+                <div v-else-if="viewMode === 'after_sales_schedule'" :key="'after_sales_schedule'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
+                  <AfterSalesSchedule
+                    :plan="selectedAfterSalesPlan"
+                    @submit="handleScheduleSubmit"
+                    @cancel="goBack"
+                  />
+                </div>
+
+                <!-- After Sales Success Mode -->
+                <div v-else-if="viewMode === 'after_sales_success'" :key="'after_sales_success'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
+                  <AfterSalesSuccess
+                    @return="goBack"
+                  />
+                </div>
+
+                <!-- Evaluation Mode -->
+                <div v-else-if="viewMode === 'evaluation'" :key="'evaluation'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
+                  <ProjectEvaluation
+                    :existingEvaluation="selectedProjectId ? projectEvaluations[selectedProjectId] : null"
+                    @submit="handleEvaluationSubmit"
+                  />
+                </div>
+
+                <!-- Evaluation Success Mode -->
+                <div v-else-if="viewMode === 'evaluation_success'" :key="'evaluation_success'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
+                  <ProjectEvaluationSuccess
+                    @return="goBack"
+                  />
+                </div>
+
+                <!-- Completion Materials Mode -->
+                <div v-else-if="viewMode === 'completion'" :key="'completion'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
+                  <CompletionMaterials
+                    :projectId="selectedProject?.id || ''"
+                    @zoomImage="zoomImage"
                   />
                 </div>
           </Transition>
