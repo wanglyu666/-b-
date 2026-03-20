@@ -39,7 +39,7 @@
     <h3 class="text-sm font-bold text-white/40 uppercase tracking-widest mb-6 px-2">项目操作指令</h3>
     <div class="flex flex-col gap-4">
       <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <button class="py-4 px-4 bg-white/5 backdrop-blur-lg border border-white/10 hover:bg-white/15 text-white font-bold text-sm rounded-2xl transition-all flex flex-col items-center justify-center gap-3 group">
+        <button @click="$emit('enterReports')" class="py-4 px-4 bg-white/5 backdrop-blur-lg border border-white/10 hover:bg-white/15 text-white font-bold text-sm rounded-2xl transition-all flex flex-col items-center justify-center gap-3 group">
           <div class="text-blue-400 group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(96,165,250,0.5)] transition-all"><FileText :size="20" /></div>
           <span class="tracking-wide">施工报告</span>
         </button>
@@ -65,9 +65,9 @@
           <div class="text-yellow-400 group-hover:scale-110 transition-all"><Star :size="20" /></div>
           <span class="tracking-wide">项目评价</span>
         </button>
-        <button class="py-4 px-4 bg-white/5 backdrop-blur-lg border border-white/10 hover:bg-white/15 text-white font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-4 group">
+        <button @click="$emit('enterStandards')" class="py-4 px-4 bg-white/5 backdrop-blur-lg border border-white/10 hover:bg-white/15 text-white font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-4 group">
           <div class="text-[#A1D573] group-hover:scale-110 transition-all"><ShieldCheck :size="20" /></div>
-          <span class="tracking-wide">巡检服务</span>
+          <span class="tracking-wide">施工标准</span>
         </button>
       </div>
     </div>
@@ -82,5 +82,5 @@ defineProps<{
   project: EngineeringProject;
 }>();
 
-defineEmits(['enterAcceptance', 'enterDefects', 'enterAfterSales', 'enterEvaluation', 'enterCompletion']);
+defineEmits(['enterAcceptance', 'enterDefects', 'enterAfterSales', 'enterEvaluation', 'enterCompletion', 'enterStandards', 'enterReports']);
 </script>

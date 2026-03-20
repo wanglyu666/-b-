@@ -26,6 +26,9 @@ import AfterSalesSuccess from './engineering/AfterSalesSuccess.vue';
 import ProjectEvaluation from './engineering/ProjectEvaluation.vue';
 import ProjectEvaluationSuccess from './engineering/ProjectEvaluationSuccess.vue';
 import CompletionMaterials from './engineering/CompletionMaterials.vue';
+import ConstructionStandards from './engineering/ConstructionStandards.vue';
+import ConstructionReports from './engineering/ConstructionReports.vue';
+import DailyReportDetail from './engineering/DailyReportDetail.vue';
 
 const props = defineProps<{
   initialStatus?: string;
@@ -38,7 +41,7 @@ const activeStatus = ref(props.initialStatus || '施工中');
 const selectedProject = ref<EngineeringProject | null>(null);
 const selectedProjectId = computed(() => selectedProject.value?.id);
 
-const viewMode = ref<'details' | 'acceptance' | 'material_detail' | 'progress_detail' | 'defect_report' | 'defect_detail' | 'defect_add' | 'after_sales' | 'after_sales_schedule' | 'after_sales_success' | 'evaluation' | 'evaluation_success' | 'completion'>('details');
+const viewMode = ref<'details' | 'acceptance' | 'material_detail' | 'progress_detail' | 'defect_report' | 'defect_detail' | 'defect_add' | 'after_sales' | 'after_sales_schedule' | 'after_sales_success' | 'evaluation' | 'evaluation_success' | 'completion' | 'standards' | 'reports' | 'report_detail'>('details');
 const lastViewMode = ref<string>('');
 
 const {
@@ -76,7 +79,7 @@ const modalDimensions = computed(() => {
   if (viewMode.value === 'evaluation' || viewMode.value === 'evaluation_success') {
     return { width: '800px', height: '700px', radius: '32px', scale: 1.02 };
   }
-  if (viewMode.value === 'completion') {
+  if (viewMode.value === 'completion' || viewMode.value === 'standards' || viewMode.value === 'reports' || viewMode.value === 'report_detail') {
     return { width: '900px', height: '800px', radius: '32px', scale: 1.02 };
   }
   if (viewMode.value === 'defect_report' || viewMode.value === 'defect_detail' || viewMode.value === 'defect_add') {
@@ -98,6 +101,9 @@ const headerTitle = computed(() => {
   if (viewMode.value === 'after_sales' || viewMode.value === 'after_sales_schedule' || viewMode.value === 'after_sales_success') return '售后计划';
   if (viewMode.value === 'evaluation' || viewMode.value === 'evaluation_success') return '项目评价';
   if (viewMode.value === 'completion') return '竣工资料';
+  if (viewMode.value === 'standards') return '施工标准';
+  if (viewMode.value === 'reports') return '施工报告';
+  if (viewMode.value === 'report_detail') return '日报详情';
   if (viewMode.value === 'defect_report') return '缺陷汇报';
   if (viewMode.value === 'defect_add' || viewMode.value === 'defect_detail') {
     if (lastViewMode.value === 'defect_report') return '缺陷汇报';
@@ -184,6 +190,20 @@ const enterCompletion = () => {
   viewMode.value = 'completion';
 };
 
+const enterStandards = () => {
+  viewMode.value = 'standards';
+};
+
+const enterReports = () => {
+  viewMode.value = 'reports';
+};
+
+const selectedReport = ref<any>(null);
+const enterReportDetail = (report: any) => {
+  selectedReport.value = report;
+  viewMode.value = 'report_detail';
+};
+
 const handleEvaluationSubmit = (data: { rating: number; feedback: string }) => {
   if (selectedProjectId.value) {
     projectEvaluations.value[selectedProjectId.value] = data;
@@ -264,7 +284,9 @@ const goBack = () => {
   
   if (viewMode.value === 'material_detail' || viewMode.value === 'progress_detail') {
     viewMode.value = 'acceptance';
-  } else if (viewMode.value === 'acceptance' || viewMode.value === 'defect_report' || viewMode.value === 'after_sales' || viewMode.value === 'evaluation' || viewMode.value === 'evaluation_success' || viewMode.value === 'completion') {
+  } else if (viewMode.value === 'report_detail') {
+    viewMode.value = 'reports';
+  } else if (viewMode.value === 'acceptance' || viewMode.value === 'defect_report' || viewMode.value === 'after_sales' || viewMode.value === 'evaluation' || viewMode.value === 'evaluation_success' || viewMode.value === 'completion' || viewMode.value === 'standards' || viewMode.value === 'reports') {
     viewMode.value = 'details';
   } else if (viewMode.value === 'after_sales_schedule' || viewMode.value === 'after_sales_success') {
     viewMode.value = 'after_sales';
@@ -415,6 +437,8 @@ const zoomImage = (url: string) => {
                 @enterAfterSales="enterAfterSales"
                 @enterEvaluation="enterEvaluation"
                 @enterCompletion="enterCompletion"
+                @enterStandards="enterStandards"
+                @enterReports="enterReports"
               />
 
               <!-- Defect Report Mode -->
@@ -523,6 +547,28 @@ const zoomImage = (url: string) => {
                   <CompletionMaterials
                     :projectId="selectedProject?.id || ''"
                     @zoomImage="zoomImage"
+                  />
+                </div>
+
+                <!-- Construction Standards Mode -->
+                <div v-else-if="viewMode === 'standards'" :key="'standards'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
+                  <ConstructionStandards
+                    :projectId="selectedProject?.id || ''"
+                  />
+                </div>
+
+                <!-- Construction Reports Mode -->
+                <div v-else-if="viewMode === 'reports'" :key="'reports'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
+                  <ConstructionReports
+                    :projectId="selectedProject?.id || ''"
+                    @enterDetail="enterReportDetail"
+                  />
+                </div>
+
+                <!-- Daily Report Detail Mode -->
+                <div v-else-if="viewMode === 'report_detail'" :key="'report_detail'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
+                  <DailyReportDetail
+                    :report="selectedReport"
                   />
                 </div>
           </Transition>
