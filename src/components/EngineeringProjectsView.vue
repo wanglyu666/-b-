@@ -29,6 +29,8 @@ import CompletionMaterials from './engineering/CompletionMaterials.vue';
 import ConstructionStandards from './engineering/ConstructionStandards.vue';
 import ConstructionReports from './engineering/ConstructionReports.vue';
 import DailyReportDetail from './engineering/DailyReportDetail.vue';
+import WeeklyReportDetail from './engineering/WeeklyReportDetail.vue';
+import EHSReportDetail from './engineering/EHSReportDetail.vue';
 
 const props = defineProps<{
   initialStatus?: string;
@@ -103,7 +105,11 @@ const headerTitle = computed(() => {
   if (viewMode.value === 'completion') return '竣工资料';
   if (viewMode.value === 'standards') return '施工标准';
   if (viewMode.value === 'reports') return '施工报告';
-  if (viewMode.value === 'report_detail') return '日报详情';
+  if (viewMode.value === 'report_detail') {
+    if (selectedReport.value?.type === 'weekly') return '周报详情';
+    if (selectedReport.value?.type === 'ehs') return 'EHS周报详情';
+    return '日报详情';
+  }
   if (viewMode.value === 'defect_report') return '缺陷汇报';
   if (viewMode.value === 'defect_add' || viewMode.value === 'defect_detail') {
     if (lastViewMode.value === 'defect_report') return '缺陷汇报';
@@ -565,9 +571,18 @@ const zoomImage = (url: string) => {
                   />
                 </div>
 
-                <!-- Daily Report Detail Mode -->
+                <!-- Daily/Weekly/EHS Report Detail Mode -->
                 <div v-else-if="viewMode === 'report_detail'" :key="'report_detail'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
+                  <WeeklyReportDetail
+                    v-if="selectedReport?.type === 'weekly'"
+                    :report="selectedReport"
+                  />
+                  <EHSReportDetail
+                    v-else-if="selectedReport?.type === 'ehs'"
+                    :report="selectedReport"
+                  />
                   <DailyReportDetail
+                    v-else
                     :report="selectedReport"
                   />
                 </div>

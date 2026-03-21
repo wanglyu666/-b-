@@ -70,6 +70,7 @@ const emit = defineEmits(['enterDetail']);
 const tabs = [
   { id: 'daily', label: '日报' },
   { id: 'weekly', label: '周报' },
+  { id: 'ehs', label: 'EHS周报' },
 ];
 
 const activeTab = ref('daily');
@@ -80,16 +81,20 @@ const activeTabLabel = computed(() => {
 
 const mockReports = {
   daily: [
-    { name: '2024-03-20 施工日报', date: '2024-03-20', manager: '张工' },
-    { name: '2024-03-19 施工日报', date: '2024-03-19', manager: '张工' },
-    { name: '2024-03-18 施工日报', date: '2024-03-18', manager: '李工' },
-    { name: '2024-03-17 施工日报', date: '2024-03-17', manager: '李工' },
-    { name: '2024-03-16 施工日报', date: '2024-03-16', manager: '张工' },
+    { id: 1, type: 'daily', name: '2024-03-20 施工日报', date: '2024-03-20', manager: '张工' },
+    { id: 2, type: 'daily', name: '2024-03-19 施工日报', date: '2024-03-19', manager: '张工' },
+    { id: 3, type: 'daily', name: '2024-03-18 施工日报', date: '2024-03-18', manager: '李工' },
+    { id: 4, type: 'daily', name: '2024-03-17 施工日报', date: '2024-03-17', manager: '李工' },
+    { id: 5, type: 'daily', name: '2024-03-16 施工日报', date: '2024-03-16', manager: '张工' },
   ],
   weekly: [
-    { name: '2024年3月第3周施工周报', date: '2024-03-15 ~ 2024-03-21', manager: '王经理' },
-    { name: '2024年3月第2周施工周报', date: '2024-03-08 ~ 2024-03-14', manager: '王经理' },
-    { name: '2024年3月第1周施工周报', date: '2024-03-01 ~ 2024-03-07', manager: '王经理' },
+    { id: 6, type: 'weekly', name: '2024年3月第3周施工周报', date: '2024-03-15 ~ 2024-03-21', manager: '王经理' },
+    { id: 7, type: 'weekly', name: '2024年3月第2周施工周报', date: '2024-03-08 ~ 2024-03-14', manager: '王经理' },
+    { id: 8, type: 'weekly', name: '2024年3月第1周施工周报', date: '2024-03-01 ~ 2024-03-07', manager: '王经理' },
+  ],
+  ehs: [
+    { id: 9, type: 'ehs', name: '2024年3月第3周 EHS周报', date: '2024-03-15 ~ 2024-03-21', manager: '赵工' },
+    { id: 10, type: 'ehs', name: '2024年3月第2周 EHS周报', date: '2024-03-08 ~ 2024-03-14', manager: '赵工' },
   ]
 };
 
