@@ -3,14 +3,14 @@
     <!-- Sub Tabs -->
     <div v-if="!isSubmittedSuccess" class="flex gap-3">
       <button 
-        @click="progressDetailTab = 'acceptance_check'"
+        @click="setTab('acceptance_check')"
         :class="['px-6 py-2 rounded-full text-sm font-bold transition-all', 
           progressDetailTab === 'acceptance_check' ? 'bg-[#FFC091] text-[#260A2F]' : 'bg-white/5 text-white/60 hover:bg-white/10']"
       >
         验收
       </button>
       <button 
-        @click="progressDetailTab = 'defect_rectification'"
+        @click="setTab('defect_rectification')"
         :class="['px-6 py-2 rounded-full text-sm font-bold transition-all', 
           progressDetailTab === 'defect_rectification' ? 'bg-[#FFC091] text-[#260A2F]' : 'bg-white/5 text-white/60 hover:bg-white/10']"
       >
@@ -133,7 +133,7 @@
       </div>
 
       <!-- Defect Rectification Content -->
-      <div v-else-if="progressDetailTab === 'defect_rectification'" class="flex-1 flex flex-col h-full relative min-h-[400px]">
+      <div v-else-if="progressDetailTab === 'defect_rectification'" :key="'defect'" class="flex-1 flex flex-col h-full relative min-h-[400px]">
         <!-- Top Header with Add Button -->
         <div class="flex justify-between items-center mb-6 px-2">
           <div class="flex items-center gap-2">
@@ -177,23 +177,36 @@
           </div>
         </div>
       </div>
+      <div v-else :key="'fallback'" class="hidden"></div>
     </Transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { Search, CheckCircle, Plus } from 'lucide-vue-next';
 
 const props = defineProps<{
   progressItem: any;
   defects: any[];
   isSubmitted: boolean;
+  initialTab?: 'acceptance_check' | 'defect_rectification';
 }>();
 
-const emit = defineEmits(['goBack', 'zoomImage', 'submit', 'addDefect', 'viewDefectDetail']);
+const emit = defineEmits(['goBack', 'zoomImage', 'submit', 'addDefect', 'viewDefectDetail', 'update:tab']);
 
-const progressDetailTab = ref('acceptance_check');
+const progressDetailTab = ref(props.initialTab || 'acceptance_check');
+
+watch(() => props.initialTab, (newVal) => {
+  if (newVal) {
+    progressDetailTab.value = newVal;
+  }
+});
+
+const setTab = (tab: 'acceptance_check' | 'defect_rectification') => {
+  progressDetailTab.value = tab;
+  emit('update:tab', tab);
+};
 const isSubmittedSuccess = ref(false);
 const evaluation = ref<'pass' | 'fail' | null>(null);
 

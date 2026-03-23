@@ -183,7 +183,7 @@
           </div>
         </div>
 
-        <!-- Other Tabs Placeholder -->
+        <div v-else :key="'fallback'" class="hidden"></div>
       </Transition>
     </div>
 

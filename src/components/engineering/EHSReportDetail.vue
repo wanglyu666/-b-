@@ -190,6 +190,8 @@
             </div>
           </div>
         </div>
+
+        <div v-else :key="'fallback'" class="hidden"></div>
       </Transition>
     </div>
   </div>

@@ -43,8 +43,8 @@ export const products: Product[] = Array.from({ length: 32 }, (_, i) => {
 });
 
 export const pieDataStatus = [
-  { name: '完工', value: 70, color: '#FFEB69' },
-  { name: '在施', value: 30, color: '#3A341C' }, 
+  { name: '完工', value: 70, color: '#f99ffc' },
+  { name: '在施', value: 30, color: '#b19eef' }, 
 ];
 
 export const pieDataWarranty = [
@@ -53,13 +53,16 @@ export const pieDataWarranty = [
 ];
 
 export const distributionData = [
-  { name: '上海市', value: 400 },
-  { name: '四川省', value: 300 },
-  { name: '重庆市', value: 300 },
-  { name: '北京市', value: 200 },
+  { name: '上海市', value: 450 },
+  { name: '四川省', value: 380 },
+  { name: '重庆市', value: 320 },
+  { name: '北京市', value: 280 },
+  { name: '广州市', value: 150 },
+  { name: '深圳市', value: 120 },
+  { name: '杭州市', value: 100 },
 ];
 
-export const COLORS_DIST = ['#A1D573', '#FFEB69', '#1f2937', '#9ca3af'];
+export const COLORS_DIST = ['#ff9ffc', 'rgba(255, 159, 252, 0.75)', 'rgba(255, 159, 252, 0.5)', 'rgba(255, 159, 252, 0.25)', '#f3f4f6'];
 
 export const contractData: Contract[] = [
   { id: 1, no: 'HT-2024001', name: '2024年度中央空调维保合同', location: '海淀区科技园A座', date: '2024-01-15' },

@@ -43,8 +43,12 @@ const activeStatus = ref(props.initialStatus || '施工中');
 const selectedProject = ref<EngineeringProject | null>(null);
 const selectedProjectId = computed(() => selectedProject.value?.id);
 
-const viewMode = ref<'details' | 'acceptance' | 'material_detail' | 'progress_detail' | 'defect_report' | 'defect_detail' | 'defect_add' | 'after_sales' | 'after_sales_schedule' | 'after_sales_success' | 'evaluation' | 'evaluation_success' | 'completion' | 'standards' | 'reports' | 'report_detail'>('details');
+const viewMode = ref<'details' | 'acceptance' | 'material_detail' | 'progress_detail' | 'progress_schedule' | 'progress_schedule_success' | 'defect_report' | 'defect_detail' | 'defect_add' | 'after_sales' | 'after_sales_schedule' | 'after_sales_success' | 'evaluation' | 'evaluation_success' | 'completion' | 'standards' | 'reports' | 'report_detail'>('details');
 const lastViewMode = ref<string>('');
+const defectReportOrigin = ref<string>('');
+const successSource = ref<'progress_schedule' | 'defect_add' | ''>('');
+const acceptanceTab = ref<'material' | 'progress'>('material');
+const progressDetailTab = ref<'acceptance_check' | 'defect_rectification'>('acceptance_check');
 
 const {
   defects,
@@ -75,7 +79,7 @@ const modalDimensions = computed(() => {
   if (viewMode.value === 'details') {
     return { width: '768px', height: '760px', radius: '40px', scale: 1 };
   }
-  if (viewMode.value === 'after_sales' || viewMode.value === 'after_sales_schedule' || viewMode.value === 'after_sales_success') {
+  if (viewMode.value === 'after_sales' || viewMode.value === 'after_sales_schedule' || viewMode.value === 'after_sales_success' || viewMode.value === 'progress_schedule' || viewMode.value === 'progress_schedule_success') {
     return { width: '800px', height: '700px', radius: '32px', scale: 1.02 };
   }
   if (viewMode.value === 'evaluation' || viewMode.value === 'evaluation_success') {
@@ -99,7 +103,10 @@ const modalDimensions = computed(() => {
 
 const headerTitle = computed(() => {
   if (viewMode.value === 'details') return '项目详情';
-  if (viewMode.value === 'acceptance' || viewMode.value === 'progress_detail' || viewMode.value === 'material_detail') return '过程验收';
+  if (viewMode.value === 'acceptance' || viewMode.value === 'progress_detail' || viewMode.value === 'material_detail' || viewMode.value === 'progress_schedule') return '过程验收';
+  if (viewMode.value === 'progress_schedule_success') {
+    return successSource.value === 'defect_add' ? (lastViewMode.value === 'defect_report' ? '缺陷汇报' : '缺陷整改') : '过程验收';
+  }
   if (viewMode.value === 'after_sales' || viewMode.value === 'after_sales_schedule' || viewMode.value === 'after_sales_success') return '售后计划';
   if (viewMode.value === 'evaluation' || viewMode.value === 'evaluation_success') return '项目评价';
   if (viewMode.value === 'completion') return '竣工资料';
@@ -186,6 +193,20 @@ const handleScheduleSubmit = (formData: any) => {
   viewMode.value = 'after_sales_success';
 };
 
+const handleProgressScheduleSubmit = (formData: any) => {
+  if (selectedProgressItem.value) {
+    const index = progressData.value.findIndex(item => item.node === selectedProgressItem.value.node);
+    if (index !== -1) {
+      progressData.value[index] = {
+        ...progressData.value[index],
+        appointmentDate: formData.scheduledDate
+      };
+    }
+  }
+  successSource.value = 'progress_schedule';
+  viewMode.value = 'progress_schedule_success';
+};
+
 const projectEvaluations = ref<Record<string, { rating: number; feedback: string }>>({});
 
 const enterEvaluation = () => {
@@ -218,6 +239,7 @@ const handleEvaluationSubmit = (data: { rating: number; feedback: string }) => {
 };
 
 const enterDefects = () => {
+  defectReportOrigin.value = viewMode.value;
   lastViewMode.value = viewMode.value;
   viewMode.value = 'defect_report';
 };
@@ -259,7 +281,9 @@ const confirmAddDefect = (payload: { image: string, description: string }) => {
   } else {
     defects.value.unshift(newDefect);
   }
-  viewMode.value = lastViewMode.value as any;
+  
+  successSource.value = 'defect_add';
+  viewMode.value = 'progress_schedule_success';
 };
 
 const viewMaterialDetail = (item: any) => {
@@ -269,7 +293,13 @@ const viewMaterialDetail = (item: any) => {
 
 const viewProgressDetail = (item: any) => {
   selectedProgressItem.value = item;
+  progressDetailTab.value = 'acceptance_check';
   viewMode.value = 'progress_detail';
+};
+
+const scheduleProgressAcceptance = (item: any) => {
+  selectedProgressItem.value = item;
+  viewMode.value = 'progress_schedule';
 };
 
 const handleMaterialSubmit = (code: string) => {
@@ -284,15 +314,39 @@ const handleProgressSubmit = (node: string) => {
 
 const goBack = () => {
   if (viewMode.value === 'defect_detail' || viewMode.value === 'defect_add') {
-    viewMode.value = lastViewMode.value as any;
+    // If we are in defect_detail or defect_add, we should go back to where we came from.
+    // This is stored in lastViewMode.
+    const prevMode = lastViewMode.value;
+    viewMode.value = prevMode as any;
+    
+    // If we go back to defect_report, we need to ensure the next back goes to details or acceptance.
+    // We don't have a full stack, but we know defect_report is usually accessed from 'details' or 'acceptance'/'progress_detail'.
+    // If we came from 'progress_detail', lastViewMode was 'progress_detail'.
+    // If we came from 'defect_report', lastViewMode was 'defect_report'.
+    // We need to preserve the origin of defect_report if we are going back to it.
+    // Let's rely on the fact that if we are in defect_report, we can just go to 'details' or 'acceptance' based on context.
+    // Actually, if we are in defect_report, we don't know where we came from unless we store it.
+    // Let's add a `defectReportOrigin` ref to track where `defect_report` was opened from.
     return;
   }
-  
-  if (viewMode.value === 'material_detail' || viewMode.value === 'progress_detail') {
+
+  if (viewMode.value === 'material_detail' || viewMode.value === 'progress_detail' || viewMode.value === 'progress_schedule') {
     viewMode.value = 'acceptance';
+  } else if (viewMode.value === 'progress_schedule_success') {
+     if (successSource.value === 'defect_add') {
+       viewMode.value = lastViewMode.value as any; // Go back to where defect_add was called from (defect_report or progress_detail)
+     } else {
+       viewMode.value = 'acceptance';
+     }
+  } else if (viewMode.value === 'defect_report') {
+    if (defectReportOrigin.value === 'progress_detail' || defectReportOrigin.value === 'acceptance' || defectReportOrigin.value === 'material_detail') {
+      viewMode.value = 'acceptance';
+    } else {
+      viewMode.value = 'details';
+    }
   } else if (viewMode.value === 'report_detail') {
     viewMode.value = 'reports';
-  } else if (viewMode.value === 'acceptance' || viewMode.value === 'defect_report' || viewMode.value === 'after_sales' || viewMode.value === 'evaluation' || viewMode.value === 'evaluation_success' || viewMode.value === 'completion' || viewMode.value === 'standards' || viewMode.value === 'reports') {
+  } else if (viewMode.value === 'acceptance' || viewMode.value === 'after_sales' || viewMode.value === 'evaluation' || viewMode.value === 'evaluation_success' || viewMode.value === 'completion' || viewMode.value === 'standards' || viewMode.value === 'reports') {
     viewMode.value = 'details';
   } else if (viewMode.value === 'after_sales_schedule' || viewMode.value === 'after_sales_success') {
     viewMode.value = 'after_sales';
@@ -479,8 +533,11 @@ const zoomImage = (url: string) => {
                   <ProcessAcceptance
                     :materialData="materialData"
                     :progressData="progressData"
+                    :initialTab="acceptanceTab"
+                    @update:tab="acceptanceTab = $event"
                     @viewMaterialDetail="viewMaterialDetail"
                     @viewProgressDetail="viewProgressDetail"
+                    @scheduleAcceptance="scheduleProgressAcceptance"
                   />
                 </div>
 
@@ -501,11 +558,31 @@ const zoomImage = (url: string) => {
                     :progressItem="selectedProgressItem"
                     :defects="defects"
                     :isSubmitted="submittedProgressItems.includes(selectedProgressItem?.node)"
+                    :initialTab="progressDetailTab"
+                    @update:tab="progressDetailTab = $event"
                     @goBack="goBack"
                     @zoomImage="zoomImage"
                     @submit="handleProgressSubmit"
                     @addDefect="addDefect"
                     @viewDefectDetail="viewDefectDetail"
+                  />
+                </div>
+
+                <!-- Progress Schedule Mode -->
+                <div v-else-if="viewMode === 'progress_schedule'" :key="'progress_schedule'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
+                  <AfterSalesSchedule
+                    :plan="{ nodeName: selectedProgressItem?.node, plannedTime: selectedProgressItem?.planDate }"
+                    @submit="handleProgressScheduleSubmit"
+                    @cancel="goBack"
+                  />
+                </div>
+
+                <!-- Progress Schedule Success Mode -->
+                <div v-else-if="viewMode === 'progress_schedule_success'" :key="'progress_schedule_success'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
+                  <AfterSalesSuccess
+                    title="已完成提交"
+                    :message="successSource === 'defect_add' ? '您的缺陷记录已成功发布到系统中' : '您的预约验收时间已成功记录到系统中'"
+                    @return="goBack"
                   />
                 </div>
 
@@ -586,6 +663,7 @@ const zoomImage = (url: string) => {
                     :report="selectedReport"
                   />
                 </div>
+                <div v-else :key="'fallback'" class="hidden"></div>
           </Transition>
         </div>
         </div>

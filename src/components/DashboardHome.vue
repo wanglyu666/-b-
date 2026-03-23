@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { TrendingUp, Package, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-vue-next';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import TopBarActions from './TopBarActions.vue';
 import { 
   chartData, 
@@ -64,9 +64,13 @@ const statusOption = {
   series: [
     {
       type: 'pie',
-      radius: ['60%', '80%'],
+      radius: ['65%', '85%'],
       avoidLabelOverlap: false,
       label: { show: false },
+      itemStyle: {
+        borderRadius: 10
+      },
+      padAngle: 5,
       data: pieDataStatus
     }
   ]
@@ -78,9 +82,13 @@ const warrantyOption = {
   series: [
     {
       type: 'pie',
-      radius: ['60%', '80%'],
+      radius: ['65%', '85%'],
       avoidLabelOverlap: false,
       label: { show: false },
+      itemStyle: {
+        borderRadius: 10
+      },
+      padAngle: 5,
       data: pieDataWarranty
     }
   ]
@@ -129,19 +137,42 @@ const areaOption = {
   ]
 };
 
-const distributionOption = {
+const processedDistributionData = computed(() => {
+  const sorted = [...distributionData].sort((a, b) => b.value - a.value);
+  const top4 = sorted.slice(0, 4);
+  const others = sorted.slice(4).reduce((sum, item) => sum + item.value, 0);
+  
+  const finalData = [...top4];
+  if (others > 0) {
+    finalData.push({ name: '其他城市', value: others });
+  }
+  return finalData;
+});
+
+const totalValue = computed(() => processedDistributionData.value.reduce((a, b) => a + b.value, 0));
+
+const distributionOption = computed(() => ({
   tooltip: { trigger: 'item' },
   color: COLORS_DIST,
   series: [
     {
       type: 'pie',
-      radius: '80%',
-      center: ['50%', '50%'],
+      radius: ['100%', '160%'],
+      center: ['50%', '95%'],
+      startAngle: 180,
       label: { show: false },
-      data: distributionData
+      emphasis: { scale: false },
+      data: [
+        ...processedDistributionData.value,
+        {
+          value: totalValue.value,
+          itemStyle: { color: 'transparent', opacity: 0 },
+          tooltip: { show: false }
+        }
+      ]
     }
   ]
-};
+}));
 </script>
 
 <template>
@@ -205,14 +236,14 @@ const distributionOption = {
               </div>
               <div class="hidden sm:block absolute -bottom-10 -right-10 w-48 h-48 bg-white/20 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700"></div>
           </div>
-          <div class="flex-1 bg-white rounded-3xl px-6 py-5 shadow-sm border border-gray-100 flex items-center justify-between hover:shadow-md transition-shadow">
+          <div class="flex-1 bg-white/50 backdrop-blur-md rounded-3xl px-6 py-5 shadow-sm border border-white/20 flex items-center justify-between hover:shadow-md transition-shadow">
                <div class="flex flex-col justify-center h-full">
-                   <div class="flex items-center space-x-3 mb-2"><div class="p-2 bg-gray-50 rounded-lg"><Package :size="18" class="text-gray-400" /></div><span class="text-gray-500 font-medium text-sm">总订单数</span></div>
+                   <div class="flex items-center space-x-3 mb-2"><div class="p-2 bg-white/30 rounded-lg backdrop-blur-sm"><Package :size="18" class="text-gray-800" /></div><span class="text-gray-700 font-medium text-sm">总订单数</span></div>
                    <div class="flex items-end space-x-3"><h3 class="text-2xl font-bold text-gray-800">2,219</h3><p class="text-[#A1D573] font-bold flex items-center bg-[#A1D573]/10 px-2 py-0.5 rounded-lg text-xs mb-0.5"><TrendingUp :size="12" class="mr-1" /> +1.18%</p></div>
                </div>
           </div>
       </div>
-      <div class="lg:col-span-5 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow h-[340px] flex flex-col">
+      <div class="lg:col-span-5 bg-white/50 backdrop-blur-md rounded-3xl p-6 shadow-sm border border-white/20 hover:shadow-md transition-shadow h-[340px] flex flex-col">
         <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-xl text-gray-800">订单状态概览</h3><MoreHorizontal :size="20" class="text-gray-400 cursor-pointer" /></div>
         <div class="flex-1 grid grid-cols-2 gap-4 items-center">
            <div class="flex flex-col items-center">
@@ -246,11 +277,23 @@ const distributionOption = {
       </div>
       <div class="lg:col-span-5 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow h-[280px] flex flex-col">
           <h3 class="font-bold text-xl text-gray-800 mb-2">区域分布</h3>
-          <div class="flex-1 flex flex-row items-center">
-              <div class="w-1/2 h-full relative">
+          <div class="flex-1 flex flex-col">
+              <div class="flex-1 relative">
                 <v-chart class="w-full h-full" :option="distributionOption" autoresize />
+                <div class="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center pb-4">
+                  <span class="text-xs text-gray-400">总计</span>
+                  <span class="text-2xl font-bold text-gray-800">{{ totalValue }}</span>
+                </div>
               </div>
-              <div class="w-1/2 flex flex-col justify-center gap-3 pl-2"><div v-for="(entry, index) in distributionData" :key="entry.name" class="flex items-center justify-between text-sm"><div class="flex items-center"><span class="w-2.5 h-2.5 rounded-full mr-2" :style="{ backgroundColor: COLORS_DIST[index % COLORS_DIST.length] }"></span><span class="text-gray-600 text-xs">{{ entry.name }}</span></div><span class="font-bold text-gray-800">{{ entry.value }}</span></div></div>
+              <div class="grid grid-cols-3 gap-y-2 gap-x-4 mt-2">
+                <div v-for="(entry, index) in processedDistributionData" :key="entry.name" class="flex items-center justify-between text-sm">
+                  <div class="flex items-center">
+                    <span class="w-2.5 h-2.5 rounded-full mr-2" :style="{ backgroundColor: COLORS_DIST[index % COLORS_DIST.length] }"></span>
+                    <span class="text-gray-600 text-xs truncate max-w-[60px]">{{ entry.name }}</span>
+                  </div>
+                  <span class="font-bold text-gray-800 text-xs">{{ entry.value }}</span>
+                </div>
+              </div>
           </div>
       </div>
     </div>

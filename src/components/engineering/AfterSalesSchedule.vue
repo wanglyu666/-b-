@@ -12,13 +12,13 @@
         <!-- Form Fields -->
         <div class="grid grid-cols-1 gap-6">
           <div class="flex items-center gap-4">
-            <div class="w-24 text-white/60 text-sm text-right"><span class="text-red-400 mr-1">*</span>售后计划</div>
-            <div class="text-white font-medium">{{ plan?.planName }}</div>
+            <div class="w-24 text-white/60 text-sm text-right"><span class="text-red-400 mr-1">*</span>{{ plan?.nodeName ? '验收节点名称' : '售后计划' }}</div>
+            <div class="text-white font-medium">{{ plan?.nodeName || plan?.planName }}</div>
           </div>
           
           <div class="flex items-center gap-4">
             <div class="w-24 text-white/60 text-sm text-right"><span class="text-red-400 mr-1">*</span>计划时间</div>
-            <div class="text-white/40 font-mono">{{ plan?.planDate }}</div>
+            <div class="text-white/40 font-mono">{{ plan?.plannedTime || plan?.planDate }}</div>
           </div>
           
           <div class="flex items-center gap-4">

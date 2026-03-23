@@ -87,26 +87,10 @@ const nextPage = () => {
     <section>
       <h2 class="text-2xl font-bold text-gray-800 mb-6">特惠活动</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div class="h-64 rounded-3xl p-8 relative overflow-hidden flex flex-col justify-center bg-gray-900 text-white group">
-           <div class="relative z-10 w-2/3">
-             <h3 class="text-3xl font-bold mb-2">高品质家具</h3>
-             <p class="text-gray-300 text-sm mb-6 line-clamp-2">时尚的内饰让我们想在其中度过更多时间。</p>
-             <button class="bg-[#FFEB69] text-gray-900 px-6 py-2 rounded-xl text-sm font-bold hover:bg-[#ffe54c] transition-colors">
-               探索更多
-             </button>
-           </div>
-           <img src="https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=600" class="absolute right-0 top-0 h-full w-1/2 object-cover opacity-80" alt="Furniture" style="mask-image: linear-gradient(to right, transparent, black);" referrerpolicy="no-referrer" />
+        <div class="h-64 rounded-3xl bg-white/50 backdrop-blur-md border border-white/20 relative overflow-hidden">
         </div>
 
-        <div class="h-64 rounded-3xl p-8 relative overflow-hidden flex flex-col justify-center text-gray-800" style="background-color: #A1D573;">
-           <div class="relative z-10 w-2/3">
-             <h3 class="text-3xl font-bold mb-2">折扣高达 50%</h3>
-             <p class="text-gray-700 text-sm mb-6">所有照明和装饰品，打造温馨家园。</p>
-             <button class="bg-white text-gray-900 px-6 py-2 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors shadow-sm">
-               立即购买
-             </button>
-           </div>
-           <img src="https://images.unsplash.com/photo-1513506003013-d5347e0f95d1?auto=format&fit=crop&q=80&w=600" class="absolute -right-10 top-0 h-full w-2/3 object-cover mix-blend-multiply opacity-60" alt="Lamp" referrerpolicy="no-referrer" />
+        <div class="h-64 rounded-3xl bg-white/50 backdrop-blur-md border border-white/20 relative overflow-hidden">
         </div>
       </div>
     </section>

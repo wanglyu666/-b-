@@ -3,14 +3,14 @@
     <!-- Sub Tabs -->
     <div class="flex gap-3">
       <button 
-        @click="acceptanceTab = 'material'"
+        @click="setTab('material')"
         :class="['px-6 py-2 rounded-full text-sm font-bold transition-all', 
           acceptanceTab === 'material' ? 'bg-[#FFC091] text-[#260A2F]' : 'bg-white/5 text-white/60 hover:bg-white/10']"
       >
         材料管控
       </button>
       <button 
-        @click="acceptanceTab = 'progress'"
+        @click="setTab('progress')"
         :class="['px-6 py-2 rounded-full text-sm font-bold transition-all', 
           acceptanceTab === 'progress' ? 'bg-[#FFC091] text-[#260A2F]' : 'bg-white/5 text-white/60 hover:bg-white/10']"
       >
@@ -147,7 +147,20 @@
                       {{ item.status }}
                     </span>
                   </td>
-                  <td class="px-6 py-4">
+                  <td class="px-6 py-4 flex items-center gap-2">
+                    <button 
+                      v-if="item.status !== '已通过'"
+                      @click="$emit('scheduleAcceptance', item)"
+                      :disabled="!!item.appointmentDate"
+                      :class="[
+                        'px-4 py-1.5 rounded-full text-xs font-bold transition-colors',
+                        item.appointmentDate 
+                          ? 'bg-white/10 text-white/40 cursor-not-allowed' 
+                          : 'bg-[#FFC091] hover:bg-[#ffb078] text-[#260A2F]'
+                      ]"
+                    >
+                      {{ item.appointmentDate ? '已确认时间' : '预约时间' }}
+                    </button>
                     <button @click="$emit('viewProgressDetail', item)" class="p-1 hover:bg-white/10 rounded-full transition-colors">
                       <MoreHorizontal :size="16" />
                     </button>
@@ -163,17 +176,29 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { MoreHorizontal } from 'lucide-vue-next';
 
-defineProps<{
+const props = defineProps<{
   materialData: any[];
   progressData: any[];
+  initialTab?: 'material' | 'progress';
 }>();
 
-defineEmits(['viewMaterialDetail', 'viewProgressDetail']);
+const emit = defineEmits(['viewMaterialDetail', 'viewProgressDetail', 'scheduleAcceptance', 'update:tab']);
 
-const acceptanceTab = ref('material');
+const acceptanceTab = ref<'material' | 'progress'>(props.initialTab || 'material');
+
+watch(() => props.initialTab, (newVal) => {
+  if (newVal) {
+    acceptanceTab.value = newVal;
+  }
+});
+
+const setTab = (tab: 'material' | 'progress') => {
+  acceptanceTab.value = tab;
+  emit('update:tab', tab);
+};
 </script>
 
 <style scoped>

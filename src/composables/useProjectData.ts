@@ -63,8 +63,8 @@ const defaultMaterialData = [
 ];
 
 const defaultProgressData = [
-  { node: '竣工验收', planDate: '2026-01-31', appointmentDate: '2026-03-16', type: '现场验收', status: '未通过' },
-  { node: '电气测试', planDate: '2026-01-25', appointmentDate: '2026-03-13', type: '现场验收', status: '未通过' },
+  { node: '竣工验收', planDate: '2026-01-31', appointmentDate: '', type: '现场验收', status: '未通过' },
+  { node: '电气测试', planDate: '2026-01-25', appointmentDate: '', type: '现场验收', status: '未通过' },
   { node: '放线验收', planDate: '2026-01-19', appointmentDate: '2026-03-13', type: '现场验收', status: '已通过' },
 ];
 
