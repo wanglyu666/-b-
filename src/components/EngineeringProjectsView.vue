@@ -259,6 +259,23 @@ const deleteDefect = (id: number) => {
   goBack();
 };
 
+const handleDefectReview = (payload: { id: number, status: 'pass' | 'fail', description: string }) => {
+  const targetArray = lastViewMode.value === 'defect_report' ? reportDefects.value : defects.value;
+  const index = targetArray.findIndex(d => d.id === payload.id);
+  
+  if (index !== -1) {
+    if (payload.status === 'pass') {
+      targetArray[index].status = '已通过';
+    } else {
+      targetArray[index].status = lastViewMode.value === 'defect_report' ? '待处理' : '待整改';
+      targetArray[index].description = payload.description;
+      targetArray[index].finishDate = '';
+      targetArray[index].rectifiedImage = '';
+    }
+  }
+  goBack();
+};
+
 const addDefect = () => {
   lastViewMode.value = viewMode.value;
   viewMode.value = 'defect_add';
@@ -519,6 +536,7 @@ const zoomImage = (url: string) => {
               :defect="selectedDefect"
               @zoomImage="zoomImage"
               @delete="deleteDefect"
+              @submitReview="handleDefectReview"
             />
 
             <!-- Defect Add Mode -->

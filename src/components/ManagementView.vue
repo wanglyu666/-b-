@@ -1,9 +1,91 @@
 <script setup lang="ts">
-import { HardHat, Clock, Wrench, CheckCircle, Banknote, Shield, ShieldAlert, AlertCircle, ClipboardList, Users, MoreHorizontal, ShoppingCart } from 'lucide-vue-next';
+import { ref, computed, watch } from 'vue';
+import { HardHat, Clock, Wrench, CheckCircle, Banknote, Shield, ShieldAlert, AlertCircle, ClipboardList, Users, MoreHorizontal, ShoppingCart, X } from 'lucide-vue-next';
 import TopBarActions from './TopBarActions.vue';
-import { members } from '../data';
+import { members, engineeringProjects } from '../data';
 
-defineEmits(['viewProjects']);
+const emit = defineEmits(['viewProjects', 'viewMaintenance']);
+
+const showAddModal = ref(false);
+
+// Filter projects for the dropdown
+const availableProjects = computed(() => {
+  return engineeringProjects.filter(p => 
+    ['待开工', '施工中', '已完工'].includes(p.status)
+  );
+});
+
+const newReport = ref({
+  projectId: '',
+  teamInfo: '',
+  startDate: '',
+  completionDate: '',
+  warrantyPeriod: '',
+  reportType: 'normal',
+  visitTime: '',
+  reason: '',
+  files: [] as File[]
+});
+
+// Watch for project selection to auto-fill details
+watch(() => newReport.value.projectId, (newId) => {
+  if (newId) {
+    const project = availableProjects.value.find(p => p.id === newId);
+    if (project) {
+      newReport.value.teamInfo = `${project.manager} (${project.contact})`;
+      newReport.value.startDate = project.startDate || '2023-01-01';
+      newReport.value.completionDate = project.endDate || '2024-01-01';
+      newReport.value.warrantyPeriod = '1年'; // Defaulting to 1 year as it's not in the type
+    }
+  } else {
+    newReport.value.teamInfo = '';
+    newReport.value.startDate = '';
+    newReport.value.completionDate = '';
+    newReport.value.warrantyPeriod = '';
+  }
+});
+
+const handleFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files) {
+    const newFiles = Array.from(target.files);
+    const totalFiles = newReport.value.files.length + newFiles.length;
+    
+    if (totalFiles > 5) {
+      alert('最多只能上传5个文件');
+      // Only add up to 5 files
+      const allowedNewFiles = newFiles.slice(0, 5 - newReport.value.files.length);
+      newReport.value.files = [...newReport.value.files, ...allowedNewFiles];
+    } else {
+      newReport.value.files = [...newReport.value.files, ...newFiles];
+    }
+  }
+  // Reset input value so the same file can be selected again if needed
+  if (target) {
+    target.value = '';
+  }
+};
+
+const removeFile = (index: number) => {
+  newReport.value.files.splice(index, 1);
+};
+
+const submitReport = () => {
+  console.log('Submitting report:', newReport.value);
+  // Reset and close
+  showAddModal.value = false;
+  newReport.value = {
+    projectId: '',
+    teamInfo: '',
+    startDate: '',
+    completionDate: '',
+    warrantyPeriod: '',
+    reportType: 'normal',
+    visitTime: '',
+    reason: '',
+    files: []
+  };
+};
 </script>
 
 <template>
@@ -173,13 +255,16 @@ defineEmits(['viewProjects']);
         </div>
 
         <!-- 维保报修管理 (黄色框) -->
-        <div class="bg-white/50 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-white/20 flex flex-col justify-between h-[220px]">
+        <div 
+          @click="emit('viewMaintenance')"
+          class="bg-white/50 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-white/20 flex flex-col justify-between h-[220px] cursor-pointer hover:bg-white/70 transition-all group"
+        >
            <div class="flex justify-between items-center mb-4">
               <div class="flex items-center space-x-2">
                  <div class="w-1 h-5 bg-[#A1D573] rounded-full"></div>
                  <h3 class="font-bold text-lg text-gray-800">维保报修管理</h3>
               </div>
-              <AlertCircle :size="18" class="text-gray-400" />
+              <AlertCircle :size="18" class="text-gray-400 group-hover:text-[#A1D573] transition-colors" />
            </div>
            <div class="flex-1 flex flex-col justify-center space-y-3">
               <div class="flex items-center justify-between px-2">
@@ -189,7 +274,10 @@ defineEmits(['viewProjects']);
                   </div>
                   <span class="font-bold text-3xl text-gray-900">42</span>
               </div>
-              <button class="w-full py-2.5 bg-[#A1D573] text-[#163300] font-bold rounded-2xl shadow-sm hover:bg-[#8ec260] transition-colors">
+              <button 
+                @click.stop="showAddModal = true" 
+                class="w-full py-2.5 bg-[#A1D573] text-[#163300] font-bold rounded-2xl shadow-sm hover:bg-[#8ec260] transition-colors"
+              >
                  新增
               </button>
            </div>
@@ -199,5 +287,146 @@ defineEmits(['viewProjects']);
     </div>
   </div>
 </div>
+
+  <!-- 新增维保报修 Modal -->
+  <Teleport to="body">
+    <Transition name="fade">
+      <div v-if="showAddModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+        <!-- Blurred Background -->
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="showAddModal = false"></div>
+        
+        <!-- Modal Content -->
+        <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+          
+          <!-- Header -->
+          <div class="flex items-center justify-between p-6 border-b border-gray-100">
+            <h2 class="text-xl font-bold text-gray-800">新增维保报修</h2>
+            <button @click="showAddModal = false" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+              <X :size="20" />
+            </button>
+          </div>
+          
+          <!-- Body -->
+          <div class="p-6 overflow-y-auto flex-1 space-y-6">
+            
+            <!-- 项目选择 -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">项目</label>
+                <select v-model="newReport.projectId" class="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#A1D573] focus:border-transparent transition-all">
+                  <option value="" disabled>请选择项目</option>
+                  <option v-for="project in availableProjects" :key="project.id" :value="project.id">
+                    {{ project.name }} ({{ project.status }})
+                  </option>
+                </select>
+              </div>
+              
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">项目组信息</label>
+                <input type="text" v-model="newReport.teamInfo" readonly placeholder="自动获取" class="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed focus:outline-none transition-all" />
+              </div>
+            </div>
+
+            <!-- 时间信息 -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">开工时间</label>
+                <input type="date" v-model="newReport.startDate" readonly class="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed focus:outline-none transition-all" />
+              </div>
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">竣工时间</label>
+                <input type="date" v-model="newReport.completionDate" readonly class="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed focus:outline-none transition-all" />
+              </div>
+              <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">质保期</label>
+                <input type="text" v-model="newReport.warrantyPeriod" readonly placeholder="自动获取" class="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed focus:outline-none transition-all" />
+              </div>
+            </div>
+
+            <div class="border-t border-gray-100 pt-6 space-y-6">
+              <!-- 报修类型 -->
+              <div class="flex items-center gap-4">
+                <label class="text-sm font-medium text-gray-700 w-24">报修类型:</label>
+                <div class="flex items-center gap-6">
+                  <label class="flex items-center gap-2 cursor-pointer group">
+                    <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors"
+                         :class="newReport.reportType === 'normal' ? 'border-[#FFC091]' : 'border-gray-300 group-hover:border-gray-400'">
+                      <div v-if="newReport.reportType === 'normal'" class="w-2 h-2 rounded-full bg-[#FFC091]"></div>
+                    </div>
+                    <span class="text-gray-600 font-medium" :class="newReport.reportType === 'normal' && 'text-[#FFC091]'">普通</span>
+                    <input type="radio" value="normal" v-model="newReport.reportType" class="hidden" />
+                  </label>
+                  <label class="flex items-center gap-2 cursor-pointer group">
+                    <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center transition-colors"
+                         :class="newReport.reportType === 'urgent' ? 'border-[#FFC091]' : 'border-gray-300 group-hover:border-gray-400'">
+                      <div v-if="newReport.reportType === 'urgent'" class="w-2 h-2 rounded-full bg-[#FFC091]"></div>
+                    </div>
+                    <span class="text-gray-600 font-medium" :class="newReport.reportType === 'urgent' && 'text-[#FFC091]'">紧急</span>
+                    <input type="radio" value="urgent" v-model="newReport.reportType" class="hidden" />
+                  </label>
+                </div>
+              </div>
+
+              <!-- 上门时间 -->
+              <div class="flex items-center gap-4">
+                <label class="text-sm font-medium text-gray-700 w-24">上门时间:</label>
+                <div class="flex-1 max-w-xs">
+                  <div class="relative">
+                    <input type="datetime-local" v-model="newReport.visitTime" class="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#FFC091] focus:border-transparent transition-all" />
+                    <Clock :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  </div>
+                </div>
+              </div>
+
+              <!-- 报修原因 -->
+              <div class="flex items-start gap-4">
+                <label class="text-sm font-medium text-gray-700 w-24 pt-2">报修原因:</label>
+                <textarea 
+                  v-model="newReport.reason"
+                  class="flex-1 h-32 px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#FFC091] focus:border-transparent transition-all resize-none"
+                ></textarea>
+              </div>
+
+              <!-- 上传图片或视频 -->
+              <div class="flex items-start gap-4">
+                <label class="text-sm font-medium text-gray-700 w-24 pt-2">上传图片或视频:</label>
+                <div class="flex-1 flex flex-col gap-3">
+                  <div class="flex items-center gap-3">
+                    <label class="px-4 py-2 bg-[#FFC091] hover:bg-[#ffb078] text-[#260A2F] text-sm font-medium rounded-lg cursor-pointer transition-colors shadow-sm" :class="{ 'opacity-50 cursor-not-allowed': newReport.files.length >= 5 }">
+                      选取文件
+                      <input type="file" @change="handleFileChange" class="hidden" accept="image/*,video/*" multiple :disabled="newReport.files.length >= 5" />
+                    </label>
+                    <span class="text-sm text-gray-500">最多上传5个文件 ({{ newReport.files.length }}/5)</span>
+                  </div>
+                  
+                  <!-- Selected Files List -->
+                  <div v-if="newReport.files.length > 0" class="flex flex-wrap gap-2 mt-2">
+                    <div v-for="(file, index) in newReport.files" :key="index" class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 max-w-[200px]">
+                      <span class="text-sm text-gray-600 truncate flex-1" :title="file.name">{{ file.name }}</span>
+                      <button @click="removeFile(index)" class="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0">
+                        <X :size="14" />
+                      </button>
+                    </div>
+                  </div>
+                  <span class="text-sm text-gray-400" v-else>未选择任何文件</span>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+          
+          <!-- Footer -->
+          <div class="p-6 border-t border-gray-100 bg-gray-50 flex justify-end">
+            <button 
+              @click="submitReport"
+              class="px-8 py-2.5 bg-[#A1D573] hover:bg-[#8ec260] text-[#163300] font-bold rounded-xl shadow-sm transition-colors"
+            >
+              确认
+            </button>
+          </div>
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 

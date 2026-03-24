@@ -27,7 +27,7 @@
           <div class="aspect-[4/3] overflow-hidden relative">
             <img :src="defect.image" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
             <div class="absolute top-3 right-3 px-2 py-0.5 rounded-full text-[9px] font-bold backdrop-blur-md" 
-              :class="(defect.status === '已完成' || defect.status === '已处理') ? 'bg-[#A1D573]/20 text-[#A1D573]' : 'bg-orange-500/20 text-orange-400'">
+              :class="(defect.status === '已完成' || defect.status === '已处理' || defect.status === '已通过') ? 'bg-[#A1D573]/20 text-[#A1D573]' : 'bg-orange-500/20 text-orange-400'">
               {{ defect.status }}
             </div>
           </div>

@@ -12,6 +12,7 @@ import MessageView from './components/MessageView.vue';
 import ManagementView from './components/ManagementView.vue';
 import ContractAndSettlementView from './components/ContractAndSettlementView.vue';
 import EngineeringProjectsView from './components/EngineeringProjectsView.vue';
+import MaintenanceRepairView from './components/MaintenanceRepairView.vue';
 import type { Product, CartItem } from './types';
 
 const activeTab = ref('home');
@@ -90,6 +91,10 @@ const handleViewProjects = (status: string) => {
   activeTab.value = 'engineering-projects';
 };
 
+const handleViewMaintenance = () => {
+  activeTab.value = 'maintenance-repair';
+};
+
 const handleBackToManagement = () => {
   activeTab.value = 'management';
 };
@@ -104,7 +109,7 @@ const handleBack = () => {
 
 const backgroundConfig = computed(() => {
   const shopTabs = ['home', 'shop', 'wishlist', 'cart', 'messages', 'product-detail'];
-  const managementTabs = ['management', 'engineering-projects', 'contracts'];
+  const managementTabs = ['management', 'engineering-projects', 'contracts', 'maintenance-repair'];
 
   if (shopTabs.includes(activeTab.value)) {
     return {
@@ -128,7 +133,7 @@ const backgroundConfig = computed(() => {
 const showBackground = computed(() => !!backgroundConfig.value);
 
 const rootBgColor = computed(() => {
-  if (['management', 'engineering-projects', 'contracts'].includes(activeTab.value)) {
+  if (['management', 'engineering-projects', 'contracts', 'maintenance-repair'].includes(activeTab.value)) {
     return 'bg-[#f1f3f0]';
   }
   return 'bg-[#f8fafc]';
@@ -168,6 +173,12 @@ const rootBgColor = computed(() => {
       <ManagementView 
         v-if="activeTab === 'management'" 
         @viewProjects="handleViewProjects"
+        @viewMaintenance="handleViewMaintenance"
+      />
+
+      <MaintenanceRepairView 
+        v-if="activeTab === 'maintenance-repair'"
+        @back="handleBackToManagement"
       />
 
       <EngineeringProjectsView 
