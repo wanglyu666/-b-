@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { HardHat, Clock, Wrench, CheckCircle, Banknote, Shield, ShieldAlert, AlertCircle, ClipboardList, Users, MoreHorizontal, ShoppingCart, X } from 'lucide-vue-next';
+import { HardHat, Clock, Wrench, CheckCircle, Banknote, Shield, ShieldAlert, AlertCircle, ClipboardList, UsersRound, MoreHorizontal, ShoppingCart, X } from 'lucide-vue-next';
 import TopBarActions from './TopBarActions.vue';
 import { members, engineeringProjects } from '../data';
+import orderMgmtIllustration from '../../image asset/shopping cart icon.png';
+import membersMgmtIllustration from '../../image asset/group icon.png';
 
-const emit = defineEmits(['viewProjects', 'viewMaintenance']);
+const emit = defineEmits(['viewProjects', 'viewMaintenance', 'viewMaintenanceProjects']);
 
 const showAddModal = ref(false);
 
@@ -114,15 +116,15 @@ const submitReport = () => {
               <Wrench :size="18" class="text-gray-400" />
            </div>
            <div class="flex-1 grid grid-cols-3 gap-6 pl-32 pr-6 py-4">
-               <button class="relative overflow-hidden rounded-3xl bg-[#FFC091] text-[#260A2F] transition-all hover:shadow-xl active:scale-95 border border-[#FFC091]/20 group">
+               <button @click="emit('viewMaintenanceProjects', '待开工')" class="relative overflow-hidden rounded-3xl bg-[#FFC091] text-[#260A2F] transition-all hover:shadow-xl active:scale-95 border border-[#FFC091]/20 group">
                   <span class="absolute top-3 right-5 text-6xl font-black opacity-90 leading-none tracking-tighter transition-all duration-700 group-hover:scale-110 group-hover:-translate-y-2 group-hover:drop-shadow-lg">12</span>
                   <span class="absolute bottom-5 left-5 text-2xl font-bold opacity-70 tracking-tight transition-all duration-700 group-hover:translate-y-1 group-hover:opacity-100">待开工</span>
                </button>
-               <button class="relative overflow-hidden rounded-3xl bg-[#FFEB69] text-[#3A341C] transition-all hover:shadow-xl active:scale-95 border border-[#FFEB69]/20 group">
+               <button @click="emit('viewMaintenanceProjects', '施工中')" class="relative overflow-hidden rounded-3xl bg-[#FFEB69] text-[#3A341C] transition-all hover:shadow-xl active:scale-95 border border-[#FFEB69]/20 group">
                   <span class="absolute top-3 right-5 text-6xl font-black opacity-90 leading-none tracking-tighter transition-all duration-700 group-hover:scale-110 group-hover:-translate-y-2 group-hover:drop-shadow-lg">5</span>
                   <span class="absolute bottom-5 left-5 text-2xl font-bold opacity-70 tracking-tight transition-all duration-700 group-hover:translate-y-1 group-hover:opacity-100">施工中</span>
                </button>
-               <button class="relative overflow-hidden rounded-3xl bg-[#A0E1E1] text-[#21231D] transition-all hover:shadow-xl active:scale-95 border border-[#A0E1E1]/20 group">
+               <button @click="emit('viewMaintenanceProjects', '已完工')" class="relative overflow-hidden rounded-3xl bg-[#A0E1E1] text-[#21231D] transition-all hover:shadow-xl active:scale-95 border border-[#A0E1E1]/20 group">
                   <span class="absolute top-4 right-6 text-6xl font-black opacity-90 leading-none tracking-tighter transition-all duration-700 group-hover:scale-110 group-hover:-translate-y-2 group-hover:drop-shadow-lg">34</span>
                   <span class="absolute bottom-6 left-6 text-2xl font-bold opacity-70 tracking-tight transition-all duration-700 group-hover:translate-y-1 group-hover:opacity-100">已完工</span>
                </button>
@@ -198,18 +200,20 @@ const submitReport = () => {
                    <div class="w-1 h-5 bg-[#163300] rounded-full"></div>
                    <h3 class="font-bold text-lg text-gray-800">成员管理</h3>
                 </div>
-                <Users :size="18" class="text-gray-400" />
+                <UsersRound :size="18" class="text-gray-400" />
              </div>
              
-             <div class="flex-1 flex flex-col">
-                <!-- 占位图 -->
-                <div class="flex justify-center mb-2">
-                   <div class="w-24 h-24 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-100 flex items-center justify-center">
-                      <span class="text-gray-300 font-medium text-[10px]">占位图</span>
-                   </div>
+             <div class="flex-1 min-h-0 flex flex-col gap-2">
+                <!-- 图片仅在上方剩余空间内缩放，再大也不会挤占成员列表 -->
+                <div class="min-h-0 flex-1 flex items-center justify-center overflow-hidden">
+                   <img
+                     :src="membersMgmtIllustration"
+                     alt=""
+                     class="max-h-full max-w-full w-auto h-auto object-contain"
+                   />
                 </div>
 
-                <div class="mt-auto flex flex-col gap-0.5 mb-2">
+                <div class="flex-shrink-0 flex flex-col gap-0.5 mb-2">
                    <div v-for="member in members" :key="member.id" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
                       <div class="flex items-center space-x-3">
                          <div :class="['w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs', member.bgColor]">
@@ -239,15 +243,19 @@ const submitReport = () => {
                  <div class="w-1 h-5 bg-[#A1D573] rounded-full"></div>
                  <h3 class="font-bold text-lg text-gray-800">订单管理</h3>
               </div>
+              <ShoppingCart :size="18" class="text-gray-400" />
            </div>
            
-           <div class="flex-1 flex flex-col items-center justify-center">
-              <!-- 占位图 -->
-              <div class="w-40 h-40 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center mb-6">
-                 <span class="text-gray-300 font-medium text-sm">占位图</span>
+           <div class="flex-1 min-h-0 flex flex-col">
+              <!-- 图片只在中间弹性区域内缩放；总订单数区域固定贴在卡片下半部 -->
+              <div class="min-h-0 flex-1 flex items-center justify-center overflow-hidden py-2">
+                 <img
+                   :src="orderMgmtIllustration"
+                   alt=""
+                   class="max-h-full max-w-full w-auto h-auto object-contain"
+                 />
               </div>
-              
-              <div class="flex flex-col items-center">
+              <div class="flex-shrink-0 flex flex-col items-center pb-1">
                  <span class="text-gray-500 font-medium mb-1 text-sm">总订单数</span>
                  <span class="font-bold text-5xl text-gray-900">156</span>
               </div>

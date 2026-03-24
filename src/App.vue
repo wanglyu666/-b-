@@ -13,6 +13,7 @@ import ManagementView from './components/ManagementView.vue';
 import ContractAndSettlementView from './components/ContractAndSettlementView.vue';
 import EngineeringProjectsView from './components/EngineeringProjectsView.vue';
 import MaintenanceRepairView from './components/MaintenanceRepairView.vue';
+import MaintenanceProjectsView from './components/MaintenanceProjectsView.vue';
 import type { Product, CartItem } from './types';
 
 const activeTab = ref('home');
@@ -26,6 +27,7 @@ const shopPage = ref(1);
 const shopScrollTop = ref(0);
 
 const activeProjectStatus = ref('施工中');
+const activeMaintenanceProjectStatus = ref('待开工');
 
 const addToCart = (product: Product, count = 1) => {
   const existingItem = cart.value.find(item => item.id === product.id);
@@ -95,6 +97,11 @@ const handleViewMaintenance = () => {
   activeTab.value = 'maintenance-repair';
 };
 
+const handleViewMaintenanceProjects = (status: string) => {
+  activeMaintenanceProjectStatus.value = status;
+  activeTab.value = 'maintenance-projects';
+};
+
 const handleBackToManagement = () => {
   activeTab.value = 'management';
 };
@@ -109,7 +116,7 @@ const handleBack = () => {
 
 const backgroundConfig = computed(() => {
   const shopTabs = ['home', 'shop', 'wishlist', 'cart', 'messages', 'product-detail'];
-  const managementTabs = ['management', 'engineering-projects', 'contracts', 'maintenance-repair'];
+  const managementTabs = ['management', 'engineering-projects', 'contracts', 'maintenance-repair', 'maintenance-projects'];
 
   if (shopTabs.includes(activeTab.value)) {
     return {
@@ -133,7 +140,7 @@ const backgroundConfig = computed(() => {
 const showBackground = computed(() => !!backgroundConfig.value);
 
 const rootBgColor = computed(() => {
-  if (['management', 'engineering-projects', 'contracts', 'maintenance-repair'].includes(activeTab.value)) {
+  if (['management', 'engineering-projects', 'contracts', 'maintenance-repair', 'maintenance-projects'].includes(activeTab.value)) {
     return 'bg-[#f1f3f0]';
   }
   return 'bg-[#f8fafc]';
@@ -174,10 +181,17 @@ const rootBgColor = computed(() => {
         v-if="activeTab === 'management'" 
         @viewProjects="handleViewProjects"
         @viewMaintenance="handleViewMaintenance"
+        @viewMaintenanceProjects="handleViewMaintenanceProjects"
       />
 
       <MaintenanceRepairView 
         v-if="activeTab === 'maintenance-repair'"
+        @back="handleBackToManagement"
+      />
+
+      <MaintenanceProjectsView
+        v-if="activeTab === 'maintenance-projects'"
+        :initialStatus="activeMaintenanceProjectStatus"
         @back="handleBackToManagement"
       />
 

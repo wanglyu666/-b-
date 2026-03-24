@@ -1,4 +1,4 @@
-import { Product, Notification, Contract, Bill, Member, EngineeringProject } from './types';
+import { Product, Notification, Contract, Bill, Member, EngineeringProject, MaintenanceProject } from './types';
 
 export const chartData = [
   { name: '1月', value: 4000 },
@@ -433,6 +433,63 @@ export const engineeringProjects: EngineeringProject[] = [
     status: '施工中',
     startDate: '2024-02-10'
   }
+];
+
+export const maintenanceProjects: MaintenanceProject[] = [
+  // 待开工 (12)
+  { id: 'M-01', no: 'WB-2024-001', name: '中央空调系统年度维保', address: '海淀区科技园 A 座', manager: '李志强', contact: '139-1234-5678', status: '待开工' },
+  { id: 'M-02', no: 'WB-2024-002', name: '消防喷淋管道检修', address: '朝阳区望京 SOHO T1', manager: '王建国', contact: '138-0013-8001', status: '待开工' },
+  { id: 'M-03', no: 'WB-2024-003', name: '电梯机房设备保养', address: '丰台区总部基地 16 号楼', manager: '张伟', contact: '137-9876-5432', status: '待开工' },
+  { id: 'M-04', no: 'WB-2024-004', name: '地下车库排水系统维护', address: '西城区金融街 8 号院', manager: '陈明', contact: '135-8888-9999', status: '待开工' },
+  { id: 'M-05', no: 'WB-2024-005', name: '楼宇智能照明系统巡检', address: '中关村软件园二期 3 号楼', manager: '刘洋', contact: '136-5555-6666', status: '待开工' },
+  { id: 'M-06', no: 'WB-2024-006', name: '外墙幕墙密封胶更换', address: '国贸中心写字楼 A 座', manager: '赵强', contact: '133-2222-3333', status: '待开工' },
+  { id: 'M-07', no: 'WB-2024-007', name: '配电房高压开关柜检测', address: '亦庄经济开发区 E9 区', manager: '李志强', contact: '139-1234-5678', status: '待开工' },
+  { id: 'M-08', no: 'WB-2024-008', name: '新风系统滤网更换', address: '东城区银河大厦 21 层', manager: '王建国', contact: '138-0013-8001', status: '待开工' },
+  { id: 'M-09', no: 'WB-2024-009', name: '屋顶防水层修补', address: '通州区万达广场 B 座', manager: '张伟', contact: '137-9876-5432', status: '待开工' },
+  { id: 'M-10', no: 'WB-2024-010', name: '监控摄像头清洁与校准', address: '昌平区回龙观产业园', manager: '陈明', contact: '135-8888-9999', status: '待开工' },
+  { id: 'M-11', no: 'WB-2024-011', name: '给排水管道防腐处理', address: '大兴区星光影视园 5 号', manager: '刘洋', contact: '136-5555-6666', status: '待开工' },
+  { id: 'M-12', no: 'WB-2024-012', name: '弱电机房UPS电池更换', address: '石景山区科技馆路 9 号', manager: '赵强', contact: '133-2222-3333', status: '待开工' },
+  // 施工中 (5)
+  { id: 'M-13', no: 'WB-2024-013', name: '绿地中心45层办公区装修', address: '绿地中心 4501-4508', manager: '李志强', contact: '139-1234-5678', status: '施工中' },
+  { id: 'M-14', no: 'WB-2024-014', name: '云端咖啡厅整体软装', address: '云端大厦 12 层', manager: '李志强', contact: '139-1234-5678', status: '施工中' },
+  { id: 'M-15', no: 'WB-2024-015', name: '高新科技园A栋大堂改造', address: '高新科技园 A 栋', manager: '张伟', contact: '137-9876-5432', status: '施工中' },
+  { id: 'M-16', no: 'WB-2024-016', name: '城市书房室内设计与施工', address: '文化广场 1 号', manager: '刘洋', contact: '136-5555-6666', status: '施工中' },
+  { id: 'M-17', no: 'WB-2024-017', name: '星海湾一号别墅空调维保', address: '星海湾一号 32 栋', manager: '王建国', contact: '138-0013-8001', status: '施工中' },
+  // 已完工 (34)
+  { id: 'M-18', no: 'WB-2023-001', name: '万科城3期消防系统检修', address: '万科城 3 期 12 栋', manager: '张伟', contact: '137-9876-5432', status: '已完工' },
+  { id: 'M-19', no: 'WB-2023-002', name: '时代广场电梯年度维保', address: '时代广场 1 层', manager: '刘洋', contact: '136-5555-6666', status: '已完工' },
+  { id: 'M-20', no: 'WB-2023-003', name: '阳光海岸酒店空调保养', address: '阳光海岸大道 88 号', manager: '陈明', contact: '135-8888-9999', status: '已完工' },
+  { id: 'M-21', no: 'WB-2023-004', name: '金融中心配电房维护', address: '金融中心 A 座 B1', manager: '王建国', contact: '138-0013-8001', status: '已完工' },
+  { id: 'M-22', no: 'WB-2023-005', name: '国际会展中心水电检修', address: '国际会展中心 3 号馆', manager: '赵强', contact: '133-2222-3333', status: '已完工' },
+  { id: 'M-23', no: 'WB-2023-006', name: '滨海商业街灯光维护', address: '滨海商业街 1-15 号', manager: '李志强', contact: '139-1234-5678', status: '已完工' },
+  { id: 'M-24', no: 'WB-2023-007', name: '创意园区安防系统升级', address: '创意园 B 区 3 栋', manager: '张伟', contact: '137-9876-5432', status: '已完工' },
+  { id: 'M-25', no: 'WB-2023-008', name: '实验中学暖通系统保养', address: '实验路 10 号', manager: '刘洋', contact: '136-5555-6666', status: '已完工' },
+  { id: 'M-26', no: 'WB-2023-009', name: '市图书馆消防设备巡检', address: '学府路 100 号', manager: '陈明', contact: '135-8888-9999', status: '已完工' },
+  { id: 'M-27', no: 'WB-2023-010', name: '奥体中心强电系统检修', address: '奥体路 1 号', manager: '王建国', contact: '138-0013-8001', status: '已完工' },
+  { id: 'M-28', no: 'WB-2023-011', name: '新华书店弱电系统维护', address: '解放路 10 号', manager: '赵强', contact: '133-2222-3333', status: '已完工' },
+  { id: 'M-29', no: 'WB-2023-012', name: '希尔顿酒店电梯检测', address: '滨海大道 1 号', manager: '李志强', contact: '139-1234-5678', status: '已完工' },
+  { id: 'M-30', no: 'WB-2023-013', name: '数字图书馆空调清洗', address: '文化路 50 号', manager: '张伟', contact: '137-9876-5432', status: '已完工' },
+  { id: 'M-31', no: 'WB-2023-014', name: '软件园B区供暖管道检修', address: '软件园 B 区', manager: '刘洋', contact: '136-5555-6666', status: '已完工' },
+  { id: 'M-32', no: 'WB-2023-015', name: '万象城排污系统疏通', address: '万象城 B1 层', manager: '陈明', contact: '135-8888-9999', status: '已完工' },
+  { id: 'M-33', no: 'WB-2023-016', name: '青年公寓外墙防水施工', address: '青年路 88 号', manager: '王建国', contact: '138-0013-8001', status: '已完工' },
+  { id: 'M-34', no: 'WB-2023-017', name: '社区医疗中心电气检测', address: '健康路 12 号', manager: '赵强', contact: '133-2222-3333', status: '已完工' },
+  { id: 'M-35', no: 'WB-2023-018', name: '地铁2号线通风系统维保', address: '地铁 2 号线全线', manager: '李志强', contact: '139-1234-5678', status: '已完工' },
+  { id: 'M-36', no: 'WB-2023-019', name: '未来科技城消防年检', address: '未来路 1 号', manager: '张伟', contact: '137-9876-5432', status: '已完工' },
+  { id: 'M-37', no: 'WB-2023-020', name: '智慧园区门禁系统维护', address: '智慧大道 88 号', manager: '刘洋', contact: '136-5555-6666', status: '已完工' },
+  { id: 'M-38', no: 'WB-2023-021', name: '滨江花园电梯钢丝绳更换', address: '滨江路 200 号', manager: '陈明', contact: '135-8888-9999', status: '已完工' },
+  { id: 'M-39', no: 'WB-2023-022', name: '连锁超市冷链设备保养', address: '全市 5 家分店', manager: '王建国', contact: '138-0013-8001', status: '已完工' },
+  { id: 'M-40', no: 'WB-2023-023', name: '实验小学教室照明改造', address: '教育路 5 号', manager: '赵强', contact: '133-2222-3333', status: '已完工' },
+  { id: 'M-41', no: 'WB-2023-024', name: '蓝天科技园水泵房维护', address: '高新园区蓝天路 1 号', manager: '李志强', contact: '139-1234-5678', status: '已完工' },
+  { id: 'M-42', no: 'WB-2023-025', name: '老旧小区燃气管道检测', address: '和平区幸福里小区', manager: '张伟', contact: '137-9876-5432', status: '已完工' },
+  { id: 'M-43', no: 'WB-2023-026', name: '高新区写字楼玻璃幕墙清洗', address: '高新区创新大厦', manager: '刘洋', contact: '136-5555-6666', status: '已完工' },
+  { id: 'M-44', no: 'WB-2023-027', name: '度假村泳池水处理维保', address: '南山度假村', manager: '陈明', contact: '135-8888-9999', status: '已完工' },
+  { id: 'M-45', no: 'WB-2023-028', name: '商务中心中央热水系统保养', address: '商务中心 A 座', manager: '王建国', contact: '138-0013-8001', status: '已完工' },
+  { id: 'M-46', no: 'WB-2023-029', name: '科技孵化器网络机房巡检', address: '孵化器大楼 5 层', manager: '赵强', contact: '133-2222-3333', status: '已完工' },
+  { id: 'M-47', no: 'WB-2023-030', name: '文化中心舞台灯光检修', address: '文化中心大剧院', manager: '李志强', contact: '139-1234-5678', status: '已完工' },
+  { id: 'M-48', no: 'WB-2023-031', name: '体育公园照明系统维护', address: '体育公园主场馆', manager: '张伟', contact: '137-9876-5432', status: '已完工' },
+  { id: 'M-49', no: 'WB-2023-032', name: '购物广场自动扶梯保养', address: '购物广场 1-3 层', manager: '刘洋', contact: '136-5555-6666', status: '已完工' },
+  { id: 'M-50', no: 'WB-2023-033', name: '工业园区变压器检测', address: '工业园区配电中心', manager: '陈明', contact: '135-8888-9999', status: '已完工' },
+  { id: 'M-51', no: 'WB-2023-034', name: '医院手术室洁净空调维保', address: '市第一人民医院 3 号楼', manager: '王建国', contact: '138-0013-8001', status: '已完工' },
 ];
 
 export const members: Member[] = [

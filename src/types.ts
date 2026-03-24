@@ -58,3 +58,13 @@ export interface Member {
   bgColor: string;
   online: boolean;
 }
+
+export interface MaintenanceProject {
+  id: string;
+  no: string;
+  name: string;
+  address: string;
+  manager: string;
+  contact: string;
+  status: '待开工' | '施工中' | '已完工';
+}
