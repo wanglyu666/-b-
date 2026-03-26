@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { ArrowLeft, Search, ChevronLeft, ChevronRight, X, CheckCircle2, Star } from 'lucide-vue-next';
+import { ArrowLeft, Search, ChevronLeft, ChevronRight, X, CheckCircle2, Star, MoreHorizontal } from 'lucide-vue-next';
 import { maintenanceProjects } from '../data';
 import type { MaintenanceProject } from '../types';
 import MaintenanceProjectCard from './maintenance/MaintenanceProjectCard.vue';
@@ -16,7 +16,7 @@ const statuses = ['待开工', '施工中', '已完工'] as const;
 const activeStatus = ref(props.initialStatus || '待开工');
 const searchQuery = ref('');
 const selectedProject = ref<MaintenanceProject | null>(null);
-const viewMode = ref<'details' | 'evaluation' | 'evaluation_success'>('details');
+const viewMode = ref<'details' | 'evaluation' | 'evaluation_success' | 'appointment' | 'confirm_time' | 'confirm_change' | 'appointment_success' | 'order_suspended' | 'order_abnormal' | 'pending_acceptance' | 'completed'>('details');
 
 const currentPage = ref(1);
 const itemsPerPage = 9;
@@ -26,6 +26,74 @@ const maintenanceEvaluations = ref<Record<string, { rating: number; feedback: st
 const evalRating = ref(0);
 const evalHoverRating = ref(0);
 const evalFeedback = ref('');
+
+const acceptanceImages = [
+  'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=600&h=450&fit=crop',
+  'https://images.unsplash.com/photo-1504307651254-35680f356dfd?w=600&h=450&fit=crop',
+  'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?w=600&h=450&fit=crop',
+  'https://images.unsplash.com/photo-1590479773265-7464e5d48118?w=600&h=450&fit=crop',
+  'https://images.unsplash.com/photo-1517581177682-a085bb7ffb15?w=600&h=450&fit=crop',
+  'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=600&h=450&fit=crop',
+];
+
+const appointmentData = ref([
+  { id: 1, name: '客户端UI设计', countdown: '-9小时-12分-16秒', appointmentTime: '2026-03-25 00:00', status: '待客户验收', changeReason: '', statusReason: '', images: acceptanceImages },
+  { id: 2, name: '客户端UI设计', countdown: '-19小时-22分-5秒', appointmentTime: '2026-03-24 13:50:11', status: '待客户确认预约时间', changeReason: '', statusReason: '', images: [] as string[] },
+  { id: 3, name: '客户端UI设计', countdown: '-19小时-21分-31秒', appointmentTime: '2026-03-24 13:50:45', status: '待客户确认变更时间', changeReason: '因施工现场发现隐蔽管线，需要重新规划施工方案，原定时间无法满足安全施工要求', statusReason: '', images: [] as string[] },
+  { id: 4, name: '客户端UI设计', countdown: '-19小时-21分-15秒', appointmentTime: '2026-03-24 13:51:01', status: '订单挂起', changeReason: '', statusReason: '客户要求暂停施工，等待设计方案变更确认后再恢复', images: [] as string[] },
+  { id: 5, name: '客户端UI设计', countdown: '-18小时-12分-16秒', appointmentTime: '2026-03-24 15:00:00', status: '预约异常', changeReason: '', statusReason: '预约时间已超时未确认，系统自动标记为异常，请联系客户重新预约', images: [] as string[] },
+  { id: 6, name: '空调系统巡检', countdown: '2天-5小时-30分', appointmentTime: '2026-03-27 10:00:00', status: '待上门', changeReason: '', statusReason: '', images: [] as string[] },
+  { id: 7, name: '消防管道维修', countdown: '-', appointmentTime: '2026-03-20 09:00:00', status: '已完工', changeReason: '', statusReason: '', images: acceptanceImages.slice(0, 4) },
+]);
+
+const appointmentMenuOpen = ref<number | null>(null);
+const selectedAppointment = ref<typeof appointmentData.value[0] | null>(null);
+
+const toggleAppointmentMenu = (id: number) => {
+  appointmentMenuOpen.value = appointmentMenuOpen.value === id ? null : id;
+};
+
+const closeAppointmentMenu = () => {
+  appointmentMenuOpen.value = null;
+};
+
+const handleAppointmentAction = (item: typeof appointmentData.value[0]) => {
+  selectedAppointment.value = item;
+  if (item.status === '待客户确认预约时间') {
+    viewMode.value = 'confirm_time';
+  } else if (item.status === '待客户确认变更时间') {
+    viewMode.value = 'confirm_change';
+  } else if (item.status === '订单挂起') {
+    viewMode.value = 'order_suspended';
+  } else if (item.status === '预约异常') {
+    viewMode.value = 'order_abnormal';
+  } else if (item.status === '待客户验收') {
+    viewMode.value = 'pending_acceptance';
+  } else if (item.status === '已完工') {
+    viewMode.value = 'completed';
+  }
+};
+
+const confirmAppointmentTime = () => {
+  if (selectedAppointment.value) {
+    selectedAppointment.value.status = '待上门';
+    viewMode.value = 'appointment_success';
+  }
+};
+
+const confirmChangeTime = () => {
+  if (selectedAppointment.value) {
+    selectedAppointment.value.status = '待上门';
+    viewMode.value = 'appointment_success';
+  }
+};
+
+const confirmAcceptance = () => {
+  if (selectedAppointment.value) {
+    selectedAppointment.value.status = '已完工';
+    viewMode.value = 'appointment_success';
+  }
+};
 
 const selectedProjectId = computed(() => selectedProject.value?.id);
 const isEvaluated = computed(() => {
@@ -72,13 +140,30 @@ const submitEvaluation = () => {
   }
 };
 
-// Modal dimensions with morphing animation
 const modalDimensions = computed(() => {
   if (viewMode.value === 'details') {
     return { width: '768px', height: '680px', radius: '40px', scale: 1 };
   }
   if (viewMode.value === 'evaluation' || viewMode.value === 'evaluation_success') {
     return { width: '800px', height: '700px', radius: '32px', scale: 1.02 };
+  }
+  if (viewMode.value === 'appointment') {
+    return { width: '960px', height: '720px', radius: '32px', scale: 1.02 };
+  }
+  if (viewMode.value === 'confirm_time') {
+    return { width: '600px', height: '400px', radius: '32px', scale: 1 };
+  }
+  if (viewMode.value === 'confirm_change') {
+    return { width: '600px', height: '500px', radius: '32px', scale: 1 };
+  }
+  if (viewMode.value === 'appointment_success') {
+    return { width: '600px', height: '480px', radius: '32px', scale: 1 };
+  }
+  if (viewMode.value === 'order_suspended' || viewMode.value === 'order_abnormal') {
+    return { width: '600px', height: '380px', radius: '32px', scale: 1 };
+  }
+  if (viewMode.value === 'pending_acceptance' || viewMode.value === 'completed') {
+    return { width: '860px', height: '680px', radius: '32px', scale: 1.02 };
   }
   return { width: '768px', height: '680px', radius: '40px', scale: 1 };
 });
@@ -87,6 +172,14 @@ const headerTitle = computed(() => {
   if (viewMode.value === 'details') return '项目详情';
   if (viewMode.value === 'evaluation') return '项目评价';
   if (viewMode.value === 'evaluation_success') return '项目评价';
+  if (viewMode.value === 'appointment') return '预约管理';
+  if (viewMode.value === 'confirm_time') return '确认预约时间';
+  if (viewMode.value === 'confirm_change') return '确认变更时间';
+  if (viewMode.value === 'appointment_success') return '预约管理';
+  if (viewMode.value === 'order_suspended') return '订单挂起';
+  if (viewMode.value === 'order_abnormal') return '预约异常';
+  if (viewMode.value === 'pending_acceptance') return '待客户验收';
+  if (viewMode.value === 'completed') return '验收完成';
   return '项目详情';
 });
 
@@ -128,7 +221,8 @@ const closeModal = () => {
 };
 
 const handleAppointment = () => {
-  console.log('预约管理:', selectedProject.value?.no);
+  appointmentMenuOpen.value = null;
+  viewMode.value = 'appointment';
 };
 
 const handleEvaluation = () => {
@@ -145,9 +239,14 @@ const handleEvaluation = () => {
 };
 
 const goBack = () => {
-  if (viewMode.value === 'evaluation') {
-    viewMode.value = 'details';
-  } else if (viewMode.value === 'evaluation_success') {
+  if (viewMode.value === 'confirm_time' || viewMode.value === 'confirm_change' || viewMode.value === 'order_suspended' || viewMode.value === 'order_abnormal' || viewMode.value === 'pending_acceptance' || viewMode.value === 'completed') {
+    selectedAppointment.value = null;
+    viewMode.value = 'appointment';
+  } else if (viewMode.value === 'appointment_success') {
+    selectedAppointment.value = null;
+    viewMode.value = 'appointment';
+  } else if (viewMode.value === 'evaluation' || viewMode.value === 'evaluation_success' || viewMode.value === 'appointment') {
+    appointmentMenuOpen.value = null;
     viewMode.value = 'details';
   }
 };
@@ -363,6 +462,147 @@ const goBack = () => {
                     返回上级页面
                   </button>
                 </div>
+
+                <!-- 预约管理页面 -->
+                <div v-else-if="viewMode === 'appointment'" :key="'appointment'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
+                  <div class="bg-white/5 backdrop-blur-xl rounded-[32px] border border-white/10 overflow-hidden shadow-inner">
+                    <div class="overflow-x-auto">
+                      <table class="w-full text-left border-collapse">
+                        <thead>
+                          <tr class="bg-white/5 text-white/40 text-[10px] uppercase tracking-widest font-bold">
+                            <th class="px-6 py-3">序号</th>
+                            <th class="px-6 py-3">项目名称</th>
+                            <th class="px-6 py-3">倒计时</th>
+                            <th class="px-6 py-3">预约时间</th>
+                            <th class="px-6 py-3">状态</th>
+                            <th class="px-6 py-3 w-12"></th>
+                          </tr>
+                        </thead>
+                        <tbody class="text-white/80 text-xs">
+                          <tr v-for="item in appointmentData" :key="item.id" class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                            <td class="px-6 py-4 font-mono">{{ item.id }}</td>
+                            <td class="px-6 py-4">{{ item.name }}</td>
+                            <td class="px-6 py-4 font-mono">{{ item.countdown }}</td>
+                            <td class="px-6 py-4 font-mono">{{ item.appointmentTime }}</td>
+                            <td class="px-6 py-4">{{ item.status }}</td>
+                            <td class="px-6 py-4">
+                              <button @click.stop="handleAppointmentAction(item)" class="p-1.5 hover:bg-white/10 rounded-full transition-colors">
+                                <MoreHorizontal :size="16" class="text-white/60" />
+                              </button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 确认预约时间页面 -->
+                <div v-else-if="viewMode === 'confirm_time'" :key="'confirm_time'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
+                  <div class="flex-1 flex flex-col gap-8 justify-center">
+                    <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                      <p class="text-xs text-white/40 uppercase tracking-widest font-bold mb-3">预约时间</p>
+                      <p class="text-white text-xl font-bold font-mono tracking-tight">{{ selectedAppointment?.appointmentTime }}</p>
+                    </div>
+                  </div>
+                  <div class="pt-4 flex justify-end flex-shrink-0">
+                    <button 
+                      @click="confirmAppointmentTime"
+                      class="px-8 py-2.5 bg-[#FFC091] text-[#260A2F] text-sm font-bold rounded-xl hover:bg-[#ffad70] transition-colors shadow-[0_0_15px_rgba(255,192,145,0.3)]"
+                    >
+                      确认
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 确认变更时间页面 -->
+                <div v-else-if="viewMode === 'confirm_change'" :key="'confirm_change'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
+                  <div class="flex-1 flex flex-col gap-6 justify-center">
+                    <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                      <p class="text-xs text-white/40 uppercase tracking-widest font-bold mb-3">更改原因</p>
+                      <p class="text-white/80 text-sm leading-relaxed">{{ selectedAppointment?.changeReason }}</p>
+                    </div>
+                    <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                      <p class="text-xs text-white/40 uppercase tracking-widest font-bold mb-3">预约时间</p>
+                      <p class="text-white text-xl font-bold font-mono tracking-tight">{{ selectedAppointment?.appointmentTime }}</p>
+                    </div>
+                  </div>
+                  <div class="pt-4 flex justify-end flex-shrink-0">
+                    <button 
+                      @click="confirmChangeTime"
+                      class="px-8 py-2.5 bg-[#FFC091] text-[#260A2F] text-sm font-bold rounded-xl hover:bg-[#ffad70] transition-colors shadow-[0_0_15px_rgba(255,192,145,0.3)]"
+                    >
+                      确认
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 预约确认成功页面 -->
+                <div v-else-if="viewMode === 'appointment_success'" :key="'appointment_success'" class="animate-in zoom-in-95 duration-500 flex flex-col items-center justify-center h-full min-h-[350px]">
+                  <div class="w-24 h-24 rounded-full bg-[#A1D573]/20 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(161,213,115,0.3)]">
+                    <CheckCircle2 :size="48" class="text-[#A1D573]" />
+                  </div>
+                  <h2 class="text-3xl font-bold text-white mb-4 tracking-tight">已完成提交</h2>
+                  <p class="text-white/60 mb-12">您的预约确认已成功提交</p>
+                  <button 
+                    @click="goBack"
+                    class="px-8 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors border border-white/10"
+                  >
+                    返回上级页面
+                  </button>
+                </div>
+
+                <!-- 订单挂起页面 -->
+                <div v-else-if="viewMode === 'order_suspended'" :key="'order_suspended'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
+                  <div class="flex-1 flex flex-col justify-center">
+                    <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                      <p class="text-xs text-white/40 uppercase tracking-widest font-bold mb-3">状态原因</p>
+                      <p class="text-white/80 text-sm leading-relaxed">{{ selectedAppointment?.statusReason }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 预约异常页面 -->
+                <div v-else-if="viewMode === 'order_abnormal'" :key="'order_abnormal'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
+                  <div class="flex-1 flex flex-col justify-center">
+                    <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-6">
+                      <p class="text-xs text-white/40 uppercase tracking-widest font-bold mb-3">状态原因</p>
+                      <p class="text-white/80 text-sm leading-relaxed">{{ selectedAppointment?.statusReason }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 待客户验收页面 -->
+                <div v-else-if="viewMode === 'pending_acceptance'" :key="'pending_acceptance'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
+                  <div class="flex-1 overflow-y-auto custom-scrollbar">
+                    <h3 class="text-white/40 text-xs uppercase tracking-widest font-bold mb-4">验收图片</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                      <div v-for="(img, i) in selectedAppointment?.images" :key="i" class="aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 bg-white/5">
+                        <img :src="img" :alt="'验收图片 ' + (i + 1)" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="pt-4 flex justify-end flex-shrink-0">
+                    <button
+                      @click="confirmAcceptance"
+                      class="px-8 py-2.5 bg-[#FFC091] text-[#260A2F] text-sm font-bold rounded-xl hover:bg-[#ffad70] transition-colors shadow-[0_0_15px_rgba(255,192,145,0.3)]"
+                    >
+                      确认
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 已完工页面 -->
+                <div v-else-if="viewMode === 'completed'" :key="'completed'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
+                  <div class="flex-1 overflow-y-auto custom-scrollbar">
+                    <h3 class="text-white/40 text-xs uppercase tracking-widest font-bold mb-4">验收图片</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                      <div v-for="(img, i) in selectedAppointment?.images" :key="i" class="aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 bg-white/5">
+                        <img :src="img" :alt="'验收图片 ' + (i + 1)" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </Transition>
             </div>
           </div>
@@ -401,6 +641,19 @@ const goBack = () => {
 .fade-slide-leave-to {
   opacity: 0;
   transform: translateX(-20px) scale(0.98);
+}
+
+.menu-pop-enter-active,
+.menu-pop-leave-active {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.menu-pop-enter-from {
+  opacity: 0;
+  transform: scale(0.9) translateY(-4px);
+}
+.menu-pop-leave-to {
+  opacity: 0;
+  transform: scale(0.9) translateY(-4px);
 }
 
 .modal-morph {

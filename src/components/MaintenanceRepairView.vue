@@ -1,17 +1,84 @@
 <script setup lang="ts">
-import { ref } from 'vue';
-import { ChevronLeft, MoreHorizontal, Search, Filter, Download } from 'lucide-vue-next';
+import { computed, ref } from 'vue';
+import { ChevronLeft, MoreHorizontal, Search, Filter, Download, X, Play } from 'lucide-vue-next';
+
+interface MediaItem {
+  type: 'image' | 'video';
+  url: string;
+  thumb?: string;
+}
+
+interface RepairItem {
+  id: number;
+  no: string;
+  projectName: string;
+  address: string;
+  managerName: string;
+  managerPhone: string;
+  status: string;
+  teamInfo: string;
+  startDate: string;
+  completionDate: string;
+  warrantyPeriod: string;
+  reportType: string;
+  visitTime: string;
+  reason: string;
+  images: string[];
+  media?: MediaItem[];
+}
+
+const props = defineProps<{
+  data: RepairItem[];
+}>();
 
 const emit = defineEmits(['back']);
 
-const maintenanceData = ref([
-  { id: 1, no: 'WB202603241401488', projectName: '星巴克上海臻选烘焙工坊', address: '上海市静安区南京西路789号', managerName: '张伟', managerPhone: '13812345678', status: '维保中' },
-  { id: 2, no: 'WB202603241348443', projectName: '喜茶深圳欢乐海岸店', address: '深圳市南山区滨海大道2008号', managerName: '李芳', managerPhone: '13987654321', status: '维保中' },
-  { id: 3, no: 'WB202603241348302', projectName: '奈雪的茶北京三里屯店', address: '北京市朝阳区三里屯路19号', managerName: '王强', managerPhone: '13700001111', status: '待处理' },
-  { id: 4, no: 'WB202603241348139', projectName: '乐乐茶杭州湖滨银泰店', address: '杭州市上城区延安路258号', managerName: '赵敏', managerPhone: '13622223333', status: '已完成' },
-  { id: 5, no: 'WB202603241348001', projectName: '瑞幸咖啡广州天河城店', address: '广州市天河区天河路208号', managerName: '刘洋', managerPhone: '13544445555', status: '维保中' },
-  { id: 6, no: 'WB202603241347998', projectName: 'Manner Coffee上海静安寺店', address: '上海市静安区南京西路1618号', managerName: '陈晨', managerPhone: '13466667777', status: '维保中' },
-]);
+const searchQuery = ref('');
+const currentPage = ref(1);
+const itemsPerPage = 6;
+
+const selectedItem = ref<RepairItem | null>(null);
+const previewMedia = ref<MediaItem | null>(null);
+
+const allMedia = computed<MediaItem[]>(() => {
+  if (!selectedItem.value) return [];
+  if (selectedItem.value.media && selectedItem.value.media.length > 0) {
+    return selectedItem.value.media;
+  }
+  return (selectedItem.value.images || []).map(url => ({ type: 'image' as const, url }));
+});
+
+const openDetail = (item: RepairItem) => {
+  selectedItem.value = item;
+};
+
+const closeDetail = () => {
+  selectedItem.value = null;
+};
+
+const openPreview = (media: MediaItem) => {
+  previewMedia.value = media;
+};
+
+const closePreview = () => {
+  previewMedia.value = null;
+};
+
+const filteredData = computed(() => {
+  if (!searchQuery.value) return props.data;
+  const q = searchQuery.value.toLowerCase();
+  return props.data.filter(item =>
+    item.no.toLowerCase().includes(q) ||
+    item.projectName.toLowerCase().includes(q)
+  );
+});
+
+const totalPages = computed(() => Math.max(1, Math.ceil(filteredData.value.length / itemsPerPage)));
+
+const paginatedData = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  return filteredData.value.slice(start, start + itemsPerPage);
+});
 
 </script>
 
@@ -36,6 +103,7 @@ const maintenanceData = ref([
         <div class="relative">
           <Search :size="18" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input 
+            v-model="searchQuery"
             type="text" 
             placeholder="搜索维保编号/项目名称..." 
             class="pl-10 pr-4 py-2 bg-white/50 backdrop-blur-md border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#A1D573] w-64 transition-all"
@@ -75,11 +143,11 @@ const maintenanceData = ref([
           </thead>
           <tbody class="divide-y divide-white/10">
             <tr 
-              v-for="(item, index) in maintenanceData" 
+              v-for="(item, index) in paginatedData" 
               :key="item.id"
               class="group hover:bg-white/30 transition-colors"
             >
-              <td class="py-5 px-6 text-gray-600">{{ index + 1 }}</td>
+              <td class="py-5 px-6 text-gray-600">{{ (currentPage - 1) * itemsPerPage + index + 1 }}</td>
               <td class="py-5 px-6 font-medium text-gray-800">{{ item.no }}</td>
               <td class="py-5 px-6 text-gray-700">{{ item.projectName }}</td>
               <td class="py-5 px-6 text-gray-500 max-w-xs truncate" :title="item.address">{{ item.address }}</td>
@@ -98,7 +166,7 @@ const maintenanceData = ref([
                 </span>
               </td>
               <td class="py-5 px-6">
-                <button class="p-2 text-gray-400 hover:text-[#E2943A] hover:bg-white/50 rounded-lg transition-all">
+                <button @click="openDetail(item)" class="p-2 text-gray-400 hover:text-[#E2943A] hover:bg-white/50 rounded-lg transition-all">
                   <MoreHorizontal :size="20" />
                 </button>
               </td>
@@ -107,16 +175,161 @@ const maintenanceData = ref([
         </table>
       </div>
 
-      <!-- Pagination Placeholder -->
       <div class="p-6 border-t border-white/10 flex justify-between items-center text-sm text-gray-500">
-        <p>显示 1 到 {{ maintenanceData.length }} 条，共 {{ maintenanceData.length }} 条记录</p>
+        <p>显示 {{ (currentPage - 1) * itemsPerPage + 1 }} 到 {{ Math.min(currentPage * itemsPerPage, filteredData.length) }} 条，共 {{ filteredData.length }} 条记录</p>
         <div class="flex space-x-2">
-          <button class="px-3 py-1 bg-white/50 rounded-lg border border-white/20 hover:bg-white/80 disabled:opacity-50" disabled>上一页</button>
-          <button class="px-3 py-1 bg-[#A1D573] text-white rounded-lg border border-[#A1D573] shadow-sm">1</button>
-          <button class="px-3 py-1 bg-white/50 rounded-lg border border-white/20 hover:bg-white/80">下一页</button>
+          <button @click="currentPage > 1 && currentPage--" :disabled="currentPage <= 1" class="px-3 py-1 bg-white/50 rounded-lg border border-white/20 hover:bg-white/80 disabled:opacity-50 transition-colors">上一页</button>
+          <button 
+            v-for="page in totalPages" :key="page"
+            @click="currentPage = page"
+            :class="['px-3 py-1 rounded-lg border shadow-sm transition-colors', currentPage === page ? 'bg-[#A1D573] text-white border-[#A1D573]' : 'bg-white/50 border-white/20 hover:bg-white/80']"
+          >{{ page }}</button>
+          <button @click="currentPage < totalPages && currentPage++" :disabled="currentPage >= totalPages" class="px-3 py-1 bg-white/50 rounded-lg border border-white/20 hover:bg-white/80 disabled:opacity-50 transition-colors">下一页</button>
         </div>
       </div>
     </div>
+    <!-- 工单详情弹窗 -->
+    <Teleport to="body">
+      <div
+        v-if="selectedItem"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-md animate-in fade-in duration-300"
+        @click.self="closeDetail"
+      >
+        <div class="w-full max-w-[960px] shadow-2xl bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[32px] overflow-hidden animate-in zoom-in-95 duration-300">
+          <!-- Header -->
+          <div class="px-8 py-5 border-b border-white/10 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+              <div class="w-1.5 h-6 bg-[#FFC091] rounded-full shadow-[0_0_15px_rgba(255,192,145,0.5)]"></div>
+              <h2 class="text-xl font-bold text-white tracking-tight">工单详情</h2>
+            </div>
+            <button @click="closeDetail" class="p-2 hover:bg-white/10 text-white/70 hover:text-white rounded-full transition-all">
+              <X :size="22" />
+            </button>
+          </div>
+
+          <!-- Body -->
+          <div class="px-8 py-5">
+            <!-- 合并卡片：项目信息 + 日期 -->
+            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 mb-4">
+              <div class="grid grid-cols-2 gap-x-10 gap-y-4">
+                <div>
+                  <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">项目</p>
+                  <p class="font-bold text-white text-base">{{ selectedItem.projectName }}</p>
+                </div>
+                <div>
+                  <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">项目组信息</p>
+                  <p class="font-bold text-white/70 text-base">{{ selectedItem.teamInfo || '暂无' }}</p>
+                </div>
+                <div>
+                  <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">开工日期</p>
+                  <p class="font-bold text-white text-sm font-mono">{{ selectedItem.startDate || '—' }}</p>
+                </div>
+                <div>
+                  <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">竣工日期</p>
+                  <p class="font-bold text-white text-sm font-mono">{{ selectedItem.completionDate || '—' }}</p>
+                </div>
+                <div>
+                  <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">质保期</p>
+                  <p class="font-bold text-white text-sm">{{ selectedItem.warrantyPeriod || '—' }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 报修类型 / 上门时间 / 工单状态 -->
+            <div class="grid grid-cols-3 gap-4 mb-4">
+              <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 flex flex-col items-center gap-1.5">
+                <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold">报修类型</p>
+                <span
+                  class="px-3 py-1 rounded-full text-xs font-bold"
+                  :class="selectedItem.reportType === '紧急' ? 'bg-red-500/20 text-red-400' : 'bg-sky-400/20 text-sky-400'"
+                >{{ selectedItem.reportType || '普通' }}</span>
+              </div>
+              <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 flex flex-col items-center gap-1.5">
+                <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold">上门时间</p>
+                <span class="text-white font-bold text-sm font-mono">{{ selectedItem.visitTime || '待安排' }}</span>
+              </div>
+              <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 flex flex-col items-center gap-1.5">
+                <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold">工单状态</p>
+                <span
+                  class="px-3 py-1 rounded-full text-xs font-bold"
+                  :class="{
+                    'bg-orange-500/20 text-orange-400': selectedItem.status === '维保中',
+                    'bg-sky-400/20 text-sky-400': selectedItem.status === '待处理',
+                    'bg-[#A1D573]/20 text-[#A1D573]': selectedItem.status === '已完成'
+                  }"
+                >{{ selectedItem.status }}</span>
+              </div>
+            </div>
+
+            <!-- 报修原因 -->
+            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 mb-4">
+              <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1.5">报修原因</p>
+              <p class="text-white/80 text-sm leading-relaxed">{{ selectedItem.reason || '暂无报修原因描述' }}</p>
+            </div>
+
+            <!-- 图片与视频 -->
+            <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4">
+              <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-3">图片/视频</p>
+              <div v-if="allMedia.length > 0" class="grid grid-cols-4 gap-3">
+                <div
+                  v-for="(m, i) in allMedia"
+                  :key="i"
+                  class="aspect-[4/3] rounded-xl overflow-hidden border border-white/10 bg-white/5 cursor-pointer relative group"
+                  @click="openPreview(m)"
+                >
+                  <img
+                    v-if="m.type === 'image'"
+                    :src="m.url"
+                    :alt="'图片 ' + (i + 1)"
+                    class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <template v-else>
+                    <img
+                      v-if="m.thumb"
+                      :src="m.thumb"
+                      :alt="'视频 ' + (i + 1)"
+                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div v-else class="w-full h-full bg-black/30 flex items-center justify-center">
+                      <Play :size="28" class="text-white/60" />
+                    </div>
+                    <div class="absolute inset-0 flex items-center justify-center bg-black/20 group-hover:bg-black/30 transition-colors">
+                      <div class="w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center border border-white/30">
+                        <Play :size="18" class="text-white ml-0.5" />
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+              <p v-else class="text-white/30 text-sm">暂无上传图片或视频</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 全屏预览 -->
+      <div
+        v-if="previewMedia"
+        class="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-xl animate-in fade-in duration-200"
+        @click.self="closePreview"
+      >
+        <button @click="closePreview" class="absolute top-6 right-6 p-2 hover:bg-white/10 text-white/70 hover:text-white rounded-full transition-all z-10">
+          <X :size="28" />
+        </button>
+        <img
+          v-if="previewMedia.type === 'image'"
+          :src="previewMedia.url"
+          class="max-w-[90vw] max-h-[90vh] object-contain rounded-2xl shadow-2xl animate-in zoom-in-95 duration-300"
+        />
+        <video
+          v-else
+          :src="previewMedia.url"
+          controls
+          autoplay
+          class="max-w-[90vw] max-h-[90vh] rounded-2xl shadow-2xl animate-in zoom-in-95 duration-300"
+        />
+      </div>
+    </Teleport>
   </div>
 </template>
 
