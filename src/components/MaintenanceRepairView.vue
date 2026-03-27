@@ -122,7 +122,7 @@ const paginatedData = computed(() => {
     <div class="bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/30 shadow-xl overflow-hidden">
       <!-- Table Header Title -->
       <div class="p-6 border-b border-white/20 flex items-center space-x-3">
-        <div class="w-1.5 h-6 bg-[#E2943A] rounded-full"></div>
+        <div class="w-1.5 h-6 bg-[#FFEB69] rounded-full"></div>
         <h2 class="text-xl font-bold text-gray-800">维保工单列表</h2>
       </div>
 
@@ -182,7 +182,7 @@ const paginatedData = computed(() => {
           <button 
             v-for="page in totalPages" :key="page"
             @click="currentPage = page"
-            :class="['px-3 py-1 rounded-lg border shadow-sm transition-colors', currentPage === page ? 'bg-[#A1D573] text-white border-[#A1D573]' : 'bg-white/50 border-white/20 hover:bg-white/80']"
+            :class="['px-3 py-1 rounded-lg border shadow-sm transition-colors tabular-nums', currentPage === page ? 'bg-[#FFEB69] text-[#3A341C] border-[#FFEB69]' : 'bg-white/50 border-white/20 hover:bg-white/80 text-[#3A341C]']"
           >{{ page }}</button>
           <button @click="currentPage < totalPages && currentPage++" :disabled="currentPage >= totalPages" class="px-3 py-1 bg-white/50 rounded-lg border border-white/20 hover:bg-white/80 disabled:opacity-50 transition-colors">下一页</button>
         </div>

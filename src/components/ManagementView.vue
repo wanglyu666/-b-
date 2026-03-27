@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import { HardHat, Clock, Wrench, CheckCircle, CheckCircle2, Banknote, Shield, ShieldAlert, AlertCircle, ClipboardList, UsersRound, MoreHorizontal, ShoppingCart, X } from 'lucide-vue-next';
 import TopBarActions from './TopBarActions.vue';
 import { members, engineeringProjects, maintenanceProjects } from '../data';
@@ -108,6 +108,37 @@ const isFormValid = computed(() => {
     newReport.value.reason.trim() !== '';
 });
 
+const addModalPanelRef = ref<HTMLElement | null>(null);
+
+const morphAddModalStep = async (nextStep: 'form' | 'success') => {
+  const panel = addModalPanelRef.value;
+  if (!panel) {
+    modalStep.value = nextStep;
+    return;
+  }
+
+  const fromHeight = panel.getBoundingClientRect().height;
+  modalStep.value = nextStep;
+  await nextTick();
+  const toHeight = panel.getBoundingClientRect().height;
+
+  if (Math.round(fromHeight) === Math.round(toHeight)) return;
+
+  panel.style.height = `${fromHeight}px`;
+  panel.style.transition = 'height 0.8s cubic-bezier(0.16, 1, 0.3, 1)';
+  panel.getBoundingClientRect();
+  panel.style.height = `${toHeight}px`;
+
+  const onDone = (event: TransitionEvent) => {
+    if (event.propertyName !== 'height') return;
+    panel.style.height = '';
+    panel.style.transition = '';
+    panel.removeEventListener('transitionend', onDone);
+  };
+
+  panel.addEventListener('transitionend', onDone);
+};
+
 const submitReport = () => {
   if (!isFormValid.value) return;
   const project = availableProjects.value.find(p => p.id === newReport.value.projectId);
@@ -118,10 +149,15 @@ const submitReport = () => {
     visitTime: newReport.value.visitTime,
     reason: newReport.value.reason,
   });
-  modalStep.value = 'success';
+  void morphAddModalStep('success');
 };
 
 const closeAddModal = () => {
+  const panel = addModalPanelRef.value;
+  if (panel) {
+    panel.style.height = '';
+    panel.style.transition = '';
+  }
   showAddModal.value = false;
   modalStep.value = 'form';
   newReport.value = {
@@ -288,7 +324,7 @@ const closeAddModal = () => {
         <div @click="emit('viewOrders')" class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-[460px] cursor-pointer hover:shadow-lg hover:border-[#A1D573]/30 transition-all group">
            <div class="flex justify-between items-center mb-4">
               <div class="flex items-center space-x-2">
-                 <div class="w-1 h-5 bg-[#A1D573] rounded-full"></div>
+                 <div class="w-1 h-5 bg-[#FFEB69] rounded-full"></div>
                  <h3 class="font-bold text-lg text-gray-800">订单管理</h3>
               </div>
               <ShoppingCart :size="18" class="text-gray-400" />
@@ -317,7 +353,7 @@ const closeAddModal = () => {
         >
            <div class="flex justify-between items-center mb-4">
               <div class="flex items-center space-x-2">
-                 <div class="w-1 h-5 bg-[#A1D573] rounded-full"></div>
+                 <div class="w-1 h-5 bg-[#FFEB69] rounded-full"></div>
                  <h3 class="font-bold text-lg text-gray-800">维保报修管理</h3>
               </div>
               <AlertCircle :size="18" class="text-gray-400 group-hover:text-[#A1D573] transition-colors" />
@@ -332,7 +368,7 @@ const closeAddModal = () => {
               </div>
               <button 
                 @click.stop="showAddModal = true" 
-                class="w-full py-2.5 bg-[#A1D573] text-[#163300] font-bold rounded-2xl shadow-sm hover:bg-[#8ec260] transition-colors"
+                class="w-full py-2.5 bg-[#FFEB69] text-[#3A341C] font-bold rounded-2xl shadow-sm hover:bg-[#f5e05a] transition-colors"
               >
                  新增
               </button>
@@ -350,7 +386,7 @@ const closeAddModal = () => {
       <div v-if="showAddModal" class="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" @click="closeAddModal"></div>
         
-        <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
+        <div ref="addModalPanelRef" class="relative bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-in zoom-in-95 duration-300">
           
           <!-- Header -->
           <div class="flex items-center justify-between p-6 border-b border-gray-100">
@@ -486,7 +522,7 @@ const closeAddModal = () => {
               <p class="text-gray-500 mb-12">维保报修工单已成功创建</p>
               <button 
                 @click="closeAddModal"
-                class="px-8 py-3 bg-[#FFEB69] hover:bg-[#f5e05a] text-[#3A341C] font-bold rounded-xl transition-colors shadow-sm"
+                class="px-8 py-3 bg-white hover:bg-gray-50 text-[#3A341C] font-bold rounded-xl transition-colors border border-gray-200 shadow-sm"
               >
                 返回上级页面
               </button>
