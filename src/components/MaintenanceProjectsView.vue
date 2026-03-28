@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
-import { ArrowLeft, Search, ChevronLeft, ChevronRight, X, CheckCircle2, Star, MoreHorizontal } from 'lucide-vue-next';
+import { ArrowLeft, Search, ChevronLeft, ChevronRight, X, Star, MoreHorizontal } from 'lucide-vue-next';
 import { maintenanceProjects } from '../data';
 import type { MaintenanceProject } from '../types';
 import MaintenanceProjectCard from './maintenance/MaintenanceProjectCard.vue';
 import MaintenanceOverview from './maintenance/MaintenanceOverview.vue';
+import checkMarkImg from '../../image asset/check mark.png';
 
 const props = defineProps<{
   initialStatus?: string;
@@ -254,14 +255,14 @@ const goBack = () => {
 
 <template>
   <div class="min-h-screen bg-transparent relative overflow-x-hidden">
-    <div class="relative z-10 p-8 space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-500">
-      <header class="flex justify-between items-center mb-8">
-        <div class="flex items-center gap-4">
+    <div class="relative z-10 p-8 max-w-[1600px] mx-auto animate-in fade-in duration-500">
+      <header class="flex justify-between items-center flex-shrink-0">
+        <div class="flex items-center space-x-4">
           <button
             @click="$emit('back')"
-            class="p-2 rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+            class="p-2 bg-white/50 backdrop-blur-md rounded-xl border border-white/20 hover:bg-white/80 transition-all active:scale-95"
           >
-            <ArrowLeft :size="20" />
+            <ArrowLeft :size="20" class="text-gray-600" />
           </button>
           <div>
             <h1 class="text-3xl font-bold text-gray-800">维保项目</h1>
@@ -269,25 +270,19 @@ const goBack = () => {
           </div>
         </div>
 
-        <div class="flex items-center space-x-4">
-          <div class="flex items-center bg-white rounded-full border border-gray-100 shadow-sm px-4 py-2 space-x-3 h-12 w-64">
-            <Search :size="18" class="text-gray-400 flex-shrink-0" />
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="搜索维保项目..."
-              class="bg-transparent border-none focus:outline-none text-sm w-full text-gray-700 placeholder-gray-400"
-            />
-          </div>
-          <div class="flex items-center space-x-3 bg-white pl-2 pr-4 py-1.5 rounded-full shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors h-12">
-            <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Cooper" alt="User" class="w-9 h-9 rounded-full bg-gray-100" />
-            <span class="text-sm font-bold text-gray-700">管理员</span>
-          </div>
+        <div class="relative shrink-0">
+          <Search :size="18" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="搜索维保项目..."
+            class="pl-10 pr-4 py-2 bg-white/50 backdrop-blur-md border border-white/20 rounded-xl w-64 transition-all focus:outline-none focus:ring-0 focus:border-white/20 focus-visible:ring-0"
+          />
         </div>
       </header>
 
       <!-- 状态胶囊 -->
-      <div class="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide mb-6">
+      <div class="mt-8 md:mt-12 flex space-x-3 overflow-x-auto pb-2 scrollbar-hide mb-6">
         <button
           v-for="status in statuses"
           :key="status"
@@ -450,9 +445,7 @@ const goBack = () => {
 
                 <!-- 评价成功页面 -->
                 <div v-else-if="viewMode === 'evaluation_success'" :key="'evaluation_success'" class="animate-in zoom-in-95 duration-500 flex flex-col items-center justify-center h-full min-h-[500px]">
-                  <div class="w-24 h-24 rounded-full bg-[#A1D573]/20 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(161,213,115,0.3)]">
-                    <CheckCircle2 :size="48" class="text-[#A1D573]" />
-                  </div>
+                  <img :src="checkMarkImg" alt="" class="mb-6 h-36 w-56 object-contain" />
                   <h2 class="text-3xl font-bold text-white mb-4 tracking-tight">已完成提交</h2>
                   <p class="text-white/60 mb-12">您的验收评价已成功记录到系统中</p>
                   <button 
@@ -539,11 +532,15 @@ const goBack = () => {
 
                 <!-- 预约确认成功页面 -->
                 <div v-else-if="viewMode === 'appointment_success'" :key="'appointment_success'" class="animate-in zoom-in-95 duration-500 flex flex-col items-center justify-center h-full min-h-[350px]">
-                  <div class="w-24 h-24 rounded-full bg-[#A1D573]/20 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(161,213,115,0.3)]">
-                    <CheckCircle2 :size="48" class="text-[#A1D573]" />
-                  </div>
+                  <img :src="checkMarkImg" alt="" class="mb-6 h-36 w-56 object-contain" />
                   <h2 class="text-3xl font-bold text-white mb-4 tracking-tight">已完成提交</h2>
-                  <p class="text-white/60 mb-12">您的预约确认已成功提交</p>
+                  <p class="text-white/60 mb-12">
+                    {{
+                      selectedAppointment?.status === '已完工'
+                        ? '您的验收确认已成功提交'
+                        : '您的预约确认已成功提交'
+                    }}
+                  </p>
                   <button 
                     @click="goBack"
                     class="px-8 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors border border-white/10"

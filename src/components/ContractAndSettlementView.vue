@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { MoreHorizontal, AlertTriangle } from 'lucide-vue-next';
+import { MoreHorizontal } from 'lucide-vue-next';
+import alertIcon from '../../image asset/alert.png';
 import TopBarActions from './TopBarActions.vue';
 import { contractData, billData } from '../data';
 
@@ -34,8 +35,8 @@ const filteredBills = computed(() => {
                   <MoreHorizontal :size="18" class="cursor-pointer hover:text-gray-800 transition-colors" />
               </div>
           </div>
-          <div class="flex-1 w-full">
-              <table class="w-full text-left">
+          <div class="flex-1 w-full min-h-0">
+              <table class="w-full h-full text-left">
                   <thead>
                       <tr class="text-gray-400 font-medium text-sm border-b border-gray-100">
                           <th class="pb-4 font-medium pl-2 whitespace-nowrap">合同编号</th>
@@ -108,7 +109,7 @@ const filteredBills = computed(() => {
           </div>
       </div>
 
-      <div class="lg:col-span-4 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-[300px] flex flex-col">
+      <div class="lg:col-span-4 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 h-[350px] flex flex-col">
           <div class="flex justify-between items-center mb-6">
               <div class="flex items-center space-x-2">
                   <div class="w-1 h-5 bg-red-500 rounded-full"></div>
@@ -116,16 +117,22 @@ const filteredBills = computed(() => {
               </div>
               <MoreHorizontal :size="18" class="text-gray-400 cursor-pointer" />
           </div>
-          <div class="flex-1 flex flex-col items-center justify-center -mt-6">
-              <div class="p-5 bg-red-50 rounded-full mb-6 relative">
-                  <AlertTriangle :size="48" class="text-red-500 relative z-10" />
+          <div class="flex-1 flex flex-col items-center justify-between py-1">
+              <div class="w-full h-[118px] flex items-center justify-center overflow-visible">
+                <img
+                  :src="alertIcon"
+                  alt=""
+                  class="h-68 w-68 object-contain shrink-0 -translate-y-4"
+                />
               </div>
-              <span class="text-6xl font-black text-red-500 tracking-tight mb-2">3</span>
-              <span class="text-gray-500 font-medium text-lg">当前违约记录</span>
+              <div class="flex flex-col items-center">
+                <span class="text-6xl font-black text-red-500 tracking-tight mb-2">3</span>
+                <span class="text-gray-500 font-medium text-lg">当前违约记录</span>
+              </div>
           </div>
       </div>
 
-      <div class="lg:col-span-8 bg-white rounded-3xl p-8 shadow-sm border border-gray-100 h-[300px] flex flex-col">
+      <div class="lg:col-span-8 bg-white rounded-3xl p-8 shadow-sm border border-gray-100 h-[350px] flex flex-col">
           <div class="flex justify-between items-center mb-6">
               <div class="flex items-center space-x-2">
                   <div class="w-1 h-5 bg-[#FFEB69] rounded-full"></div>
@@ -167,12 +174,12 @@ const filteredBills = computed(() => {
                       </tr>
                   </thead>
                   <tbody>
-                      <tr v-for="item in filteredBills" :key="item.id" class="group hover:bg-gray-50/70 transition-colors border-b border-gray-50/80 last:border-0 text-sm">
-                          <td class="py-3 pl-2 text-gray-600 font-medium whitespace-nowrap">{{ item.no }}</td>
-                          <td class="py-3 text-gray-500 whitespace-nowrap">{{ item.prjNo }}</td>
-                          <td class="py-3 text-gray-800 font-bold whitespace-nowrap">{{ item.name }}</td>
-                          <td class="py-3 text-right pr-6 font-bold text-gray-900 whitespace-nowrap">{{ item.amount }}</td>
-                          <td class="py-3 text-right pr-2">
+                      <tr v-for="item in filteredBills" :key="item.id" class="group h-1/3 hover:bg-gray-50/70 transition-colors border-b border-gray-50/80 last:border-0 text-sm">
+                          <td class="py-4 pl-2 text-gray-600 font-medium whitespace-nowrap">{{ item.no }}</td>
+                          <td class="py-4 text-gray-500 whitespace-nowrap">{{ item.prjNo }}</td>
+                          <td class="py-4 text-gray-800 font-bold whitespace-nowrap">{{ item.name }}</td>
+                          <td class="py-4 text-right pr-6 font-bold text-gray-900 whitespace-nowrap">{{ item.amount }}</td>
+                          <td class="py-4 text-right pr-2">
                               <button class="p-1.5 bg-white border border-gray-200 rounded-md shadow-sm opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 hover:text-[#A1D573]">
                                   <MoreHorizontal :size="16" />
                               </button>

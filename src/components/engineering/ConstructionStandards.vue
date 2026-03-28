@@ -18,7 +18,7 @@
     <!-- Content Area -->
     <div class="flex-1 overflow-y-auto px-6 pb-6 custom-scrollbar">
       <div class="mb-6">
-        <p class="text-xs text-gray-500">包含本项目中涉及的施工标准，点击查看更多</p>
+        <p class="text-xs text-white/80">包含本项目中涉及的施工标准，点击查看更多</p>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -65,6 +65,7 @@ const tabs = [
   { id: 'safety', label: '安全管控' },
   { id: 'health', label: '健康管控' },
   { id: 'product', label: '成品管控' },
+  { id: 'quality', label: '质量管控' },
   { id: 'hygiene', label: '卫生保洁' },
   { id: 'risk', label: '风险管控' },
 ];
@@ -95,6 +96,11 @@ const mockData = {
     { title: '进场材料质量验收标准', description: '核对规格型号，检查合格证件，确保材料质量合格。' },
     { title: '半成品现场保护措施', description: '采取覆盖、遮挡等方式，防止损坏、污染。' },
     { title: '成品交付前质量核查清单', description: '逐项检查外观、功能，确保达到交付标准。' },
+  ],
+  quality: [
+    { title: '隐蔽工程质量验收规范', description: '隐蔽前必须完成自检与监理验收，验收记录完整可追溯。' },
+    { title: '工序交接质量检查制度', description: '上道工序验收合格后方可移交，关键节点执行双人复核。' },
+    { title: '质量问题整改闭环流程', description: '发现问题即刻登记，限时整改复验，形成问题闭环台账。' },
   ],
   hygiene: [
     { title: '施工现场每日清扫制度', description: '做到工完场清，保持作业面整洁，无积水积尘。' },

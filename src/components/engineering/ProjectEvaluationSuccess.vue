@@ -1,8 +1,6 @@
 <template>
   <div class="animate-in zoom-in-95 duration-500 flex flex-col items-center justify-center h-full min-h-[500px]">
-    <div class="w-24 h-24 rounded-full bg-[#A1D573]/20 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(161,213,115,0.3)]">
-      <CheckCircle2 :size="48" class="text-[#A1D573]" />
-    </div>
+    <img :src="checkMarkImg" alt="" class="mb-6 h-36 w-56 object-contain" />
     <h2 class="text-3xl font-bold text-white mb-4 tracking-tight">已完成提交</h2>
     <p class="text-white/60 mb-12">您的项目评价已成功记录到系统中</p>
     
@@ -16,7 +14,7 @@
 </template>
 
 <script setup lang="ts">
-import { CheckCircle2 } from 'lucide-vue-next';
+import checkMarkImg from '../../../image asset/check mark.png';
 
 defineEmits(['return']);
 </script>

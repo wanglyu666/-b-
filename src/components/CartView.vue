@@ -1,24 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { ArrowLeft, ShoppingBag, Trash2, Minus, Plus, ArrowRight } from 'lucide-vue-next';
-import TopBarActions from './TopBarActions.vue';
 import type { CartItem } from '../types';
 
 const props = defineProps<{
   cartItems: CartItem[];
-  cartCount: number;
-  wishlistCount: number;
-  messageCount: number;
 }>();
 
-const emit = defineEmits([
-  'updateQuantity', 
-  'removeItem', 
-  'back', 
-  'cartClick', 
-  'wishlistClick', 
-  'messageClick'
-]);
+defineEmits(['updateQuantity', 'removeItem', 'back']);
 
 const total = computed(() => {
   return props.cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -26,9 +15,9 @@ const total = computed(() => {
 </script>
 
 <template>
-  <div class="p-8 h-full flex flex-col max-w-[1000px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-     <header class="flex justify-between items-center mb-8">
-        <div class="flex items-center gap-4">
+  <div class="relative min-h-screen bg-transparent overflow-x-hidden w-full">
+    <div class="relative z-10 flex flex-col min-h-screen max-w-[1600px] mx-auto w-full px-4 sm:px-6 md:px-8 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+     <header class="flex-shrink-0 flex items-center gap-4">
            <button 
               @click="$emit('back')" 
               class="p-2 rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
@@ -36,19 +25,9 @@ const total = computed(() => {
               <ArrowLeft :size="20" />
            </button>
            <h1 class="text-2xl font-bold text-gray-900">我的购物车 ({{ cartItems.length }})</h1>
-        </div>
-        <TopBarActions 
-          :isShop="true" 
-          :cartCount="cartCount" 
-          @cartClick="$emit('cartClick')" 
-          @wishlistClick="$emit('wishlistClick')" 
-          :wishlistCount="wishlistCount" 
-          @messageClick="$emit('messageClick')" 
-          :messageCount="messageCount" 
-        />
      </header>
 
-     <div v-if="cartItems.length === 0" class="flex-1 flex flex-col items-center justify-center text-gray-400 bg-white rounded-3xl border border-dashed border-gray-200 p-12">
+     <div v-if="cartItems.length === 0" class="mt-8 md:mt-10 flex-1 flex flex-col items-center justify-center w-full min-h-[calc(100vh-10rem)] text-gray-400 bg-white rounded-3xl border border-dashed border-gray-200 p-12">
         <ShoppingBag :size="64" :strokeWidth="1" class="mb-4 text-gray-300" />
         <p class="text-lg font-medium">购物车是空的</p>
         <button @click="$emit('back')" class="mt-6 px-6 py-2 bg-black text-white rounded-full text-sm font-bold hover:bg-gray-800 transition-colors">
@@ -56,7 +35,7 @@ const total = computed(() => {
         </button>
      </div>
      <template v-else>
-       <div class="flex-1 space-y-4 overflow-y-auto pb-32">
+       <div class="mt-10 md:mt-12 flex-1 space-y-4 overflow-y-auto pb-32 min-h-0">
           <div v-for="item in cartItems" :key="item.id" class="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex items-center group transition-all hover:shadow-md">
              <div class="w-24 h-24 bg-gray-50 rounded-2xl flex-shrink-0 overflow-hidden flex items-center justify-center">
                 <img :src="item.image" :alt="item.name" class="w-full h-full object-cover mix-blend-multiply opacity-90" referrerpolicy="no-referrer" />
@@ -100,7 +79,8 @@ const total = computed(() => {
           </div>
        </div>
 
-       <div class="fixed bottom-6 left-1/2 md:left-[calc(50%+8rem)] transform -translate-x-1/2 w-full max-w-[900px] px-8 z-10">
+       <div class="fixed bottom-6 left-0 right-0 z-10 px-4 md:left-64 md:px-8 pointer-events-none">
+          <div class="max-w-[1600px] mx-auto pointer-events-auto">
           <div class="bg-[#A1D573] text-[#163300] p-4 pl-8 pr-4 rounded-full shadow-2xl flex items-center justify-between border border-[#A1D573]">
              <div class="flex flex-col">
                 <span class="text-[#163300]/70 text-xs font-medium uppercase tracking-wider">总计 (Total)</span>
@@ -110,7 +90,9 @@ const total = computed(() => {
                 去结算 <ArrowRight :size="16" />
              </button>
           </div>
+          </div>
        </div>
      </template>
+    </div>
   </div>
 </template>

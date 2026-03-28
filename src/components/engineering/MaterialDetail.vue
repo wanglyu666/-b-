@@ -2,9 +2,7 @@
   <div class="animate-in zoom-in-95 duration-500 flex flex-col gap-16">
     <Transition name="fade-slide" mode="out-in">
       <div v-if="isSubmittedSuccess" :key="'success'" class="flex flex-col items-center justify-center py-20 gap-8 animate-in fade-in zoom-in-95 duration-500">
-        <div class="w-24 h-24 rounded-full bg-[#A1D573]/20 flex items-center justify-center text-[#A1D573] shadow-[0_0_30px_rgba(161,213,115,0.3)]">
-          <CheckCircle :size="64" />
-        </div>
+        <img :src="checkMarkImg" alt="" class="h-36 w-56 object-contain" />
         <div class="text-center">
           <h3 class="text-3xl font-bold text-white mb-2">已完成提交</h3>
           <p class="text-white/40">您的验收评价已成功记录到系统中</p>
@@ -131,6 +129,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { Search, CheckCircle, FileText } from 'lucide-vue-next';
+import checkMarkImg from '../../../image asset/check mark.png';
 
 const props = defineProps<{
   material: any;

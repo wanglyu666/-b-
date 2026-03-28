@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue';
-import { HardHat, Clock, Wrench, CheckCircle, CheckCircle2, Banknote, Shield, ShieldAlert, AlertCircle, ClipboardList, UsersRound, MoreHorizontal, ShoppingCart, X } from 'lucide-vue-next';
+import { HardHat, Clock, Wrench, CheckCircle, Banknote, Shield, ShieldAlert, AlertCircle, ClipboardList, UsersRound, MoreHorizontal, ShoppingCart, X } from 'lucide-vue-next';
 import TopBarActions from './TopBarActions.vue';
 import { members, engineeringProjects, maintenanceProjects } from '../data';
 import orderMgmtIllustration from '../../image asset/shopping cart icon.png';
 import membersMgmtIllustration from '../../image asset/group icon.png';
+import checkMarkImg from '../../image asset/check mark.png';
 
 const props = withDefaults(
   defineProps<{
@@ -99,6 +100,37 @@ const handleFileChange = (event: Event) => {
 
 const removeFile = (index: number) => {
   newReport.value.files.splice(index, 1);
+};
+
+/** YYYY-MM-DD → yyyy/mm/dd（用 text 占位，避免原生 date 显示 yyyy/mm/日） */
+function formatDateSlash(isoDate: string): string {
+  if (!isoDate?.trim()) return '';
+  const m = isoDate.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return isoDate;
+  return `${m[1]}/${m[2]}/${m[3]}`;
+}
+
+/** datetime-local：YYYY-MM-DDTHH:mm → yyyy/mm/dd HH:mm */
+function formatDateTimeSlashForDisplay(isoLocal: string): string {
+  if (!isoLocal?.trim()) return '';
+  const trimmed = isoLocal.trim();
+  const [datePart, timePart] = trimmed.split('T');
+  const slash = formatDateSlash(datePart);
+  if (!slash) return '';
+  if (!timePart || timePart.length < 4) return `${slash} --:--`;
+  return `${slash} ${timePart.slice(0, 5)}`;
+}
+
+const visitTimePickerRef = ref<HTMLInputElement | null>(null);
+const openVisitTimePicker = () => {
+  const el = visitTimePickerRef.value;
+  if (!el) return;
+  try {
+    el.showPicker?.();
+  } catch {
+    /* 部分浏览器不支持 showPicker */
+  }
+  el.focus();
 };
 
 const isFormValid = computed(() => {
@@ -421,11 +453,23 @@ const closeAddModal = () => {
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
                 <div class="space-y-2">
                   <label class="block text-sm font-medium text-gray-700">开工时间</label>
-                  <input type="date" v-model="newReport.startDate" readonly class="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed focus:outline-none transition-all" />
+                  <input
+                    type="text"
+                    readonly
+                    :value="formatDateSlash(newReport.startDate)"
+                    placeholder="yyyy/mm/dd"
+                    class="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed focus:outline-none transition-all"
+                  />
                 </div>
                 <div class="space-y-2">
                   <label class="block text-sm font-medium text-gray-700">竣工时间</label>
-                  <input type="date" v-model="newReport.completionDate" readonly class="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed focus:outline-none transition-all" />
+                  <input
+                    type="text"
+                    readonly
+                    :value="formatDateSlash(newReport.completionDate)"
+                    placeholder="yyyy/mm/dd"
+                    class="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed focus:outline-none transition-all"
+                  />
                 </div>
                 <div class="space-y-2">
                   <label class="block text-sm font-medium text-gray-700">质保期</label>
@@ -460,8 +504,23 @@ const closeAddModal = () => {
                   <label class="text-sm font-medium text-gray-700 w-24">上门时间: <span class="text-red-400">*</span></label>
                   <div class="flex-1 max-w-xs">
                     <div class="relative">
-                      <input type="datetime-local" v-model="newReport.visitTime" class="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#FFEB69] focus:border-transparent transition-all" />
-                      <Clock :size="16" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                      <input
+                        ref="visitTimePickerRef"
+                        v-model="newReport.visitTime"
+                        type="datetime-local"
+                        tabindex="-1"
+                        aria-hidden="true"
+                        class="absolute m-0 h-px w-px overflow-hidden border-0 p-0 opacity-0"
+                      />
+                      <Clock :size="16" class="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        readonly
+                        :value="formatDateTimeSlashForDisplay(newReport.visitTime)"
+                        placeholder="yyyy/mm/dd --:--"
+                        class="w-full cursor-pointer rounded-lg border border-gray-200 bg-white py-2 pl-10 pr-4 text-gray-700 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#FFEB69] transition-all"
+                        @click="openVisitTimePicker"
+                      />
                     </div>
                   </div>
                 </div>
@@ -518,9 +577,7 @@ const closeAddModal = () => {
           <!-- 成功页面 -->
           <template v-else>
             <div class="flex-1 flex flex-col items-center justify-center p-12 min-h-[400px]">
-              <div class="w-24 h-24 rounded-full bg-[#A1D573]/20 flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(161,213,115,0.3)]">
-                <CheckCircle2 :size="48" class="text-[#A1D573]" />
-              </div>
+              <img :src="checkMarkImg" alt="" class="mb-6 h-36 w-56 object-contain" />
               <h2 class="text-3xl font-bold text-gray-800 mb-4 tracking-tight">已完成提交</h2>
               <p class="text-gray-500 mb-12">维保报修工单已成功创建</p>
               <button 

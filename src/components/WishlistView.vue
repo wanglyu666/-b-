@@ -1,29 +1,18 @@
 <script setup lang="ts">
 import { ArrowLeft, Heart, Trash2, ShoppingBag } from 'lucide-vue-next';
-import TopBarActions from './TopBarActions.vue';
 import type { Product } from '../types';
 
 defineProps<{
   wishlistItems: Product[];
-  cartCount: number;
-  wishlistCount: number;
-  messageCount: number;
 }>();
 
-defineEmits([
-  'removeItem', 
-  'back', 
-  'cartClick', 
-  'wishlistClick', 
-  'addToCart', 
-  'messageClick'
-]);
+defineEmits(['removeItem', 'back', 'addToCart']);
 </script>
 
 <template>
-  <div class="p-8 h-full flex flex-col max-w-[1000px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-     <header class="flex justify-between items-center mb-8">
-        <div class="flex items-center gap-4">
+  <div class="relative min-h-screen bg-transparent overflow-x-hidden w-full">
+    <div class="relative z-10 flex flex-col min-h-screen max-w-[1600px] mx-auto w-full px-4 sm:px-6 md:px-8 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+     <header class="flex-shrink-0 flex items-center gap-4">
            <button 
               @click="$emit('back')" 
               class="p-2 rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
@@ -31,26 +20,16 @@ defineEmits([
               <ArrowLeft :size="20" />
            </button>
            <h1 class="text-2xl font-bold text-gray-900">我的收藏 ({{ wishlistItems.length }})</h1>
-        </div>
-        <TopBarActions 
-          :isShop="true" 
-          :cartCount="cartCount" 
-          @cartClick="$emit('cartClick')" 
-          @wishlistClick="$emit('wishlistClick')" 
-          :wishlistCount="wishlistCount" 
-          @messageClick="$emit('messageClick')" 
-          :messageCount="messageCount" 
-        />
      </header>
 
-     <div v-if="wishlistItems.length === 0" class="flex-1 flex flex-col items-center justify-center text-gray-400 bg-white rounded-3xl border border-dashed border-gray-200 p-12">
+     <div v-if="wishlistItems.length === 0" class="mt-8 md:mt-10 flex-1 flex flex-col items-center justify-center w-full min-h-[calc(100vh-10rem)] text-gray-400 bg-white rounded-3xl border border-dashed border-gray-200 p-12">
         <Heart :size="64" :strokeWidth="1" class="mb-4 text-gray-300" />
         <p class="text-lg font-medium">暂无收藏商品</p>
         <button @click="$emit('back')" class="mt-6 px-6 py-2 bg-black text-white rounded-full text-sm font-bold hover:bg-gray-800 transition-colors">
            去逛逛
         </button>
      </div>
-     <div v-else class="flex-1 space-y-4 overflow-y-auto pb-12">
+     <div v-else class="mt-10 md:mt-12 flex-1 space-y-4 overflow-y-auto pb-12 min-h-0">
         <div v-for="item in wishlistItems" :key="item.id" class="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex items-center group transition-all hover:shadow-md">
            <div class="w-24 h-24 bg-gray-50 rounded-2xl flex-shrink-0 overflow-hidden flex items-center justify-center">
               <img :src="item.image" :alt="item.name" class="w-full h-full object-cover mix-blend-multiply opacity-90" referrerpolicy="no-referrer" />
@@ -83,5 +62,6 @@ defineEmits([
            </div>
         </div>
      </div>
+    </div>
   </div>
 </template>

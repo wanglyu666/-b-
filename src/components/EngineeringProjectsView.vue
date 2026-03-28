@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { 
   ArrowLeft, 
   X, 
@@ -34,9 +34,11 @@ import EHSReportDetail from './engineering/EHSReportDetail.vue';
 
 const props = defineProps<{
   initialStatus?: string;
+  autoOpenProjectId?: string | null;
+  autoOpenViewMode?: string | null;
 }>();
 
-const emit = defineEmits(['back']);
+const emit = defineEmits(['back', 'autoOpenConsumed']);
 
 const statuses = ['待开工', '施工中', '已完工', '已结算', '保修中', '保修外'];
 const activeStatus = ref(props.initialStatus || '施工中');
@@ -374,19 +376,46 @@ const zoomImage = (url: string) => {
   zoomedImageUrl.value = url;
   isImageZoomed.value = true;
 };
+
+onMounted(async () => {
+  if (props.autoOpenProjectId) {
+    await nextTick();
+    const target = engineeringProjects.find(p => p.id === props.autoOpenProjectId);
+    if (target) {
+      activeStatus.value = target.status;
+      await nextTick();
+      selectedProject.value = target;
+      const vm = props.autoOpenViewMode;
+      if (vm === 'reports') {
+        viewMode.value = 'reports';
+      } else if (vm === 'completion') {
+        viewMode.value = 'completion';
+      } else if (vm === 'acceptance') {
+        viewMode.value = 'acceptance';
+      } else if (vm === 'evaluation') {
+        viewMode.value = 'evaluation';
+      } else if (vm === 'standards') {
+        viewMode.value = 'standards';
+      } else {
+        viewMode.value = 'details';
+      }
+    }
+    emit('autoOpenConsumed');
+  }
+});
 </script>
 
 <template>
   <div class="min-h-screen bg-transparent relative overflow-x-hidden">
     <!-- Content Area -->
-    <div class="relative z-10 p-8 space-y-6 max-w-[1600px] mx-auto animate-in fade-in duration-500">
-      <header class="flex justify-between items-center mb-8">
-      <div class="flex items-center gap-4">
+    <div class="relative z-10 p-8 max-w-[1600px] mx-auto animate-in fade-in duration-500">
+      <header class="flex justify-between items-center flex-shrink-0">
+      <div class="flex items-center space-x-4">
          <button 
             @click="$emit('back')" 
-            class="p-2 rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+            class="p-2 bg-white/50 backdrop-blur-md rounded-xl border border-white/20 hover:bg-white/80 transition-all active:scale-95"
          >
-            <ArrowLeft :size="20" />
+            <ArrowLeft :size="20" class="text-gray-600" />
          </button>
          <div>
            <h1 class="text-3xl font-bold text-gray-800">工程项目</h1>
@@ -394,27 +423,19 @@ const zoomImage = (url: string) => {
          </div>
       </div>
       
-      <div class="flex items-center space-x-4">
-        <div class="flex items-center bg-white rounded-full border border-gray-100 shadow-sm px-4 py-2 space-x-3 h-12 w-64">
-          <Search :size="18" class="text-gray-400 flex-shrink-0" />
-          <input 
-            v-model="searchQuery" 
-            type="text" 
-            placeholder="全局搜索项目..." 
-            class="bg-transparent border-none focus:outline-none text-sm w-full text-gray-700 placeholder-gray-400" 
-          />
-        </div>
-        <div class="flex items-center space-x-3 bg-white pl-2 pr-4 py-1.5 rounded-full shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors h-12">
-          <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Cooper" alt="User" class="w-9 h-9 rounded-full bg-gray-100" />
-          <div class="flex items-center space-x-2">
-            <span class="text-sm font-bold text-gray-700">管理员</span>
-          </div>
-        </div>
+      <div class="relative shrink-0">
+        <Search :size="18" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="全局搜索项目..."
+          class="pl-10 pr-4 py-2 bg-white/50 backdrop-blur-md border border-white/20 rounded-xl w-64 transition-all focus:outline-none focus:ring-0 focus:border-white/20 focus-visible:ring-0"
+        />
       </div>
     </header>
 
     <!-- 状态胶囊 -->
-    <div class="flex space-x-3 overflow-x-auto pb-2 scrollbar-hide mb-6">
+    <div class="mt-8 md:mt-12 flex space-x-3 overflow-x-auto pb-2 scrollbar-hide mb-6">
       <button 
          v-for="status in statuses" 
          :key="status" 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { ChevronLeft, MoreHorizontal, Search, Filter, Download, X } from 'lucide-vue-next';
+import { ChevronLeft, MoreHorizontal, Search, X } from 'lucide-vue-next';
 
 interface OrderItem {
   id: number;
@@ -94,9 +94,9 @@ const formatCost = (val: number) => {
 </script>
 
 <template>
-  <div class="p-8 space-y-6 max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
+  <div class="p-8 max-w-[1600px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700">
     <!-- Header -->
-    <header class="flex justify-between items-center mb-8">
+    <header class="flex justify-between items-center flex-shrink-0">
       <div class="flex items-center space-x-4">
         <button
           @click="emit('back')"
@@ -110,27 +110,19 @@ const formatCost = (val: number) => {
         </div>
       </div>
 
-      <div class="flex items-center space-x-3">
-        <div class="relative">
-          <Search :size="18" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="搜索订单编号/服务地址..."
-            class="pl-10 pr-4 py-2 bg-white/50 backdrop-blur-md border border-white/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#A1D573] w-64 transition-all"
-          />
-        </div>
-        <button class="p-2 bg-white/50 backdrop-blur-md rounded-xl border border-white/20 hover:bg-white/80 transition-all">
-          <Filter :size="20" class="text-gray-600" />
-        </button>
-        <button class="p-2 bg-white/50 backdrop-blur-md rounded-xl border border-white/20 hover:bg-white/80 transition-all">
-          <Download :size="20" class="text-gray-600" />
-        </button>
+      <div class="relative">
+        <Search :size="18" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="搜索订单编号/服务地址..."
+          class="pl-10 pr-4 py-2 bg-white/50 backdrop-blur-md border border-white/20 rounded-xl w-64 transition-all focus:outline-none focus:ring-0 focus:border-white/20 focus-visible:ring-0"
+        />
       </div>
     </header>
 
     <!-- Table Container -->
-    <div class="bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/30 shadow-xl overflow-hidden">
+    <div class="mt-8 md:mt-12 bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/30 shadow-xl overflow-hidden">
       <div class="p-6 border-b border-white/20 flex items-center space-x-3">
         <div class="w-1.5 h-6 bg-[#FFEB69] rounded-full"></div>
         <h2 class="text-xl font-bold text-gray-800">订单列表</h2>

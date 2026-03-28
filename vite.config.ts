@@ -21,6 +21,11 @@ export default defineConfig(({mode}) => {
       },
     },
     server: {
+      // 外接盘 / 网络卷上 FSEvents 常不可靠，轮询可恢复保存即热更新
+      watch: {
+        usePolling: true,
+        interval: 300,
+      },
       hmr: process.env.DISABLE_HMR !== 'true',
     },
   };

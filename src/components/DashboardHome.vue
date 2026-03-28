@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { TrendingUp, Package, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-vue-next';
+import { TrendingUp, Package, MoreHorizontal, ChevronLeft, ChevronRight, FileText, FolderCheck, ClipboardCheck, Star, CalendarClock, ChevronRight as ChevronRightSmall } from 'lucide-vue-next';
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import TopBarActions from './TopBarActions.vue';
 import { 
-  chartData, 
   pieDataStatus, 
   pieDataWarranty, 
   distributionData, 
@@ -12,26 +11,56 @@ import {
 
 import { use } from 'echarts/core';
 import { CanvasRenderer } from 'echarts/renderers';
-import { PieChart, LineChart } from 'echarts/charts';
+import { PieChart } from 'echarts/charts';
 import { TooltipComponent, GridComponent, LegendComponent } from 'echarts/components';
 import VChart from 'vue-echarts';
 
 use([
   CanvasRenderer,
   PieChart,
-  LineChart,
   TooltipComponent,
   GridComponent,
   LegendComponent
 ]);
 
-defineProps<{
+type TodoItem = {
+  id: number;
+  title: string;
+  content: string;
+  projectName: string;
+  projectId: string;
+  projectStatus: string;
+  viewMode: string;
+  time: string;
+  kind: 'report' | 'completion' | 'acceptance' | 'evaluation' | 'standards';
+};
+
+const props = defineProps<{
   cartCount: number;
   wishlistCount: number;
   messageCount: number;
+  todoItems: TodoItem[];
 }>();
 
-defineEmits(['cartClick', 'wishlistClick', 'messageClick']);
+const emit = defineEmits(['cartClick', 'wishlistClick', 'messageClick', 'openProjectView']);
+
+const iconMap = {
+  report: { icon: FileText, color: 'text-blue-400', bg: 'bg-blue-400/10' },
+  completion: { icon: FolderCheck, color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
+  acceptance: { icon: CalendarClock, color: 'text-orange-400', bg: 'bg-orange-400/10' },
+  evaluation: { icon: Star, color: 'text-yellow-400', bg: 'bg-yellow-400/10' },
+  standards: { icon: ClipboardCheck, color: 'text-teal-400', bg: 'bg-teal-400/10' },
+} as const;
+
+const latestTodoItems = computed(() => props.todoItems.slice(0, 3));
+
+const handleTodoClick = (item: TodoItem) => {
+  emit('openProjectView', {
+    projectId: item.projectId,
+    projectStatus: item.projectStatus,
+    viewMode: item.viewMode
+  });
+};
 
 const currentSlide = ref(0);
 const slides = [
@@ -94,48 +123,6 @@ const warrantyOption = {
   ]
 };
 
-const areaOption = {
-  tooltip: {
-    trigger: 'axis',
-    backgroundColor: '#1f2937',
-    textStyle: { color: '#fff' },
-    borderWidth: 0,
-    borderRadius: 8
-  },
-  grid: { top: 10, right: 10, left: 0, bottom: 0, containLabel: true },
-  xAxis: {
-    type: 'category',
-    boundaryGap: false,
-    data: chartData.map(d => d.name),
-    axisLine: { show: false },
-    axisTick: { show: false },
-    axisLabel: { color: '#9ca3af', fontSize: 12, margin: 10 }
-  },
-  yAxis: {
-    type: 'value',
-    splitLine: { lineStyle: { type: 'dashed', color: '#f0f0f0' } },
-    axisLabel: { color: '#9ca3af', fontSize: 12 }
-  },
-  series: [
-    {
-      data: chartData.map(d => d.value),
-      type: 'line',
-      smooth: true,
-      lineStyle: { color: '#A1D573', width: 3 },
-      showSymbol: false,
-      areaStyle: {
-        color: {
-          type: 'linear',
-          x: 0, y: 0, x2: 0, y2: 1,
-          colorStops: [
-            { offset: 0, color: 'rgba(161, 213, 115, 0.3)' },
-            { offset: 1, color: 'rgba(161, 213, 115, 0)' }
-          ]
-        }
-      }
-    }
-  ]
-};
 
 const processedDistributionData = computed(() => {
   const sorted = [...distributionData].sort((a, b) => b.value - a.value);
@@ -182,7 +169,7 @@ const distributionOption = computed(() => ({
       <header class="flex justify-between items-center mb-8">
       <div>
         <h1 class="text-3xl font-bold text-gray-800">欢迎回来，JustPai！</h1>
-        <p class="text-gray-500 mt-1">这是您目前的销售概览</p>
+        <p class="text-gray-500 mt-1">这是您目前的工作概览</p>
       </div>
       <TopBarActions 
         :isShop="false" 
@@ -191,7 +178,7 @@ const distributionOption = computed(() => ({
         @cartClick="$emit('cartClick')" 
         @wishlistClick="$emit('wishlistClick')" 
         :wishlistCount="wishlistCount" 
-        @messageClick="$emit('messageClick')" 
+        @bellClick="$emit('messageClick')" 
         :messageCount="messageCount" 
       />
     </header>
@@ -263,9 +250,29 @@ const distributionOption = computed(() => ({
         </div>
       </div>
       <div class="lg:col-span-7 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow h-[340px] flex flex-col">
-        <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-xl text-gray-800">销售概览</h3><div class="flex space-x-4"><span class="flex items-center text-xs text-gray-500"><span class="w-2 h-2 rounded-full bg-[#A1D573] mr-2"></span>收入</span><span class="flex items-center text-xs text-gray-500"><span class="w-2 h-2 rounded-full bg-[#FFEB69] mr-2"></span>预测</span></div></div>
-        <div class="flex-1 w-full">
-          <v-chart class="w-full h-full" :option="areaOption" autoresize />
+        <div class="flex justify-between items-center mb-3">
+          <h3 class="font-bold text-xl text-gray-800">待办事项</h3>
+          <span class="text-xs text-gray-400 font-medium">{{ props.todoItems.length }} 条新通知</span>
+        </div>
+        <div class="flex-1 -mx-1 px-1 space-y-2.5">
+          <div
+            v-for="item in latestTodoItems"
+            :key="item.id"
+            @click="handleTodoClick(item)"
+            class="flex items-center gap-3.5 p-3.5 rounded-2xl hover:bg-gray-50 cursor-pointer transition-colors group border border-gray-100/70"
+          >
+            <div :class="['w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0', iconMap[item.kind].bg]">
+              <component :is="iconMap[item.kind].icon" :size="20" :class="iconMap[item.kind].color" />
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2 mb-0.5">
+                <span class="font-bold text-sm text-gray-800 truncate">{{ item.title }}</span>
+                <span class="text-[10px] text-gray-400 flex-shrink-0">{{ item.time }}</span>
+              </div>
+              <p class="text-xs text-gray-500 truncate">{{ item.projectName }} · {{ item.content }}</p>
+            </div>
+            <ChevronRightSmall :size="16" class="text-gray-300 flex-shrink-0 group-hover:text-gray-500 transition-colors" />
+          </div>
         </div>
       </div>
       <div class="lg:col-span-7 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow h-[280px] flex flex-col justify-center">
@@ -300,3 +307,4 @@ const distributionOption = computed(() => ({
   </div>
 </div>
 </template>
+
