@@ -8,7 +8,7 @@
       </div>
       <button 
         @click="$emit('add')"
-        class="px-4 py-2 rounded-xl bg-[#FFC091] text-[#260A2F] text-xs font-bold flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-orange-500/10"
+        class="px-4 py-2 rounded-xl bg-[#FFE600] text-[#260A2F] text-xs font-bold flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-orange-500/10"
       >
         <Plus :size="16" />
         新增缺陷

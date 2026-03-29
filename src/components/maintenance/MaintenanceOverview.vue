@@ -72,7 +72,7 @@ defineEmits(['enterAppointment', 'enterEvaluation']);
 
 const statusStyle = computed(() => {
   switch (props.project.status) {
-    case '待开工': return 'bg-[#FFC091]/20 border border-[#FFC091]/30 text-[#FFC091]';
+    case '待开工': return 'bg-[#FFE600]/20 border border-[#FFE600]/30 text-[#FFE600]';
     case '施工中': return 'bg-[#FFEB69]/20 border border-[#FFEB69]/30 text-[#FFEB69]';
     case '已完工': return 'bg-[#A1D573]/20 border border-[#A1D573]/30 text-[#A1D573]';
     default: return 'bg-white/10 border border-white/20 text-white/60';

@@ -4,7 +4,7 @@ import { Settings } from 'lucide-vue-next';
 import Sidebar from './components/Sidebar.vue';
 import DashboardHome from './components/DashboardHome.vue';
 import ShopView from './components/ShopView.vue';
-import Grainient from './components/Grainient.vue';
+import ManagementHaloBackground from './components/ManagementHaloBackground.vue';
 import ProductDetailView from './components/ProductDetailView.vue';
 import CartView from './components/CartView.vue';
 import WishlistView from './components/WishlistView.vue';
@@ -15,6 +15,7 @@ import EngineeringProjectsView from './components/EngineeringProjectsView.vue';
 import MaintenanceRepairView from './components/MaintenanceRepairView.vue';
 import MaintenanceProjectsView from './components/MaintenanceProjectsView.vue';
 import OrderManagementView from './components/OrderManagementView.vue';
+import ConsultationFeedbackView from './components/consultation-feedback/ConsultationFeedbackView.vue';
 import type { Product, CartItem } from './types';
 
 type TodoNotification = {
@@ -276,37 +277,8 @@ const handleBack = () => {
   }
 };
 
-const backgroundConfig = computed(() => {
-  const shopTabs = ['home', 'shop', 'wishlist', 'cart', 'messages', 'product-detail'];
-  const managementTabs = ['management', 'engineering-projects', 'contracts', 'maintenance-repair', 'maintenance-projects', 'order-management'];
-
-  if (shopTabs.includes(activeTab.value)) {
-    return {
-      color1: '#A1D573',
-      color2: '#ff9ffc',
-      color3: '#b19eef',
-      timeSpeed: 0.8
-    };
-  }
-  if (managementTabs.includes(activeTab.value)) {
-    return {
-      color1: '#FFEB69',
-      color2: '#E2943A',
-      color3: '#DDBDDF',
-      timeSpeed: 0.8
-    };
-  }
-  return null;
-});
-
-const showBackground = computed(() => !!backgroundConfig.value);
-
-const rootBgColor = computed(() => {
-  if (['management', 'engineering-projects', 'contracts', 'maintenance-repair', 'maintenance-projects', 'order-management'].includes(activeTab.value)) {
-    return 'bg-[#f1f3f0]';
-  }
-  return 'bg-[#f8fafc]';
-});
+/** 与 ManagementHaloBackground 底部柔化一致，全站统一底色 */
+const rootBgColor = 'bg-[#f1f3f0]';
 
 watch(activeTab, () => {
   const mainEl = document.getElementById('main-content');
@@ -319,19 +291,9 @@ watch(activeTab, () => {
 
 <template>
   <div :class="['flex h-screen font-sans text-gray-900 selection:bg-[#A1D573] selection:text-white relative overflow-hidden transition-colors duration-300 ease-out', rootBgColor]">
-    <!-- Persistent Background Layer -->
-    <div 
-      v-if="showBackground"
-      class="absolute top-0 left-0 w-full h-[70vh] overflow-hidden pointer-events-none z-0"
-      style="mask-image: linear-gradient(to bottom, black 0%, black 20%, transparent 100%); -webkit-mask-image: linear-gradient(to bottom, black 0%, black 20%, transparent 100%);"
-    >
-      <Grainient 
-        v-bind="backgroundConfig"
-        :zoom="0.8"
-        :noiseScale="1.5"
-      />
-      <!-- Frosted Glass Overlay -->
-      <div class="absolute inset-0 backdrop-blur-[40px] bg-white/10"></div>
+    <!-- 全站：绿 + 黄光晕（原管理中心背景，应用于所有页面） -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none z-0">
+      <ManagementHaloBackground />
     </div>
 
     <Sidebar :activeTab="activeTab" @update:activeTab="activeTab = $event" class="relative z-10" />
@@ -390,6 +352,8 @@ watch(activeTab, () => {
       />
 
       <ContractAndSettlementView v-if="activeTab === 'contracts'" />
+
+      <ConsultationFeedbackView v-if="activeTab === 'consultation-feedback'" />
 
       <ShopView 
         v-if="activeTab === 'shop'"
@@ -462,7 +426,7 @@ watch(activeTab, () => {
 
 /*
  * 页面切换仅用 opacity，避免对主内容做 transform/scale。
- * transform 会单独升层，与侧栏、全屏 Grainient + backdrop-blur 不同步时易出现「偏一下再对齐」和掉帧。
+ * transform 会单独升层，与侧栏、全屏背景不同步时易出现「偏一下再对齐」和掉帧。
  */
 .page-transition-enter-active {
   transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1);

@@ -8,7 +8,7 @@
         @click="activeTab = tab.id"
         class="px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 border"
         :class="activeTab === tab.id 
-          ? 'bg-[#FFC091] border-[#FFC091] text-[#260A2F] shadow-[0_0_15px_rgba(255,192,145,0.3)]' 
+          ? 'bg-[#FFE600] border-[#FFE600] text-[#260A2F] shadow-[0_0_15px_rgba(255,230,0,0.3)]' 
           : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:border-white/20'"
       >
         {{ tab.label }}
@@ -46,8 +46,8 @@
           class="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between h-40 hover:bg-white/10 transition-colors group"
         >
           <div class="flex items-start gap-3">
-            <div class="w-10 h-10 rounded-xl bg-[#FFC091]/10 flex items-center justify-center flex-shrink-0">
-              <FileText :size="20" class="text-[#FFC091]" />
+            <div class="w-10 h-10 rounded-xl bg-[#FFE600]/10 flex items-center justify-center flex-shrink-0">
+              <FileText :size="20" class="text-[#FFE600]" />
             </div>
             <h4 class="text-white font-medium leading-tight line-clamp-2">
               {{ file.name }}
@@ -56,7 +56,7 @@
           
           <div class="flex justify-end">
             <button 
-              class="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-[#FFC091] hover:text-[#260A2F] text-white text-sm font-bold rounded-xl transition-all"
+              class="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-[#FFE600] hover:text-[#260A2F] text-white text-sm font-bold rounded-xl transition-all"
               @click="handleDownload(file)"
             >
               <Download :size="16" />

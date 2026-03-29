@@ -289,7 +289,7 @@ const goBack = () => {
           @click="() => { activeStatus = status; searchQuery = ''; }"
           :class="['px-6 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all shadow-sm',
             activeStatus === status && !searchQuery
-              ? 'bg-[#FFC091] text-[#260A2F]'
+              ? 'bg-[#FFE600] text-[#260A2F]'
               : 'bg-white text-gray-500 border border-gray-100 hover:border-gray-300 hover:text-gray-800'
           ]"
         >
@@ -328,7 +328,7 @@ const goBack = () => {
             @click="currentPage = page"
             :class="['w-10 h-10 rounded-full text-sm font-bold transition-all',
               currentPage === page
-                ? 'bg-[#FFC091] text-[#260A2F] shadow-sm'
+                ? 'bg-[#FFE600] text-[#260A2F] shadow-sm'
                 : 'bg-white text-gray-500 border border-gray-100 hover:border-gray-300'
             ]"
           >
@@ -356,7 +356,7 @@ const goBack = () => {
             <!-- Header -->
             <div class="px-8 py-6 border-b border-white/10 flex justify-between items-center flex-shrink-0">
               <div class="flex items-center gap-3">
-                <div class="w-1.5 h-6 bg-[#FFC091] rounded-full shadow-[0_0_15px_rgba(255,192,145,0.5)]"></div>
+                <div class="w-1.5 h-6 bg-[#FFE600] rounded-full shadow-[0_0_15px_rgba(255,230,0,0.5)]"></div>
                 <h2 class="text-2xl font-bold text-white tracking-tight">{{ headerTitle }}</h2>
               </div>
               <div class="flex items-center gap-4">
@@ -429,7 +429,7 @@ const goBack = () => {
                       v-if="!isEvaluated"
                       @click="submitEvaluation"
                       :disabled="!evalIsValid"
-                      class="px-8 py-2.5 bg-[#FFC091] text-[#260A2F] text-sm font-bold rounded-xl hover:bg-[#ffad70] transition-colors shadow-[0_0_15px_rgba(255,192,145,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+                      class="px-8 py-2.5 bg-[#FFE600] text-[#260A2F] text-sm font-bold rounded-xl hover:bg-[#e6cf00] transition-colors shadow-[0_0_15px_rgba(255,230,0,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       确认提交
                     </button>
@@ -501,7 +501,7 @@ const goBack = () => {
                   <div class="pt-4 flex justify-end flex-shrink-0">
                     <button 
                       @click="confirmAppointmentTime"
-                      class="px-8 py-2.5 bg-[#FFC091] text-[#260A2F] text-sm font-bold rounded-xl hover:bg-[#ffad70] transition-colors shadow-[0_0_15px_rgba(255,192,145,0.3)]"
+                      class="px-8 py-2.5 bg-[#FFE600] text-[#260A2F] text-sm font-bold rounded-xl hover:bg-[#e6cf00] transition-colors shadow-[0_0_15px_rgba(255,230,0,0.3)]"
                     >
                       确认
                     </button>
@@ -523,7 +523,7 @@ const goBack = () => {
                   <div class="pt-4 flex justify-end flex-shrink-0">
                     <button 
                       @click="confirmChangeTime"
-                      class="px-8 py-2.5 bg-[#FFC091] text-[#260A2F] text-sm font-bold rounded-xl hover:bg-[#ffad70] transition-colors shadow-[0_0_15px_rgba(255,192,145,0.3)]"
+                      class="px-8 py-2.5 bg-[#FFE600] text-[#260A2F] text-sm font-bold rounded-xl hover:bg-[#e6cf00] transition-colors shadow-[0_0_15px_rgba(255,230,0,0.3)]"
                     >
                       确认
                     </button>
@@ -582,7 +582,7 @@ const goBack = () => {
                   <div class="pt-4 flex justify-end flex-shrink-0">
                     <button
                       @click="confirmAcceptance"
-                      class="px-8 py-2.5 bg-[#FFC091] text-[#260A2F] text-sm font-bold rounded-xl hover:bg-[#ffad70] transition-colors shadow-[0_0_15px_rgba(255,192,145,0.3)]"
+                      class="px-8 py-2.5 bg-[#FFE600] text-[#260A2F] text-sm font-bold rounded-xl hover:bg-[#e6cf00] transition-colors shadow-[0_0_15px_rgba(255,230,0,0.3)]"
                     >
                       确认
                     </button>

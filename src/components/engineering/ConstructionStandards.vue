@@ -8,7 +8,7 @@
         @click="activeTab = tab.id"
         class="px-5 py-2 rounded-full text-sm font-medium transition-all duration-300 border"
         :class="activeTab === tab.id 
-          ? 'bg-[#FFC091] border-[#FFC091] text-[#260A2F] shadow-[0_0_15px_rgba(255,192,145,0.3)]' 
+          ? 'bg-[#FFE600] border-[#FFE600] text-[#260A2F] shadow-[0_0_15px_rgba(255,230,0,0.3)]' 
           : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:border-white/20'"
       >
         {{ tab.label }}

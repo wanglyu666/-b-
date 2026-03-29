@@ -5,14 +5,14 @@
       <button 
         @click="setTab('material')"
         :class="['px-6 py-2 rounded-full text-sm font-bold transition-all', 
-          acceptanceTab === 'material' ? 'bg-[#FFC091] text-[#260A2F]' : 'bg-white/5 text-white/60 hover:bg-white/10']"
+          acceptanceTab === 'material' ? 'bg-[#FFE600] text-[#260A2F]' : 'bg-white/5 text-white/60 hover:bg-white/10']"
       >
         材料管控
       </button>
       <button 
         @click="setTab('progress')"
         :class="['px-6 py-2 rounded-full text-sm font-bold transition-all', 
-          acceptanceTab === 'progress' ? 'bg-[#FFC091] text-[#260A2F]' : 'bg-white/5 text-white/60 hover:bg-white/10']"
+          acceptanceTab === 'progress' ? 'bg-[#FFE600] text-[#260A2F]' : 'bg-white/5 text-white/60 hover:bg-white/10']"
       >
         进度管控
       </button>
@@ -25,7 +25,7 @@
         <div class="bg-white/5 backdrop-blur-xl rounded-[32px] border border-white/10 overflow-hidden shadow-inner">
           <div class="px-8 py-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
             <h3 class="text-white font-bold flex items-center gap-2">
-                <div class="w-1 h-4 bg-[#FFC091] rounded-full shadow-[0_0_8px_rgba(255,192,145,0.4)]"></div>
+                <div class="w-1 h-4 bg-[#FFE600] rounded-full shadow-[0_0_8px_rgba(255,230,0,0.4)]"></div>
                 材料清单
             </h3>
           </div>
@@ -63,7 +63,7 @@
         <div class="bg-white/5 backdrop-blur-xl rounded-[32px] border border-white/10 overflow-hidden shadow-inner">
           <div class="px-8 py-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
             <h3 class="text-white font-bold flex items-center gap-2">
-                <div class="w-1 h-4 bg-[#FFC091] rounded-full shadow-[0_0_8px_rgba(255,192,145,0.4)]"></div>
+                <div class="w-1 h-4 bg-[#FFE600] rounded-full shadow-[0_0_8px_rgba(255,230,0,0.4)]"></div>
                 材料进场计划
             </h3>
           </div>
@@ -114,60 +114,73 @@
 
       <!-- Progress Content -->
       <div v-else :key="'progress'" class="flex flex-col gap-8">
-        <div class="bg-white/5 backdrop-blur-xl rounded-[32px] border border-white/10 overflow-hidden shadow-inner">
-          <div class="px-8 py-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
+        <div class="w-full max-w-3xl mx-auto bg-white/5 backdrop-blur-xl rounded-[32px] border border-white/10 overflow-hidden shadow-inner">
+          <div class="px-4 sm:px-5 py-3 border-b border-white/10 bg-white/5 flex justify-between items-center">
             <h3 class="text-white font-bold flex items-center gap-2">
-                <div class="w-1 h-4 bg-[#FFC091] rounded-full shadow-[0_0_8px_rgba(255,192,145,0.4)]"></div>
+                <div class="w-1 h-4 bg-[#FFE600] rounded-full shadow-[0_0_8px_rgba(255,230,0,0.4)]"></div>
                 进度验收节点
             </h3>
           </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
+          <div class="px-3 sm:px-4 pb-4">
+              <div class="overflow-x-auto rounded-xl">
+                <table class="w-full table-fixed border-collapse text-left">
+              <colgroup>
+                <col class="w-[24%]" />
+                <col class="w-[15%]" />
+                <col class="w-[15%]" />
+                <col class="w-[14%]" />
+                <col class="w-[12%]" />
+                <col class="w-[20%]" />
+              </colgroup>
               <thead>
                 <tr class="bg-white/5 text-white/40 text-[10px] uppercase tracking-widest font-bold">
-                  <th class="px-6 py-3">验收节点名称</th>
-                  <th class="px-6 py-3">计划验收时间</th>
-                  <th class="px-6 py-3">预约验收时间</th>
-                  <th class="px-6 py-3">验收类型</th>
-                  <th class="px-6 py-3">验收状态</th>
-                  <th class="px-6 py-3"></th>
+                  <th class="px-3 py-2.5">验收节点名称</th>
+                  <th class="px-3 py-2.5 whitespace-nowrap">计划验收时间</th>
+                  <th class="px-3 py-2.5 whitespace-nowrap">预约验收时间</th>
+                  <th class="px-3 py-2.5">验收类型</th>
+                  <th class="px-3 py-2.5">验收状态</th>
+                  <th class="px-3 py-2.5"></th>
                 </tr>
               </thead>
               <tbody class="text-white/80 text-xs">
                 <tr v-for="(item, i) in progressData" :key="i" class="border-b border-white/5 hover:bg-white/5 transition-colors">
-                  <td class="px-6 py-4">{{ item.node }}</td>
-                  <td class="px-6 py-4 font-mono">{{ item.planDate }}</td>
-                  <td class="px-6 py-4 font-mono">{{ item.appointmentDate }}</td>
-                  <td class="px-6 py-4">{{ item.type }}</td>
-                  <td class="px-6 py-4">
+                  <td class="px-3 py-3 align-middle truncate" :title="item.node">{{ item.node }}</td>
+                  <td class="px-3 py-3 font-mono whitespace-nowrap align-middle">{{ item.planDate }}</td>
+                  <td class="px-3 py-3 font-mono whitespace-nowrap align-middle">{{ item.appointmentDate }}</td>
+                  <td class="px-3 py-3 align-middle">{{ item.type }}</td>
+                  <td class="px-3 py-3 align-middle">
                     <span :class="[
-                      'px-3 py-1 rounded-full text-[10px] font-bold',
+                      'inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap',
                       item.status === '已通过' ? 'bg-[#A1D573]/20 text-[#A1D573]' : 'bg-rose-500/20 text-rose-400'
                     ]">
                       {{ item.status }}
                     </span>
                   </td>
-                  <td class="px-6 py-4 flex items-center gap-2">
-                    <button 
-                      v-if="item.status !== '已通过'"
-                      @click="$emit('scheduleAcceptance', item)"
-                      :disabled="!!item.appointmentDate"
-                      :class="[
-                        'px-4 py-1.5 rounded-full text-xs font-bold transition-colors',
-                        item.appointmentDate 
-                          ? 'bg-white/10 text-white/40 cursor-not-allowed' 
-                          : 'bg-[#FFC091] hover:bg-[#ffb078] text-[#260A2F]'
-                      ]"
-                    >
-                      {{ item.appointmentDate ? '已确认时间' : '预约时间' }}
-                    </button>
-                    <button @click="$emit('viewProgressDetail', item)" class="p-1 hover:bg-white/10 rounded-full transition-colors">
-                      <MoreHorizontal :size="16" />
-                    </button>
+                  <td class="px-3 py-3 align-middle min-w-0">
+                    <div class="w-full flex items-center justify-between gap-2">
+                      <button 
+                        v-if="item.status !== '已通过'"
+                        @click="$emit('scheduleAcceptance', item)"
+                        :disabled="!!item.appointmentDate"
+                        :class="[
+                          'px-4 py-1.5 rounded-full text-xs font-bold transition-colors',
+                          item.appointmentDate 
+                            ? 'bg-white/10 text-white/40 cursor-not-allowed' 
+                            : 'bg-[#FFE600] hover:bg-[#e6cf00] text-[#260A2F]'
+                        ]"
+                      >
+                        {{ item.appointmentDate ? '已确认时间' : '预约时间' }}
+                      </button>
+                      <span v-else class="h-7"></span>
+                      <button @click="$emit('viewProgressDetail', item)" class="p-1 hover:bg-white/10 rounded-full transition-colors">
+                        <MoreHorizontal :size="16" />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               </tbody>
             </table>
+              </div>
           </div>
         </div>
       </div>

@@ -31,7 +31,7 @@
               readonly
               :value="formatDateSlash(scheduledDate)"
               placeholder="yyyy/mm/dd"
-              class="w-full cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 font-mono text-white transition-colors focus:border-[#FFC091] focus:outline-none"
+              class="w-full cursor-pointer rounded-xl border border-white/10 bg-white/5 px-4 py-2 font-mono text-white transition-colors focus:border-[#FFE600] focus:outline-none"
               @click="openDatePicker"
             />
           </div>
@@ -46,7 +46,7 @@
             type="button"
             @click="addContact"
             :disabled="contacts.length >= 3"
-            class="rounded-lg bg-[#FFC091] px-4 py-1.5 text-xs font-bold text-[#260A2F] transition-colors hover:bg-[#ffad70] disabled:cursor-not-allowed disabled:opacity-50"
+            class="rounded-lg bg-[#FFE600] px-4 py-1.5 text-xs font-bold text-[#260A2F] transition-colors hover:bg-[#e6cf00] disabled:cursor-not-allowed disabled:opacity-50"
           >
             添加人员
           </button>
@@ -73,7 +73,7 @@
                     type="text"
                     v-model="contact.name"
                     placeholder="请输入"
-                    class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition-colors focus:border-[#FFC091] focus:outline-none"
+                    class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition-colors focus:border-[#FFE600] focus:outline-none"
                   />
                 </td>
                 <td class="py-3 pr-4">
@@ -81,7 +81,7 @@
                     type="text"
                     v-model="contact.position"
                     placeholder="请输入"
-                    class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition-colors focus:border-[#FFC091] focus:outline-none"
+                    class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition-colors focus:border-[#FFE600] focus:outline-none"
                   />
                 </td>
                 <td class="py-3 pr-4">
@@ -89,7 +89,7 @@
                     type="tel"
                     v-model="contact.phone"
                     placeholder="请输入"
-                    class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition-colors focus:border-[#FFC091] focus:outline-none"
+                    class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white transition-colors focus:border-[#FFE600] focus:outline-none"
                   />
                 </td>
                 <td class="py-3 text-center">
@@ -113,7 +113,7 @@
         type="button"
         @click="submit"
         :disabled="!isValid"
-        class="rounded-xl bg-[#FFC091] px-8 py-2.5 text-sm font-bold text-[#260A2F] shadow-[0_0_15px_rgba(255,192,145,0.3)] transition-colors hover:bg-[#ffad70] disabled:cursor-not-allowed disabled:opacity-50"
+        class="rounded-xl bg-[#FFE600] px-8 py-2.5 text-sm font-bold text-[#260A2F] shadow-[0_0_15px_rgba(255,230,0,0.3)] transition-colors hover:bg-[#e6cf00] disabled:cursor-not-allowed disabled:opacity-50"
       >
         确定
       </button>

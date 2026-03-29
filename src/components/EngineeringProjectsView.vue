@@ -98,6 +98,23 @@ const modalDimensions = computed(() => {
     }
     return { width: '1000px', height: '800px', radius: '32px', scale: 1 };
   }
+  /** 过程验收：材料管控表格多、占宽；进度管控内容紧凑，缩小弹窗（尺寸变化由 .modal-morph 过渡） */
+  if (viewMode.value === 'acceptance') {
+    if (acceptanceTab.value === 'progress') {
+      return {
+        width: 'min(800px, 94vw)',
+        height: 'min(620px, 86vh)',
+        radius: '32px',
+        scale: 1,
+      };
+    }
+    return {
+      width: 'min(1300px, 96vw)',
+      height: 'min(900px, 90vh)',
+      radius: '32px',
+      scale: 1.02,
+    };
+  }
   const w = Math.round(windowSize.value.width * 0.95);
   const h = Math.round(windowSize.value.height * 0.9);
   return { width: `${w}px`, height: `${h}px`, radius: '24px', scale: 1.02 };
@@ -442,7 +459,7 @@ onMounted(async () => {
          @click="() => { activeStatus = status; searchQuery = ''; }"
          :class="['px-6 py-2.5 rounded-full text-sm font-bold whitespace-nowrap transition-all shadow-sm',
            activeStatus === status && !searchQuery
-             ? 'bg-[#FFC091] text-[#260A2F]' 
+             ? 'bg-[#FFE600] text-[#260A2F]' 
              : 'bg-white text-gray-500 border border-gray-100 hover:border-gray-300 hover:text-gray-800'
          ]"
       >
@@ -481,7 +498,7 @@ onMounted(async () => {
           @click="currentPage = page"
           :class="['w-10 h-10 rounded-full text-sm font-bold transition-all',
             currentPage === page 
-              ? 'bg-[#FFC091] text-[#260A2F] shadow-sm' 
+              ? 'bg-[#FFE600] text-[#260A2F] shadow-sm' 
               : 'bg-white text-gray-500 border border-gray-100 hover:border-gray-300'
           ]"
         >
@@ -509,7 +526,7 @@ onMounted(async () => {
           <!-- Header -->
           <div class="px-8 py-6 border-b border-white/10 flex justify-between items-center flex-shrink-0">
             <div class="flex items-center gap-3">
-              <div class="w-1.5 h-6 bg-[#FFC091] rounded-full shadow-[0_0_15px_rgba(255,192,145,0.5)]"></div>
+              <div class="w-1.5 h-6 bg-[#FFE600] rounded-full shadow-[0_0_15px_rgba(255,230,0,0.5)]"></div>
               <h2 class="text-2xl font-bold text-white tracking-tight">
                 {{ headerTitle }}
               </h2>

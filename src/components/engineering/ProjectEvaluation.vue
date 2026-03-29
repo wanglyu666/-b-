@@ -50,7 +50,7 @@
         v-if="!isEvaluated"
         @click="submit"
         :disabled="!isValid"
-        class="px-8 py-2.5 bg-[#FFC091] text-[#260A2F] text-sm font-bold rounded-xl hover:bg-[#ffad70] transition-colors shadow-[0_0_15px_rgba(255,192,145,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+        class="px-8 py-2.5 bg-[#FFE600] text-[#260A2F] text-sm font-bold rounded-xl hover:bg-[#e6cf00] transition-colors shadow-[0_0_15px_rgba(255,230,0,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
       >
         确认提交
       </button>

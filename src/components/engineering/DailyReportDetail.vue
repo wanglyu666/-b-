@@ -8,7 +8,7 @@
         @click="activeTab = tab.id"
         class="px-6 py-2 rounded-full text-sm font-bold transition-all duration-300 border"
         :class="activeTab === tab.id 
-          ? 'bg-[#FFC091] border-[#FFC091] text-[#260A2F] shadow-[0_0_15px_rgba(255,192,145,0.3)]' 
+          ? 'bg-[#FFE600] border-[#FFE600] text-[#260A2F] shadow-[0_0_15px_rgba(255,230,0,0.3)]' 
           : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:border-white/20'"
       >
         {{ tab.label }}
@@ -24,41 +24,41 @@
           <div class="grid grid-cols-2 gap-6">
             <!-- 施工区域 -->
             <div class="space-y-2">
-              <div class="flex items-center gap-2 text-[#FFC091]">
+              <div class="flex items-center gap-2 text-[#FFE600]">
                 <MapPin :size="16" />
                 <span class="font-bold text-xs tracking-widest uppercase">施工区域</span>
               </div>
               <textarea 
                 v-model="reportData.area"
                 placeholder="请输入施工区域..."
-                class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors h-[150px] resize-none"
+                class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors h-[150px] resize-none"
               ></textarea>
             </div>
 
             <!-- 完成进度 -->
             <div class="space-y-2">
-              <div class="flex items-center gap-2 text-[#FFC091]">
+              <div class="flex items-center gap-2 text-[#FFE600]">
                 <TrendingUp :size="16" />
                 <span class="font-bold text-xs tracking-widest uppercase">完成进度</span>
               </div>
               <textarea 
                 v-model="reportData.progressDesc"
                 placeholder="请输入进度说明..."
-                class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors h-[150px] resize-none"
+                class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors h-[150px] resize-none"
               ></textarea>
             </div>
           </div>
 
           <!-- Bottom Row: Content -->
           <div class="flex-1 space-y-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <Hammer :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">施工内容</span>
             </div>
             <textarea 
               v-model="reportData.content"
               placeholder="请输入详细施工内容..."
-              class="w-full h-[300px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none"
+              class="w-full h-[300px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none"
             ></textarea>
           </div>
         </div>
@@ -67,20 +67,20 @@
         <div v-else-if="activeTab === 'materials'" :key="'materials'" class="h-full flex flex-col gap-8">
           <!-- 进场材料 -->
           <div class="space-y-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <Package :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">进场材料</span>
             </div>
             <textarea 
               v-model="reportData.materials"
               placeholder="请输入进场材料信息..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none"
+              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none"
             ></textarea>
           </div>
 
           <!-- 工种表格 -->
           <div class="flex-1 flex flex-col min-h-0">
-            <div class="flex items-center gap-2 text-[#FFC091] mb-2">
+            <div class="flex items-center gap-2 text-[#FFE600] mb-2">
               <Users :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">工种人员</span>
             </div>
@@ -111,53 +111,53 @@
         <div v-else-if="activeTab === 'issues'" :key="'issues'" class="h-full grid grid-cols-2 grid-rows-2 gap-6">
           <!-- 现场问题与解决 -->
           <div class="space-y-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <AlertCircle :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">现场问题与解决</span>
             </div>
             <textarea 
               v-model="reportData.issues"
               placeholder="请输入现场问题及解决方案..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none"
+              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none"
             ></textarea>
           </div>
 
           <!-- 次日施工区域 -->
           <div class="space-y-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <MapPin :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">次日施工区域</span>
             </div>
             <textarea 
               v-model="reportData.nextDayArea"
               placeholder="请输入次日施工区域..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none"
+              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none"
             ></textarea>
           </div>
 
           <!-- 次日施工内容 -->
           <div class="space-y-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <Hammer :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">次日施工内容</span>
             </div>
             <textarea 
               v-model="reportData.nextDayContent"
               placeholder="请输入次日施工内容..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none"
+              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none"
             ></textarea>
           </div>
 
           <!-- 次日人员安排 -->
           <div class="space-y-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <Users :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">次日人员安排</span>
             </div>
             <textarea 
               v-model="reportData.nextDayWorkers"
               placeholder="请输入次日人员安排..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none"
+              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none"
             ></textarea>
           </div>
         </div>
@@ -169,7 +169,7 @@
               v-for="(photo, index) in reportData.photos" 
               :key="index"
               @click="selectedPhoto = photo"
-              class="aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10 cursor-pointer hover:border-[#FFC091]/50 transition-all group relative"
+              class="aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10 cursor-pointer hover:border-[#FFE600]/50 transition-all group relative"
             >
               <img 
                 :src="photo" 

@@ -191,7 +191,7 @@ const paginatedData = computed(() => {
           <!-- Header -->
           <div class="px-8 py-5 border-b border-white/10 flex justify-between items-center">
             <div class="flex items-center gap-3">
-              <div class="w-1.5 h-6 bg-[#FFC091] rounded-full shadow-[0_0_15px_rgba(255,192,145,0.5)]"></div>
+              <div class="w-1.5 h-6 bg-[#FFE600] rounded-full shadow-[0_0_15px_rgba(255,230,0,0.5)]"></div>
               <h2 class="text-xl font-bold text-white tracking-tight">工单详情</h2>
             </div>
             <button @click="closeDetail" class="p-2 hover:bg-white/10 text-white/70 hover:text-white rounded-full transition-all">

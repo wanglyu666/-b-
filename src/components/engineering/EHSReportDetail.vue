@@ -8,7 +8,7 @@
         @click="activeTab = tab.id"
         class="px-6 py-2 rounded-full text-sm font-bold transition-all duration-300 border"
         :class="activeTab === tab.id 
-          ? 'bg-[#FFC091] border-[#FFC091] text-[#260A2F] shadow-[0_0_15px_rgba(255,192,145,0.3)]' 
+          ? 'bg-[#FFE600] border-[#FFE600] text-[#260A2F] shadow-[0_0_15px_rgba(255,230,0,0.3)]' 
           : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:border-white/20'"
       >
         {{ tab.label }}
@@ -22,14 +22,14 @@
         <div v-if="activeTab === 'summary'" :key="'summary'" class="flex flex-col gap-6">
           <!-- 特殊作业 -->
           <div class="flex flex-col gap-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <Zap :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">本周开展的特殊作业</span>
             </div>
             <textarea 
               v-model="reportData.specialWork"
               placeholder="请输入本周开展的特殊作业内容..."
-              class="w-full h-[180px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none custom-scrollbar"
+              class="w-full h-[180px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none custom-scrollbar"
             ></textarea>
           </div>
 
@@ -37,7 +37,7 @@
           <div class="flex items-center gap-12 py-2">
             <!-- 本周开展的安全教育次数 -->
             <div class="flex items-center gap-4">
-              <div class="flex items-center gap-2 text-[#FFC091]">
+              <div class="flex items-center gap-2 text-[#FFE600]">
                 <GraduationCap :size="18" />
                 <span class="font-bold text-sm tracking-wide">本周开展的安全教育次数：</span>
               </div>
@@ -45,7 +45,7 @@
                 <input 
                   v-model="reportData.educationCount"
                   type="number"
-                  class="w-16 bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-center text-[#FFC091] font-bold focus:outline-none focus:border-[#FFC091]/50"
+                  class="w-16 bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-center text-[#FFE600] font-bold focus:outline-none focus:border-[#FFE600]/50"
                 />
                 <span class="text-sm text-gray-400 font-bold">次</span>
               </div>
@@ -53,7 +53,7 @@
 
             <!-- 共开展教育与培训总结 -->
             <div class="flex items-center gap-4">
-              <div class="flex items-center gap-2 text-[#FFC091]">
+              <div class="flex items-center gap-2 text-[#FFE600]">
                 <ClipboardList :size="18" />
                 <span class="font-bold text-sm tracking-wide">共开展教育与培训总结：</span>
               </div>
@@ -61,7 +61,7 @@
                 <input 
                   v-model="reportData.trainingSummaryCount"
                   type="number"
-                  class="w-16 bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-center text-[#FFC091] font-bold focus:outline-none focus:border-[#FFC091]/50"
+                  class="w-16 bg-white/10 border border-white/20 rounded-lg px-2 py-1 text-center text-[#FFE600] font-bold focus:outline-none focus:border-[#FFE600]/50"
                 />
                 <span class="text-sm text-gray-400 font-bold">次</span>
               </div>
@@ -70,14 +70,14 @@
 
           <!-- 教育与培训 -->
           <div class="flex flex-col gap-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <BookOpen :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">教育与培训</span>
             </div>
             <textarea 
               v-model="reportData.training"
               placeholder="请输入教育与培训详细内容..."
-              class="w-full h-[180px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none custom-scrollbar"
+              class="w-full h-[180px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none custom-scrollbar"
             ></textarea>
           </div>
         </div>
@@ -86,27 +86,27 @@
         <div v-else-if="activeTab === 'plan'" :key="'plan'" class="flex flex-col gap-6">
           <!-- 工作内容及控制措施 -->
           <div class="flex flex-col gap-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <ShieldCheck :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">工作内容及控制措施</span>
             </div>
             <textarea 
               v-model="reportData.planContent"
               placeholder="请输入下周工作内容及控制措施..."
-              class="w-full h-[220px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none custom-scrollbar"
+              class="w-full h-[220px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none custom-scrollbar"
             ></textarea>
           </div>
 
           <!-- 教育与培训计划 -->
           <div class="flex flex-col gap-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <BookOpen :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">教育与培训计划</span>
             </div>
             <textarea 
               v-model="reportData.planTraining"
               placeholder="请输入下周教育与培训计划..."
-              class="w-full h-[220px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none custom-scrollbar"
+              class="w-full h-[220px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none custom-scrollbar"
             ></textarea>
           </div>
         </div>
@@ -115,7 +115,7 @@
         <div v-else-if="activeTab === 'others'" :key="'others'" class="flex flex-col gap-8">
           <!-- 现场检查与隐患排查 -->
           <div class="flex flex-col gap-4">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <Search :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">现场检查与隐患排查</span>
             </div>
@@ -154,21 +154,21 @@
 
           <!-- 其他重要事项 -->
           <div class="flex flex-col gap-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <AlertCircle :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">其他重要事项</span>
             </div>
             <textarea 
               v-model="reportData.others"
               placeholder="请输入其他重要EHS事项..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none custom-scrollbar"
+              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none custom-scrollbar"
             ></textarea>
           </div>
         </div>
 
         <!-- 培训照片 Tab -->
         <div v-else-if="activeTab === 'photos'" :key="'photos'" class="flex flex-col gap-6">
-          <div class="flex items-center gap-2 text-[#FFC091]">
+          <div class="flex items-center gap-2 text-[#FFE600]">
             <Camera :size="16" />
             <span class="font-bold text-xs tracking-widest uppercase">EHS培训及现场照片</span>
           </div>
@@ -176,7 +176,7 @@
             <div 
               v-for="(photo, index) in reportData.photos" 
               :key="index"
-              class="group relative aspect-[4/3] bg-white/5 border border-white/10 rounded-xl overflow-hidden cursor-pointer hover:border-[#FFC091]/50 transition-all duration-300"
+              class="group relative aspect-[4/3] bg-white/5 border border-white/10 rounded-xl overflow-hidden cursor-pointer hover:border-[#FFE600]/50 transition-all duration-300"
             >
               <img 
                 :src="photo.url" 

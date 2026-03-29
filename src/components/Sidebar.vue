@@ -8,6 +8,7 @@ import {
   MessageSquare, 
   FileText 
 } from 'lucide-vue-next';
+import logoDarkGreen from '../../justpai logo/justpai logo darkgreen 1.png';
 
 defineProps<{
   activeTab: string
@@ -21,13 +22,14 @@ defineEmits<{
 <template>
   <aside class="w-64 bg-white h-full flex flex-col border-r border-gray-100 hidden md:flex sticky top-0">
     <div class="p-8">
-      <div class="flex items-center space-x-2 mb-2">
-        <div class="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
-          <span class="text-white font-bold text-xl italic">J</span>
-        </div>
-        <span class="text-xl font-bold tracking-tight">JustPai</span>
+      <div class="flex items-center gap-2">
+        <img
+          :src="logoDarkGreen"
+          alt=""
+          class="h-9 w-auto max-w-[140px] object-contain object-left shrink-0"
+        />
+        <span class="text-xl font-bold tracking-tight">这么派</span>
       </div>
-      <span class="text-xs text-gray-400 font-medium tracking-widest pl-10">B端 管理员</span>
     </div>
 
     <nav class="flex-1 px-4 space-y-2 mt-4">
@@ -80,10 +82,13 @@ defineEmits<{
         <span>合同与结算</span>
       </div>
 
-      <div 
-        class="flex items-center space-x-3 px-6 py-4 cursor-pointer transition-all duration-200 group text-gray-500 hover:text-black hover:bg-gray-50"
+      <div
+        @click="$emit('update:activeTab', 'consultation-feedback')"
+        :class="['flex items-center space-x-3 px-6 py-4 cursor-pointer transition-all duration-200 group',
+          activeTab === 'consultation-feedback' ? 'text-black font-bold border-l-4 border-black bg-gray-50' : 'text-gray-500 hover:text-black hover:bg-gray-50'
+        ]"
       >
-        <MessageSquare :size="20" class="text-gray-400 group-hover:text-black" />
+        <MessageSquare :size="20" :class="activeTab === 'consultation-feedback' ? 'text-black' : 'text-gray-400 group-hover:text-black'" />
         <span>咨询与反馈</span>
       </div>
     </nav>

@@ -68,12 +68,12 @@
                   <div 
                     :class="[
                       'w-7 h-7 rounded-full border-2 transition-all duration-300 flex items-center justify-center',
-                      evaluation === opt.id ? 'border-[#FFC091] bg-[#FFC091]/10' : 'border-white/20 group-hover:border-white/40'
+                      evaluation === opt.id ? 'border-[#FFE600] bg-[#FFE600]/10' : 'border-white/20 group-hover:border-white/40'
                     ]"
                   >
                     <div 
                       v-if="evaluation === opt.id"
-                      class="w-3 h-3 rounded-full bg-[#FFC091] shadow-[0_0_12px_rgba(255,192,145,0.8)]"
+                      class="w-3 h-3 rounded-full bg-[#FFE600] shadow-[0_0_12px_rgba(255,230,0,0.8)]"
                     ></div>
                   </div>
                   <span :class="['text-xl font-bold transition-colors', evaluation === opt.id ? 'text-white' : 'text-white/40 group-hover:text-white/60']">
@@ -106,8 +106,8 @@
               @click="submit"
               :disabled="!evaluation"
               :class="[
-                'h-18 px-16 font-bold text-xl rounded-2xl transition-all shadow-[0_10px_40px_rgba(255,192,145,0.3)] active:scale-[0.95]',
-                evaluation ? 'bg-[#FFC091] hover:bg-[#ffad70] text-[#260A2F]' : 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5 shadow-none'
+                'h-18 px-16 font-bold text-xl rounded-2xl transition-all shadow-[0_10px_40px_rgba(255,230,0,0.3)] active:scale-[0.95]',
+                evaluation ? 'bg-[#FFE600] hover:bg-[#e6cf00] text-[#260A2F]' : 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5 shadow-none'
               ]"
             >
               提交

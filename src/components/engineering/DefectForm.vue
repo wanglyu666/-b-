@@ -50,7 +50,7 @@
     <div class="flex justify-end pt-6">
       <button 
         @click="confirmAddDefect"
-        class="px-12 py-4 rounded-2xl bg-[#FFC091] text-[#260A2F] font-bold hover:scale-105 active:scale-95 transition-all shadow-xl shadow-orange-500/20 flex items-center gap-2"
+        class="px-12 py-4 rounded-2xl bg-[#FFE600] text-[#260A2F] font-bold hover:scale-105 active:scale-95 transition-all shadow-xl shadow-orange-500/20 flex items-center gap-2"
       >
         确定发布
       </button>

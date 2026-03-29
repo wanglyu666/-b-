@@ -8,7 +8,7 @@
         @click="activeTab = tab.id"
         class="px-6 py-2 rounded-full text-sm font-bold transition-all duration-300 border"
         :class="activeTab === tab.id 
-          ? 'bg-[#FFC091] border-[#FFC091] text-[#260A2F] shadow-[0_0_15px_rgba(255,192,145,0.3)]' 
+          ? 'bg-[#FFE600] border-[#FFE600] text-[#260A2F] shadow-[0_0_15px_rgba(255,230,0,0.3)]' 
           : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:border-white/20'"
       >
         {{ tab.label }}
@@ -25,15 +25,15 @@
             <!-- Current Total Progress -->
             <div class="space-y-3">
               <div class="flex justify-between items-center">
-                <div class="flex items-center gap-2 text-[#FFC091]">
+                <div class="flex items-center gap-2 text-[#FFE600]">
                   <TrendingUp :size="16" />
                   <span class="font-bold text-xs tracking-widest uppercase">当前总进度</span>
                 </div>
-                <span class="text-[#FFC091] font-bold text-lg">{{ reportData.currentProgress }}%</span>
+                <span class="text-[#FFE600] font-bold text-lg">{{ reportData.currentProgress }}%</span>
               </div>
               <div class="h-3 bg-white/5 rounded-full overflow-hidden border border-white/5">
                 <div 
-                  class="h-full bg-gradient-to-r from-[#FFC091] to-[#FF8C42] rounded-full transition-all duration-1000 ease-out"
+                  class="h-full bg-gradient-to-r from-[#FFE600] to-[#FF8C42] rounded-full transition-all duration-1000 ease-out"
                   :style="{ width: `${reportData.currentProgress}%` }"
                 ></div>
               </div>
@@ -42,15 +42,15 @@
             <!-- Original Planned Progress -->
             <div class="space-y-3">
               <div class="flex justify-between items-center">
-                <div class="flex items-center gap-2 text-[#FFC091]">
+                <div class="flex items-center gap-2 text-[#FFE600]">
                   <Calendar :size="16" />
                   <span class="font-bold text-xs tracking-widest uppercase">原计划进度</span>
                 </div>
-                <span class="text-[#FFC091] font-bold text-lg">{{ reportData.plannedProgress }}%</span>
+                <span class="text-[#FFE600] font-bold text-lg">{{ reportData.plannedProgress }}%</span>
               </div>
               <div class="h-3 bg-white/5 rounded-full overflow-hidden border border-white/5">
                 <div 
-                  class="h-full bg-gradient-to-r from-[#FFC091] to-[#FF8C42] rounded-full transition-all duration-1000 ease-out opacity-50"
+                  class="h-full bg-gradient-to-r from-[#FFE600] to-[#FF8C42] rounded-full transition-all duration-1000 ease-out opacity-50"
                   :style="{ width: `${reportData.plannedProgress}%` }"
                 ></div>
               </div>
@@ -61,27 +61,27 @@
           <div class="flex-1 grid grid-cols-2 gap-6 min-h-0">
             <!-- 主要施工内容及劳动力安排 -->
             <div class="flex flex-col gap-2">
-              <div class="flex items-center gap-2 text-[#FFC091]">
+              <div class="flex items-center gap-2 text-[#FFE600]">
                 <Hammer :size="16" />
                 <span class="font-bold text-xs tracking-widest uppercase">主要施工内容及劳动力安排</span>
               </div>
               <textarea 
                 v-model="reportData.mainContent"
                 placeholder="请输入主要施工内容及劳动力安排..."
-                class="h-[220px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none custom-scrollbar"
+                class="h-[220px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none custom-scrollbar"
               ></textarea>
             </div>
 
             <!-- 进度偏差分析与应对措施 -->
             <div class="flex flex-col gap-2">
-              <div class="flex items-center gap-2 text-[#FFC091]">
+              <div class="flex items-center gap-2 text-[#FFE600]">
                 <AlertCircle :size="16" />
                 <span class="font-bold text-xs tracking-widest uppercase">进度偏差分析与应对措施</span>
               </div>
               <textarea 
                 v-model="reportData.deviationAnalysis"
                 placeholder="请输入进度偏差分析与应对措施..."
-                class="h-[220px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none custom-scrollbar"
+                class="h-[220px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none custom-scrollbar"
               ></textarea>
             </div>
           </div>
@@ -91,27 +91,27 @@
         <div v-else-if="activeTab === 'quality'" :key="'quality'" class="flex flex-col gap-8">
           <!-- 质量检查与验收 -->
           <div class="flex flex-col gap-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <ShieldCheck :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">质量检查与验收</span>
             </div>
             <textarea 
               v-model="reportData.qualityCheck"
               placeholder="请输入质量检查与验收情况..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none custom-scrollbar"
+              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none custom-scrollbar"
             ></textarea>
           </div>
 
           <!-- 问题整改 -->
           <div class="flex flex-col gap-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <ClipboardList :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">问题整改</span>
             </div>
             <textarea 
               v-model="reportData.qualityRectification"
               placeholder="请输入问题整改情况..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none custom-scrollbar"
+              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none custom-scrollbar"
             ></textarea>
           </div>
         </div>
@@ -120,27 +120,27 @@
         <div v-else-if="activeTab === 'issues'" :key="'issues'" class="flex flex-col gap-8">
           <!-- 现场问题 -->
           <div class="flex flex-col gap-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <AlertCircle :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">现场问题</span>
             </div>
             <textarea 
               v-model="reportData.siteIssues"
               placeholder="请输入现场发现的问题..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none custom-scrollbar"
+              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none custom-scrollbar"
             ></textarea>
           </div>
 
           <!-- 解决方案与进展 -->
           <div class="flex flex-col gap-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <FileCheck :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">解决方案与进展</span>
             </div>
             <textarea 
               v-model="reportData.solutions"
               placeholder="请输入解决方案及当前进展..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none custom-scrollbar"
+              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none custom-scrollbar"
             ></textarea>
           </div>
         </div>
@@ -149,27 +149,27 @@
         <div v-else-if="activeTab === 'next_week'" :key="'next_week'" class="flex flex-col gap-8">
           <!-- 计划施工内容 -->
           <div class="flex flex-col gap-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <Calendar :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">计划施工内容</span>
             </div>
             <textarea 
               v-model="reportData.nextWeekPlan"
               placeholder="请输入下周计划施工内容..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none custom-scrollbar"
+              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none custom-scrollbar"
             ></textarea>
           </div>
 
           <!-- 资源需求 -->
           <div class="flex flex-col gap-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <Package :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">资源需求</span>
             </div>
             <textarea 
               v-model="reportData.resourceNeeds"
               placeholder="请输入下周所需资源（材料、人工、设备等）..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none custom-scrollbar"
+              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none custom-scrollbar"
             ></textarea>
           </div>
         </div>
@@ -178,34 +178,34 @@
         <div v-else-if="activeTab === 'others'" :key="'others'" class="flex flex-col gap-8">
           <!-- 需甲方确认事项 -->
           <div class="flex flex-col gap-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <MessageSquare :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">需甲方确认事项</span>
             </div>
             <textarea 
               v-model="reportData.clientConfirmation"
               placeholder="请输入需要甲方确认的事项..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none custom-scrollbar"
+              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none custom-scrollbar"
             ></textarea>
           </div>
 
           <!-- 其他未尽事项 -->
           <div class="flex flex-col gap-2">
-            <div class="flex items-center gap-2 text-[#FFC091]">
+            <div class="flex items-center gap-2 text-[#FFE600]">
               <MoreHorizontal :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">其他未尽事项</span>
             </div>
             <textarea 
               v-model="reportData.otherMatters"
               placeholder="请输入其他需要说明的事项..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFC091]/50 transition-colors resize-none custom-scrollbar"
+              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none custom-scrollbar"
             ></textarea>
           </div>
         </div>
 
         <!-- 现场照片 Tab -->
         <div v-else-if="activeTab === 'photos'" :key="'photos'" class="flex flex-col gap-6">
-          <div class="flex items-center gap-2 text-[#FFC091]">
+          <div class="flex items-center gap-2 text-[#FFE600]">
             <Camera :size="16" />
             <span class="font-bold text-xs tracking-widest uppercase">现场施工照片</span>
           </div>
@@ -213,7 +213,7 @@
             <div 
               v-for="(photo, index) in reportData.photos" 
               :key="index"
-              class="group relative aspect-[4/3] bg-white/5 border border-white/10 rounded-xl overflow-hidden cursor-pointer hover:border-[#FFC091]/50 transition-all duration-300"
+              class="group relative aspect-[4/3] bg-white/5 border border-white/10 rounded-xl overflow-hidden cursor-pointer hover:border-[#FFE600]/50 transition-all duration-300"
             >
               <img 
                 :src="photo.url" 
@@ -230,7 +230,7 @@
 
         <!-- 验收记录 Tab -->
         <div v-else-if="activeTab === 'acceptance'" :key="'acceptance'" class="flex flex-col gap-6">
-          <div class="flex items-center gap-2 text-[#FFC091]">
+          <div class="flex items-center gap-2 text-[#FFE600]">
             <FileCheck :size="16" />
             <span class="font-bold text-xs tracking-widest uppercase">验收记录与报告</span>
           </div>
@@ -241,7 +241,7 @@
               class="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col gap-6 hover:bg-white/10 transition-all duration-300"
             >
               <div class="flex items-start gap-4">
-                <div class="w-12 h-12 rounded-xl bg-[#FFC091]/10 flex items-center justify-center text-[#FFC091]">
+                <div class="w-12 h-12 rounded-xl bg-[#FFE600]/10 flex items-center justify-center text-[#FFE600]">
                   <FileText :size="24" />
                 </div>
                 <div class="flex-1 min-w-0">
@@ -249,7 +249,7 @@
                   <p class="text-gray-400 text-xs">{{ doc.size }} · {{ doc.date }}</p>
                 </div>
               </div>
-              <button class="w-full py-2.5 bg-white/5 hover:bg-[#FFC091] hover:text-[#260A2F] border border-white/10 hover:border-[#FFC091] rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2">
+              <button class="w-full py-2.5 bg-white/5 hover:bg-[#FFE600] hover:text-[#260A2F] border border-white/10 hover:border-[#FFE600] rounded-xl text-xs font-bold transition-all duration-300 flex items-center justify-center gap-2">
                 <Download :size="14" />
                 下载文件
               </button>

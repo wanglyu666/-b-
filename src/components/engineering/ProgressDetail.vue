@@ -5,14 +5,14 @@
       <button 
         @click="setTab('acceptance_check')"
         :class="['px-6 py-2 rounded-full text-sm font-bold transition-all', 
-          progressDetailTab === 'acceptance_check' ? 'bg-[#FFC091] text-[#260A2F]' : 'bg-white/5 text-white/60 hover:bg-white/10']"
+          progressDetailTab === 'acceptance_check' ? 'bg-[#FFE600] text-[#260A2F]' : 'bg-white/5 text-white/60 hover:bg-white/10']"
       >
         验收
       </button>
       <button 
         @click="setTab('defect_rectification')"
         :class="['px-6 py-2 rounded-full text-sm font-bold transition-all', 
-          progressDetailTab === 'defect_rectification' ? 'bg-[#FFC091] text-[#260A2F]' : 'bg-white/5 text-white/60 hover:bg-white/10']"
+          progressDetailTab === 'defect_rectification' ? 'bg-[#FFE600] text-[#260A2F]' : 'bg-white/5 text-white/60 hover:bg-white/10']"
       >
         缺陷整改
       </button>
@@ -86,12 +86,12 @@
                   <div 
                     :class="[
                       'w-7 h-7 rounded-full border-2 transition-all duration-300 flex items-center justify-center',
-                      evaluation === opt.id ? 'border-[#FFC091] bg-[#FFC091]/10' : 'border-white/20 group-hover:border-white/40'
+                      evaluation === opt.id ? 'border-[#FFE600] bg-[#FFE600]/10' : 'border-white/20 group-hover:border-white/40'
                     ]"
                   >
                     <div 
                       v-if="evaluation === opt.id"
-                      class="w-3 h-3 rounded-full bg-[#FFC091] shadow-[0_0_12px_rgba(255,192,145,0.8)]"
+                      class="w-3 h-3 rounded-full bg-[#FFE600] shadow-[0_0_12px_rgba(255,230,0,0.8)]"
                     ></div>
                   </div>
                   <span :class="['text-xl font-bold transition-colors', evaluation === opt.id ? 'text-white' : 'text-white/40 group-hover:text-white/60']">
@@ -113,8 +113,8 @@
               @click="submit"
               :disabled="!evaluation"
               :class="[
-                'h-18 px-16 font-bold text-xl rounded-2xl transition-all shadow-[0_10px_40px_rgba(255,192,145,0.3)] active:scale-[0.95]',
-                evaluation ? 'bg-[#FFC091] hover:bg-[#ffad70] text-[#260A2F]' : 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5 shadow-none'
+                'h-18 px-16 font-bold text-xl rounded-2xl transition-all shadow-[0_10px_40px_rgba(255,230,0,0.3)] active:scale-[0.95]',
+                evaluation ? 'bg-[#FFE600] hover:bg-[#e6cf00] text-[#260A2F]' : 'bg-white/5 text-white/20 cursor-not-allowed border border-white/5 shadow-none'
               ]"
             >
               提交
@@ -140,7 +140,7 @@
           </div>
           <button 
             @click="$emit('addDefect')"
-            class="px-4 py-2 rounded-xl bg-[#FFC091] text-[#260A2F] text-xs font-bold flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-orange-500/10"
+            class="px-4 py-2 rounded-xl bg-[#FFE600] text-[#260A2F] text-xs font-bold flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-orange-500/10"
           >
             <Plus :size="16" />
             新增缺陷

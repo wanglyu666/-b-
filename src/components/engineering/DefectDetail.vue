@@ -87,7 +87,7 @@
             v-if="reviewStatus"
             @click="handleSubmit"
             :disabled="reviewStatus === 'fail' && !newDescription.trim()"
-            class="px-6 py-3 rounded-2xl bg-[#FFC091] hover:bg-[#ffb078] text-[#260A2F] text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            class="px-6 py-3 rounded-2xl bg-[#FFE600] hover:bg-[#e6cf00] text-[#260A2F] text-sm font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             提交
           </button>

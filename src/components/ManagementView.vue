@@ -226,23 +226,23 @@ const closeAddModal = () => {
         <div class="bg-white/40 backdrop-blur-md p-6 rounded-3xl shadow-sm border border-white/20 flex flex-col h-[280px]">
            <div class="flex justify-between items-center mb-6">
               <div class="flex items-center space-x-2">
-                 <div class="w-1 h-5 bg-[#FFC091] rounded-full"></div>
+                 <div class="w-1 h-5 bg-[#FFEB69] rounded-full"></div>
                  <h3 class="font-bold text-lg text-gray-800">维保项目管理</h3>
               </div>
               <Wrench :size="18" class="text-gray-400" />
            </div>
            <div class="flex-1 grid grid-cols-3 gap-6 pl-32 pr-6 py-4">
-               <button @click="emit('viewMaintenanceProjects', '待开工')" class="relative rounded-3xl bg-[#FFC091] text-[#260A2F] transition-all hover:shadow-xl active:scale-95 border border-[#FFC091]/20 group min-h-[120px] overflow-visible">
-                  <span class="absolute top-3 right-3 sm:right-5 text-5xl sm:text-6xl font-black opacity-90 leading-none tracking-tighter tabular-nums transition-all duration-700 group-hover:scale-110 group-hover:-translate-y-2 group-hover:drop-shadow-lg pointer-events-none">{{ maintenancePendingCount }}</span>
+               <button @click="emit('viewMaintenanceProjects', '待开工')" class="relative rounded-3xl bg-[#9FE870] text-[#163300] shadow-none transition-all active:scale-95 border border-[#9FE870]/35 group min-h-[120px] overflow-visible">
+                  <span class="absolute top-3 right-3 sm:right-5 text-5xl sm:text-6xl font-black opacity-90 leading-none tracking-tighter tabular-nums transition-all duration-700 group-hover:scale-110 group-hover:-translate-y-2 pointer-events-none">{{ maintenancePendingCount }}</span>
                   <span class="absolute bottom-5 left-5 text-2xl font-bold opacity-70 tracking-tight transition-all duration-700 group-hover:translate-y-1 group-hover:opacity-100">待开工</span>
                </button>
-               <button @click="emit('viewMaintenanceProjects', '施工中')" class="relative rounded-3xl bg-[#FFEB69] text-[#3A341C] transition-all hover:shadow-xl active:scale-95 border border-[#FFEB69]/20 group min-h-[120px] overflow-visible">
-                  <span class="absolute top-3 right-3 sm:right-5 text-5xl sm:text-6xl font-black opacity-90 leading-none tracking-tighter tabular-nums transition-all duration-700 group-hover:scale-110 group-hover:-translate-y-2 group-hover:drop-shadow-lg pointer-events-none">{{ maintenanceInProgressCount }}</span>
-                  <span class="absolute bottom-5 left-5 text-2xl font-bold opacity-70 tracking-tight transition-all duration-700 group-hover:translate-y-1 group-hover:opacity-100">施工中</span>
+               <button @click="emit('viewMaintenanceProjects', '施工中')" class="relative rounded-3xl bg-slate-500/10 text-[#334455] shadow-none border-0 transition-all active:scale-95 group min-h-[120px] overflow-visible">
+                  <span class="absolute top-3 right-3 sm:right-5 text-5xl sm:text-6xl font-black text-[#334455] leading-none tracking-tighter tabular-nums transition-all duration-700 group-hover:scale-110 group-hover:-translate-y-2 pointer-events-none">{{ maintenanceInProgressCount }}</span>
+                  <span class="absolute bottom-5 left-5 text-2xl font-bold text-[#334455] tracking-tight transition-all duration-700 group-hover:translate-y-1">施工中</span>
                </button>
-               <button @click="emit('viewMaintenanceProjects', '已完工')" class="relative rounded-3xl bg-[#FFA500] text-white transition-all hover:shadow-xl active:scale-95 border border-[#FD6B02]/30 group min-h-[120px] overflow-visible">
-                  <span class="absolute top-3 right-3 sm:right-6 text-5xl sm:text-6xl font-black opacity-90 leading-none tracking-tighter tabular-nums transition-all duration-700 group-hover:scale-110 group-hover:-translate-y-2 group-hover:drop-shadow-lg pointer-events-none">{{ maintenanceCompletedCount }}</span>
-                  <span class="absolute bottom-6 left-6 text-2xl font-bold opacity-70 tracking-tight transition-all duration-700 group-hover:translate-y-1 group-hover:opacity-100">已完工</span>
+               <button @click="emit('viewMaintenanceProjects', '已完工')" class="relative rounded-3xl bg-slate-500/10 text-[#334455] shadow-none border-0 transition-all active:scale-95 group min-h-[120px] overflow-visible">
+                  <span class="absolute top-3 right-3 sm:right-6 text-5xl sm:text-6xl font-black text-[#334455] leading-none tracking-tighter tabular-nums transition-all duration-700 group-hover:scale-110 group-hover:-translate-y-2 pointer-events-none">{{ maintenanceCompletedCount }}</span>
+                  <span class="absolute bottom-6 left-6 text-2xl font-bold text-[#334455] tracking-tight transition-all duration-700 group-hover:translate-y-1">已完工</span>
                </button>
            </div>
         </div>
@@ -252,7 +252,7 @@ const closeAddModal = () => {
           <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-[400px]">
              <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center space-x-2">
-                   <div class="w-1 h-5 bg-[#FFC091] rounded-full"></div>
+                   <div class="w-1 h-5 bg-[#FFEB69] rounded-full"></div>
                    <h3 class="font-bold text-lg text-gray-800">工程项目管理</h3>
                 </div>
                 <HardHat :size="18" class="text-gray-400" />
@@ -261,7 +261,7 @@ const closeAddModal = () => {
              <div class="flex-1 flex flex-col justify-between py-0.5">
                 <div @click="$emit('viewProjects', '待开工')" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
                    <div class="flex items-center space-x-3">
-                      <div class="p-1.5 bg-[#FFA500]/15 text-[#FFA500] rounded-full"><Clock :size="14" /></div>
+                      <div class="p-1.5 bg-[#f8c91c]/15 text-[#f8c91c] rounded-full"><Clock :size="14" /></div>
                       <span class="text-gray-600 font-medium text-sm">待开工</span>
                    </div>
                    <span class="font-bold text-lg text-gray-900">{{ engPendingCount }}</span>
@@ -269,7 +269,7 @@ const closeAddModal = () => {
 
                 <div @click="$emit('viewProjects', '施工中')" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
                    <div class="flex items-center space-x-3">
-                      <div class="p-1.5 bg-[#FFA500]/15 text-[#FFA500] rounded-full"><Wrench :size="14" /></div>
+                      <div class="p-1.5 bg-[#f8c91c]/15 text-[#f8c91c] rounded-full"><Wrench :size="14" /></div>
                       <span class="text-gray-600 font-medium text-sm">施工中</span>
                    </div>
                    <span class="font-bold text-lg text-gray-900">{{ engInProgressCount }}</span>
@@ -277,7 +277,7 @@ const closeAddModal = () => {
 
                 <div @click="$emit('viewProjects', '已完工')" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
                    <div class="flex items-center space-x-3">
-                      <div class="p-1.5 bg-[#FFA500]/15 text-[#FFA500] rounded-full"><CheckCircle :size="14" /></div>
+                      <div class="p-1.5 bg-[#f8c91c]/15 text-[#f8c91c] rounded-full"><CheckCircle :size="14" /></div>
                       <span class="text-gray-600 font-medium text-sm">已完工</span>
                    </div>
                    <span class="font-bold text-lg text-gray-900">{{ engCompletedCount }}</span>
@@ -285,7 +285,7 @@ const closeAddModal = () => {
 
                 <div @click="$emit('viewProjects', '已结算')" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
                    <div class="flex items-center space-x-3">
-                      <div class="p-1.5 bg-[#FFA500]/15 text-[#FFA500] rounded-full"><Banknote :size="14" /></div>
+                      <div class="p-1.5 bg-[#f8c91c]/15 text-[#f8c91c] rounded-full"><Banknote :size="14" /></div>
                       <span class="text-gray-600 font-medium text-sm">已结算</span>
                    </div>
                    <span class="font-bold text-lg text-gray-900">{{ engSettledCount }}</span>
@@ -293,7 +293,7 @@ const closeAddModal = () => {
 
                 <div @click="$emit('viewProjects', '保修中')" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
                    <div class="flex items-center space-x-3">
-                      <div class="p-1.5 bg-[#FFA500]/15 text-[#FFA500] rounded-full"><Shield :size="14" /></div>
+                      <div class="p-1.5 bg-[#f8c91c]/15 text-[#f8c91c] rounded-full"><Shield :size="14" /></div>
                       <span class="text-gray-600 font-medium text-sm">保修中</span>
                    </div>
                    <span class="font-bold text-lg text-gray-900">{{ engWarrantyInCount }}</span>
@@ -301,7 +301,7 @@ const closeAddModal = () => {
 
                 <div @click="$emit('viewProjects', '保修外')" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
                    <div class="flex items-center space-x-3">
-                      <div class="p-1.5 bg-[#FFA500]/15 text-[#FFA500] rounded-full"><ShieldAlert :size="14" /></div>
+                      <div class="p-1.5 bg-[#f8c91c]/15 text-[#f8c91c] rounded-full"><ShieldAlert :size="14" /></div>
                       <span class="text-gray-600 font-medium text-sm">保修外</span>
                    </div>
                    <span class="font-bold text-lg text-gray-900">{{ engWarrantyOutCount }}</span>
@@ -313,7 +313,7 @@ const closeAddModal = () => {
           <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-[400px]">
              <div class="flex justify-between items-center mb-4">
                 <div class="flex items-center space-x-2">
-                   <div class="w-1 h-5 bg-[#163300] rounded-full"></div>
+                   <div class="w-1 h-5 bg-[#FFEB69] rounded-full"></div>
                    <h3 class="font-bold text-lg text-gray-800">成员管理</h3>
                 </div>
                 <UsersRound :size="18" class="text-gray-400" />
@@ -400,7 +400,7 @@ const closeAddModal = () => {
               </div>
               <button 
                 @click.stop="showAddModal = true" 
-                class="w-full py-2.5 bg-[#FFEB69] text-[#3A341C] font-bold rounded-2xl shadow-sm hover:bg-[#f5e05a] transition-colors"
+                class="w-full py-2.5 bg-[#9FE870] text-[#163300] font-bold rounded-2xl shadow-sm hover:bg-[#8dd85f] transition-colors"
               >
                  新增
               </button>
