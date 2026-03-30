@@ -16,6 +16,7 @@ import MaintenanceRepairView from './components/MaintenanceRepairView.vue';
 import MaintenanceProjectsView from './components/MaintenanceProjectsView.vue';
 import OrderManagementView from './components/OrderManagementView.vue';
 import ConsultationFeedbackView from './components/consultation-feedback/ConsultationFeedbackView.vue';
+import AllConsultationsView from './components/consultation-feedback/AllConsultationsView.vue';
 import type { Product, CartItem } from './types';
 
 type TodoNotification = {
@@ -265,6 +266,17 @@ const handleViewMaintenanceProjects = (status: string) => {
   activeTab.value = 'maintenance-projects';
 };
 
+const activeConsultationStatus = ref<'待回复' | '进行中' | '已结束'>('待回复');
+
+const handleOpenAllConsultations = (status: '待回复' | '进行中' | '已结束') => {
+  activeConsultationStatus.value = status;
+  activeTab.value = 'all-consultations';
+};
+
+const handleBackToConsultationFeedback = () => {
+  activeTab.value = 'consultation-feedback';
+};
+
 const handleBackToManagement = () => {
   activeTab.value = 'management';
 };
@@ -353,7 +365,16 @@ watch(activeTab, () => {
 
       <ContractAndSettlementView v-if="activeTab === 'contracts'" />
 
-      <ConsultationFeedbackView v-if="activeTab === 'consultation-feedback'" />
+      <ConsultationFeedbackView
+        v-if="activeTab === 'consultation-feedback'"
+        @openAllConsultations="handleOpenAllConsultations"
+      />
+
+      <AllConsultationsView
+        v-if="activeTab === 'all-consultations'"
+        :initialStatus="activeConsultationStatus"
+        @back="handleBackToConsultationFeedback"
+      />
 
       <ShopView 
         v-if="activeTab === 'shop'"
