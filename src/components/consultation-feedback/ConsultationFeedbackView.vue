@@ -14,7 +14,8 @@ import { engineeringProjects } from '../../data';
 import {
   CONSULTATION_STATUSES,
   type ConsultationSheetStatus,
-  previewConsultations,
+  type ConsultationRecord,
+  latestConsultationsInStatus,
 } from '../../data/consultations';
 import { truncateWithEllipsis } from '../../utils/string';
 import imgFeedbackNewConsultation from '../../../image asset/feedback.png';
@@ -39,16 +40,23 @@ const imgNewOpinionOffsetXPx = 20;
 const CONSULTATION_MODAL_SHIFT_LEFT_PX = 24;
 
 const emit = defineEmits<{
-  openAllConsultations: [status: ConsultationSheetStatus];
+  openAllConsultations: [payload: { status: ConsultationSheetStatus; openConsultationId?: string }];
 }>();
 
 const consultationSheetStatus = ref<ConsultationSheetStatus>('待回复');
 const statusOptions = CONSULTATION_STATUSES;
 
-const currentConsultationCards = computed(() => previewConsultations(consultationSheetStatus.value));
+/** 当前选中状态下按时间倒序，展示该状态内最新 2 条 */
+const currentConsultationCards = computed(() =>
+  latestConsultationsInStatus(consultationSheetStatus.value, 2),
+);
 
 function goToAllConsultations() {
-  emit('openAllConsultations', consultationSheetStatus.value);
+  emit('openAllConsultations', { status: consultationSheetStatus.value });
+}
+
+function goToAllConsultationsOpenDetail(item: ConsultationRecord) {
+  emit('openAllConsultations', { status: item.status, openConsultationId: item.id });
 }
 
 /** 仅点击白底区域（标题栏、留白等）跳转；子卡片内点击由 @click.stop 拦截 */
@@ -420,11 +428,15 @@ function submitConsultationForm() {
               class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden pr-0.5"
             >
               <article
-                v-for="(item, index) in currentConsultationCards"
+                v-for="item in currentConsultationCards"
                 :key="item.id"
                 data-consultation-item
-                class="flex min-h-0 flex-1 basis-0 cursor-default flex-col rounded-2xl border border-gray-100 bg-gray-50/90 p-5 shadow-sm ring-1 ring-gray-100/80"
-                @click.stop
+                role="button"
+                tabindex="0"
+                class="flex min-h-0 flex-1 basis-0 cursor-pointer flex-col rounded-2xl border border-gray-100 bg-gray-50/90 p-5 text-left shadow-sm ring-1 ring-gray-100/80 transition-all hover:border-[#9FE870]/50 hover:bg-white hover:shadow-md"
+                @click.stop="goToAllConsultationsOpenDetail(item)"
+                @keydown.enter.prevent="goToAllConsultationsOpenDetail(item)"
+                @keydown.space.prevent="goToAllConsultationsOpenDetail(item)"
               >
                 <h3 class="mb-4 line-clamp-2 text-base font-bold leading-snug text-gray-900">
                   {{ item.title }}

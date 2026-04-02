@@ -267,15 +267,26 @@ const handleViewMaintenanceProjects = (status: string) => {
 };
 
 const activeConsultationStatus = ref<'待回复' | '进行中' | '已结束'>('待回复');
+/** 从咨询与反馈首页点某条咨询进入全部咨询时，打开对应详情弹窗（消费后清空） */
+const pendingOpenConsultationId = ref<string | null>(null);
 
-const handleOpenAllConsultations = (status: '待回复' | '进行中' | '已结束') => {
-  activeConsultationStatus.value = status;
+const handleOpenAllConsultations = (payload: {
+  status: '待回复' | '进行中' | '已结束';
+  openConsultationId?: string;
+}) => {
+  activeConsultationStatus.value = payload.status;
+  pendingOpenConsultationId.value = payload.openConsultationId ?? null;
   activeTab.value = 'all-consultations';
 };
 
 const handleBackToConsultationFeedback = () => {
+  pendingOpenConsultationId.value = null;
   activeTab.value = 'consultation-feedback';
 };
+
+function onAllConsultationsOpenedInitial() {
+  pendingOpenConsultationId.value = null;
+}
 
 const handleBackToManagement = () => {
   activeTab.value = 'management';
@@ -373,7 +384,9 @@ watch(activeTab, () => {
       <AllConsultationsView
         v-if="activeTab === 'all-consultations'"
         :initialStatus="activeConsultationStatus"
+        :initialOpenConsultationId="pendingOpenConsultationId"
         @back="handleBackToConsultationFeedback"
+        @opened-initial-consultation="onAllConsultationsOpenedInitial"
       />
 
       <ShopView 

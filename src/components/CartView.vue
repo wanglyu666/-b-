@@ -1,13 +1,16 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { ArrowLeft, ShoppingBag, Trash2, Minus, Plus, ArrowRight } from 'lucide-vue-next';
 import type { CartItem } from '../types';
+import CartConsultationModal from './consultation-feedback/CartConsultationModal.vue';
 
 const props = defineProps<{
   cartItems: CartItem[];
 }>();
 
 defineEmits(['updateQuantity', 'removeItem', 'back']);
+
+const cartConsultModalOpen = ref(false);
 
 const total = computed(() => {
   return props.cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -17,15 +20,28 @@ const total = computed(() => {
 <template>
   <div class="relative min-h-screen bg-transparent overflow-x-hidden w-full">
     <div class="relative z-10 flex flex-col min-h-screen max-w-[1600px] mx-auto w-full px-4 sm:px-6 md:px-8 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-     <header class="flex-shrink-0 flex items-center gap-4">
-           <button 
-              @click="$emit('back')" 
-              class="p-2 rounded-full bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
+     <header class="flex-shrink-0 flex w-full items-center justify-between gap-4">
+           <div class="flex min-w-0 items-center gap-4">
+             <button
+                type="button"
+                @click="$emit('back')"
+                class="shrink-0 rounded-full border border-gray-200 bg-white p-2 transition-colors hover:bg-gray-50"
+             >
+                <ArrowLeft :size="20" />
+             </button>
+             <h1 class="truncate text-2xl font-bold text-gray-900">我的购物车 ({{ cartItems.length }})</h1>
+           </div>
+           <button
+             v-if="cartItems.length > 0"
+             type="button"
+             class="shrink-0 rounded-full border border-[#163300]/15 bg-[#9FE870]/50 px-4 py-2 text-sm font-bold text-[#163300] shadow-sm transition-colors hover:bg-[#9FE870]/70"
+             @click="cartConsultModalOpen = true"
            >
-              <ArrowLeft :size="20" />
+             咨询
            </button>
-           <h1 class="text-2xl font-bold text-gray-900">我的购物车 ({{ cartItems.length }})</h1>
      </header>
+
+     <CartConsultationModal v-model="cartConsultModalOpen" :cart-items="cartItems" />
 
      <div v-if="cartItems.length === 0" class="mt-8 md:mt-10 flex-1 flex flex-col items-center justify-center w-full min-h-[calc(100vh-10rem)] text-gray-400 bg-white rounded-3xl border border-dashed border-gray-200 p-12">
         <ShoppingBag :size="64" :strokeWidth="1" class="mb-4 text-gray-300" />
