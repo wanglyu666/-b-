@@ -14,6 +14,51 @@ export type ConsultationCartLineSnapshot = {
   image: string;
 };
 
+export type ConsultationRelatedMaterialKind = 'image' | 'video';
+
+export type ConsultationRelatedMaterialFile = {
+  fileName: string;
+  kind: ConsultationRelatedMaterialKind;
+  /** 媒体地址（演示可用占位图/示例视频 URL） */
+  url: string;
+};
+
+/** 报价清单明细行 */
+export type ConsultationQuoteLineItem = {
+  specialty: string;
+  itemCode: string;
+  itemName: string;
+  brand: string;
+  seriesModel: string;
+  quantity: number;
+  materialCost: number;
+  installFee: number;
+  unitPrice: number;
+  totalPrice: number;
+  /** 对应商店商品 id（与 `src/data.ts` 中 products），用于「加入购物车」 */
+  productId?: number;
+};
+
+export type ConsultationQuoteSummaryRow = {
+  specialty: string;
+  price: number;
+};
+
+/** 报价清单（详情「清单」Tab） */
+export type ConsultationQuoteSheet = {
+  quoter?: string;
+  contact?: string;
+  quoteTime: string;
+  remarks?: string;
+  lines: ConsultationQuoteLineItem[];
+  summary: ConsultationQuoteSummaryRow[];
+  taxRatePercent: number;
+  taxAmount: number;
+  subtotalExclTax: number;
+  totalInclTax: number;
+  attachmentFiles?: ConsultationRelatedMaterialFile[];
+};
+
 export type ConsultationRecord = {
   id: string;
   no: string;
@@ -43,12 +88,35 @@ export type ConsultationRecord = {
    * 相关资料（合并需求文件、现场照片、图纸、报价单等说明）
    */
   relatedMaterials?: string;
+  /**
+   * 相关资料附件（图片/视频），详情页以文件名标签展示，点击全屏预览；与 relatedMaterials 二选一或并存时优先展示此项
+   */
+  relatedMaterialFiles?: ConsultationRelatedMaterialFile[];
+  /** 意见反馈详情等：处理结果说明（只读；无则展示「暂无」） */
+  feedbackResult?: string;
+  /** 报价清单（详情「清单」Tab） */
+  quoteSheet?: ConsultationQuoteSheet;
   /** 来自购物车咨询：提交时车内商品快照 */
   cartLineItems?: ConsultationCartLineSnapshot[];
 };
 
 /** 用户从购物车提交的咨询单（会话内追加在静态数据之前展示） */
 export const dynamicConsultations = ref<ConsultationRecord[]>([]);
+
+/** 会话内「结束咨询」标记：对应 id 在列表与详情中视为已结束 */
+const consultationEndedIds = ref<Record<string, true>>({});
+
+export function markConsultationEnded(id: string) {
+  consultationEndedIds.value = { ...consultationEndedIds.value, [id]: true };
+}
+
+/** 合并结束覆盖后的咨询单（用于列表、查找） */
+export function effectiveConsultationRecord(c: ConsultationRecord): ConsultationRecord {
+  if (consultationEndedIds.value[c.id]) {
+    return { ...c, status: '已结束' };
+  }
+  return c;
+}
 
 export function prependDynamicConsultation(record: ConsultationRecord) {
   dynamicConsultations.value = [record, ...dynamicConsultations.value];
@@ -73,7 +141,54 @@ export const allConsultations: ConsultationRecord[] = [
     serviceAddress: '上海市静安区曹家渡街道智慧广场（武宁南路）',
     needQuote: '否',
     quoteTime: '暂无',
-    relatedMaterials: '暂无上传',
+    relatedMaterials: '现场照片、勘查视频（演示）',
+    relatedMaterialFiles: [
+      {
+        fileName: '零件1.JPG',
+        kind: 'image',
+        url: 'https://picsum.photos/id/237/1200/800',
+      },
+      {
+        fileName: '现场勘查.mp4',
+        kind: 'video',
+        url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+      },
+    ],
+    feedbackResult:
+      '已安排暖通工程师于 3 月 29 日电话回访，并发送多联机与风冷模块机选型对比表及大致造价区间说明。',
+    quoteSheet: {
+      quoter: '',
+      contact: '',
+      quoteTime: '2026-01-04',
+      remarks: '',
+      lines: [
+        {
+          specialty: '产品',
+          itemCode: '1001',
+          itemName: '测试1001',
+          brand: '测试1001',
+          seriesModel: '测试1001',
+          quantity: 100,
+          materialCost: 0,
+          installFee: 20,
+          unitPrice: 20,
+          totalPrice: 2000,
+          productId: 1,
+        },
+      ],
+      summary: [{ specialty: '产品', price: 2000 }],
+      taxRatePercent: 9,
+      taxAmount: 180,
+      subtotalExclTax: 2000,
+      totalInclTax: 2180,
+      attachmentFiles: [
+        {
+          fileName: '报价清单附图.png',
+          kind: 'image',
+          url: 'https://picsum.photos/id/28/1200/800',
+        },
+      ],
+    },
   },
   {
     id: 'c2',
@@ -93,6 +208,31 @@ export const allConsultations: ConsultationRecord[] = [
     needQuote: '是',
     quoteTime: '2026-04-02',
     relatedMaterials: '平面图 PDF、现场照片 3 张',
+    /** 详情「相关资料」以文件名圆角标签展示，点击全屏预览（无此项时仅显示 relatedMaterials 文案） */
+    relatedMaterialFiles: [
+      {
+        fileName: '精装户型-平面图.pdf',
+        kind: 'image',
+        url: 'https://picsum.photos/id/180/1400/900',
+      },
+      {
+        fileName: '现场照片-客厅.jpg',
+        kind: 'image',
+        url: 'https://picsum.photos/id/15/1200/800',
+      },
+      {
+        fileName: '现场照片-厨房.jpg',
+        kind: 'image',
+        url: 'https://picsum.photos/id/24/1200/800',
+      },
+      {
+        fileName: '现场巡场记录.mp4',
+        kind: 'video',
+        url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+      },
+    ],
+    feedbackResult:
+      '已邮件回复物业报批材料清单模板；周末静音施工时段需物业书面确认后执行，预计 2 个工作日内反馈。',
   },
   {
     id: 'c3',
@@ -270,8 +410,9 @@ export const allConsultations: ConsultationRecord[] = [
 ];
 
 export function consultationsInStatus(status: ConsultationSheetStatus): ConsultationRecord[] {
-  const fromDynamic = dynamicConsultations.value.filter((c) => c.status === status);
-  const fromStatic = allConsultations.filter((c) => c.status === status);
+  const eff = effectiveConsultationRecord;
+  const fromDynamic = dynamicConsultations.value.filter((c) => eff(c).status === status).map(eff);
+  const fromStatic = allConsultations.filter((c) => eff(c).status === status).map(eff);
   return [...fromDynamic, ...fromStatic];
 }
 
@@ -291,7 +432,8 @@ export function latestConsultationsInStatus(
 }
 
 export function findConsultationById(id: string): ConsultationRecord | undefined {
-  return allConsultationsMerged().find((c) => c.id === id);
+  const c = allConsultationsMerged().find((row) => row.id === id);
+  return c ? effectiveConsultationRecord(c) : undefined;
 }
 
 /** 首页「咨询单」区域仅展示每条状态前若干条 */

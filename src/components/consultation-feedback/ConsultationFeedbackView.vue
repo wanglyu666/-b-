@@ -16,6 +16,8 @@ import {
   type ConsultationSheetStatus,
   type ConsultationRecord,
   latestConsultationsInStatus,
+  allConsultationsMerged,
+  effectiveConsultationRecord,
 } from '../../data/consultations';
 import { truncateWithEllipsis } from '../../utils/string';
 import imgFeedbackNewConsultation from '../../../image asset/feedback.png';
@@ -41,6 +43,8 @@ const CONSULTATION_MODAL_SHIFT_LEFT_PX = 24;
 
 const emit = defineEmits<{
   openAllConsultations: [payload: { status: ConsultationSheetStatus; openConsultationId?: string }];
+  /** 进入反馈记录全表；若从表格「⋯」进入可带 openConsultationId 以自动弹出详情 */
+  openFeedbackRecords: [payload?: { openConsultationId?: string }];
 }>();
 
 const consultationSheetStatus = ref<ConsultationSheetStatus>('待回复');
@@ -68,23 +72,15 @@ function requirementPreview(text: string) {
   return truncateWithEllipsis(text, REQUIREMENT_MAX_LEN);
 }
 
-/** 意见反馈表格（最多 4 行，风格对齐维保工单列表） */
-type FeedbackTableStatus = '待回复' | '进行中' | '已结束';
+/** 意见反馈预览表：全量咨询合并后按时间倒序取最新 4 条（与反馈记录页同源） */
+const feedbackPreviewRows = computed(() => {
+  const list = allConsultationsMerged().map((c) => effectiveConsultationRecord(c));
+  list.sort((a, b) => b.time.localeCompare(a.time, 'zh-CN'));
+  return list.slice(0, 4);
+});
 
-const feedbackTableRows: {
-  id: string;
-  projectName: string;
-  time: string;
-  status: FeedbackTableStatus;
-}[] = [
-  { id: 'fb1', projectName: '绿地中心 45 层办公区装修', time: '2026-03-28 09:30', status: '待回复' },
-  { id: 'fb2', projectName: '星巴克上海臻选烘焙工坊', time: '2026-03-27 14:15', status: '进行中' },
-  { id: 'fb3', projectName: '国际会展中心展厅搭建', time: '2026-03-26 11:00', status: '已结束' },
-  { id: 'fb4', projectName: '万科城3期精装房改造', time: '2026-03-25 16:45', status: '待回复' },
-];
-
-function feedbackStatusClass(status: FeedbackTableStatus) {
-  const map: Record<FeedbackTableStatus, string> = {
+function feedbackStatusClass(status: ConsultationSheetStatus) {
+  const map: Record<ConsultationSheetStatus, string> = {
     待回复: 'bg-blue-500/20 text-blue-600',
     进行中: 'bg-orange-500/20 text-orange-600',
     已结束: 'bg-[#A1D573]/20 text-[#163300]',
@@ -527,9 +523,14 @@ function submitConsultationForm() {
           </div>
         </section>
 
-        <!-- 意见反馈：底部通栏（与上两格总宽对齐） -->
+        <!-- 意见反馈：底部通栏（与上两格总宽对齐）；点击整块进入「完整咨询记录」页 -->
         <section
-          class="order-4 flex min-h-[300px] flex-col rounded-3xl border border-white/20 bg-white/40 p-6 shadow-sm backdrop-blur-md lg:order-none lg:col-span-8 lg:row-start-2 lg:col-start-5"
+          role="button"
+          tabindex="0"
+          class="order-4 flex min-h-[300px] flex-col rounded-3xl border border-white/20 bg-white/40 p-6 shadow-sm backdrop-blur-md transition hover:bg-white/55 cursor-pointer lg:order-none lg:col-span-8 lg:row-start-2 lg:col-start-5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9FE870]/50"
+          @click="emit('openFeedbackRecords')"
+          @keydown.enter.prevent="emit('openFeedbackRecords')"
+          @keydown.space.prevent="emit('openFeedbackRecords')"
         >
           <div class="mb-4 flex shrink-0 items-center justify-between">
             <div class="flex items-center gap-2">
@@ -556,15 +557,15 @@ function submitConsultationForm() {
                 </thead>
                 <tbody class="divide-y divide-white/10">
                   <tr
-                    v-for="(row, index) in feedbackTableRows"
+                    v-for="(row, index) in feedbackPreviewRows"
                     :key="row.id"
                     class="group transition-colors hover:bg-white/30"
                   >
                     <td class="px-1 py-3 pl-0 text-sm text-gray-600 tabular-nums sm:px-2 sm:py-4">
                       {{ index + 1 }}
                     </td>
-                    <td class="max-w-[12rem] truncate px-2 py-3 text-sm font-medium text-gray-800 sm:max-w-none sm:py-4" :title="row.projectName">
-                      {{ row.projectName }}
+                    <td class="max-w-[12rem] truncate px-2 py-3 text-sm font-medium text-gray-800 sm:max-w-none sm:py-4" :title="row.title">
+                      {{ row.title }}
                     </td>
                     <td class="whitespace-nowrap px-2 py-3 font-mono text-sm text-gray-600 sm:py-4">
                       {{ row.time }}
@@ -580,9 +581,9 @@ function submitConsultationForm() {
                     <td class="py-3 text-right sm:py-4">
                       <button
                         type="button"
-                        class="inline-flex rounded-md border border-gray-200 bg-white p-1.5 text-gray-500 opacity-0 shadow-sm transition-opacity group-hover:opacity-100 hover:text-[#A1D573] focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9FE870]/40"
-                        aria-label="更多操作"
-                        @click.stop
+                        class="inline-flex rounded-md border border-gray-200 bg-white p-1.5 text-gray-500 shadow-sm transition-colors hover:text-[#A1D573] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9FE870]/40"
+                        aria-label="查看反馈详情"
+                        @click.stop="emit('openFeedbackRecords', { openConsultationId: row.id })"
                       >
                         <MoreHorizontal :size="16" />
                       </button>

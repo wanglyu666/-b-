@@ -85,10 +85,10 @@ defineEmits<{
       <div
         @click="$emit('update:activeTab', 'consultation-feedback')"
         :class="['flex items-center space-x-3 px-6 py-4 cursor-pointer transition-all duration-200 group',
-          (activeTab === 'consultation-feedback' || activeTab === 'all-consultations') ? 'text-black font-bold border-l-4 border-black bg-gray-50' : 'text-gray-500 hover:text-black hover:bg-gray-50'
+          (activeTab === 'consultation-feedback' || activeTab === 'all-consultations' || activeTab === 'feedback-records') ? 'text-black font-bold border-l-4 border-black bg-gray-50' : 'text-gray-500 hover:text-black hover:bg-gray-50'
         ]"
       >
-        <MessageSquare :size="20" :class="(activeTab === 'consultation-feedback' || activeTab === 'all-consultations') ? 'text-black' : 'text-gray-400 group-hover:text-black'" />
+        <MessageSquare :size="20" :class="(activeTab === 'consultation-feedback' || activeTab === 'all-consultations' || activeTab === 'feedback-records') ? 'text-black' : 'text-gray-400 group-hover:text-black'" />
         <span>咨询与反馈</span>
       </div>
     </nav>

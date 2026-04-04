@@ -17,6 +17,7 @@ import MaintenanceProjectsView from './components/MaintenanceProjectsView.vue';
 import OrderManagementView from './components/OrderManagementView.vue';
 import ConsultationFeedbackView from './components/consultation-feedback/ConsultationFeedbackView.vue';
 import AllConsultationsView from './components/consultation-feedback/AllConsultationsView.vue';
+import FeedbackRecordsView from './components/consultation-feedback/FeedbackRecordsView.vue';
 import type { Product, CartItem } from './types';
 
 type TodoNotification = {
@@ -269,6 +270,8 @@ const handleViewMaintenanceProjects = (status: string) => {
 const activeConsultationStatus = ref<'待回复' | '进行中' | '已结束'>('待回复');
 /** 从咨询与反馈首页点某条咨询进入全部咨询时，打开对应详情弹窗（消费后清空） */
 const pendingOpenConsultationId = ref<string | null>(null);
+/** 从咨询首页意见反馈表「⋯」进入反馈记录页时，自动打开对应详情（消费后清空） */
+const pendingOpenFeedbackConsultationId = ref<string | null>(null);
 
 const handleOpenAllConsultations = (payload: {
   status: '待回复' | '进行中' | '已结束';
@@ -281,8 +284,18 @@ const handleOpenAllConsultations = (payload: {
 
 const handleBackToConsultationFeedback = () => {
   pendingOpenConsultationId.value = null;
+  pendingOpenFeedbackConsultationId.value = null;
   activeTab.value = 'consultation-feedback';
 };
+
+const handleOpenFeedbackRecords = (payload?: { openConsultationId?: string }) => {
+  pendingOpenFeedbackConsultationId.value = payload?.openConsultationId ?? null;
+  activeTab.value = 'feedback-records';
+};
+
+function onFeedbackRecordsOpenedInitialDetail() {
+  pendingOpenFeedbackConsultationId.value = null;
+}
 
 function onAllConsultationsOpenedInitial() {
   pendingOpenConsultationId.value = null;
@@ -379,6 +392,14 @@ watch(activeTab, () => {
       <ConsultationFeedbackView
         v-if="activeTab === 'consultation-feedback'"
         @openAllConsultations="handleOpenAllConsultations"
+        @openFeedbackRecords="handleOpenFeedbackRecords"
+      />
+
+      <FeedbackRecordsView
+        v-if="activeTab === 'feedback-records'"
+        :initial-open-consultation-id="pendingOpenFeedbackConsultationId"
+        @back="handleBackToConsultationFeedback"
+        @opened-initial-feedback-detail="onFeedbackRecordsOpenedInitialDetail"
       />
 
       <AllConsultationsView
@@ -387,6 +408,7 @@ watch(activeTab, () => {
         :initialOpenConsultationId="pendingOpenConsultationId"
         @back="handleBackToConsultationFeedback"
         @opened-initial-consultation="onAllConsultationsOpenedInitial"
+        @addToCart="addToCart"
       />
 
       <ShopView 

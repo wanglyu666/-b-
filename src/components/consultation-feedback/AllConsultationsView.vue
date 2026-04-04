@@ -1,15 +1,20 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick, watchEffect } from 'vue';
 import { ArrowLeft, Search, ChevronLeft, ChevronRight, X, Download } from 'lucide-vue-next';
 import {
   CONSULTATION_STATUSES,
   type ConsultationSheetStatus,
   type ConsultationRecord,
+  type ConsultationRelatedMaterialFile,
+  type ConsultationQuoteLineItem,
   type ConsultationInquiryMessage,
   consultationsInStatus,
   findConsultationById,
   inquiryMessagesFor,
+  markConsultationEnded,
 } from '../../data/consultations';
+import { products } from '../../data';
+import type { Product } from '../../types';
 import { truncateWithEllipsis } from '../../utils/string';
 import AfterSalesSuccess from '../engineering/AfterSalesSuccess.vue';
 
@@ -26,6 +31,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   back: [];
   'opened-initial-consultation': [];
+  addToCart: [product: Product, count?: number];
 }>();
 
 const statuses = CONSULTATION_STATUSES;
@@ -74,24 +80,10 @@ function requirementPreview(text: string) {
   return truncateWithEllipsis(text, REQUIREMENT_MAX_LEN);
 }
 
-/** 咨询单详情弹窗（风格对齐工程项目「施工报告」玻璃态弹窗） */
+/** 咨询单详情弹窗（风格对齐工程项目「施工报告」玻璃态弹窗；单页纵向滚动展示各区块） */
 const selectedConsultation = ref<ConsultationRecord | null>(null);
-const detailTab = ref<'basic' | 'product' | 'quote'>('basic');
 
-const detailTabs = [
-  { id: 'basic' as const, label: '基本信息' },
-  { id: 'product' as const, label: '产品信息' },
-  { id: 'quote' as const, label: '询价' },
-];
-
-/** 仅「购物车咨询」单含 cartLineItems 时展示「产品信息」Tab */
-const visibleDetailTabs = computed(() => {
-  const c = selectedConsultation.value;
-  if (c?.cartLineItems?.length) return detailTabs;
-  return detailTabs.filter((t) => t.id !== 'product');
-});
-
-/** 询价 Tab 内：是否显示「短交流」流程（表单 / 成功页与卡片列表互斥） */
+/** 询价区块：是否显示「短交流」流程（表单 / 成功页与卡片列表互斥） */
 const shortExchangeFormOpen = ref(false);
 /** 短交流表单提交后的成功页 */
 const shortExchangeSubmitSuccess = ref(false);
@@ -104,6 +96,9 @@ const localInquiryMessagesByConsultationId = ref<Record<string, ConsultationInqu
 
 /** 会话内「确认报价」点击状态（按咨询单 id） */
 const quoteConfirmedByConsultationId = ref<Record<string, boolean>>({});
+
+/** 清单「加入购物车」已执行（按咨询单 id，会话内保留） */
+const quoteSheetAddedToCartByConsultationId = ref<Record<string, boolean>>({});
 
 const showConfirmQuoteButton = computed(() => {
   const c = selectedConsultation.value;
@@ -136,22 +131,6 @@ const inquiryMessages = computed((): ConsultationInquiryMessage[] => {
   return [...base, ...extra];
 });
 
-watch(detailTab, (t) => {
-  if (t !== 'quote') {
-    shortExchangeFormOpen.value = false;
-    shortExchangeSubmitSuccess.value = false;
-  }
-});
-
-watch(
-  () => selectedConsultation.value,
-  (c) => {
-    if (detailTab.value === 'product' && !c?.cartLineItems?.length) {
-      detailTab.value = 'basic';
-    }
-  },
-);
-
 function inquiryContentPreview(text: string) {
   return truncateWithEllipsis(text, INQUIRY_CONTENT_MAX);
 }
@@ -179,10 +158,22 @@ function resetShortExchangeDraft() {
 }
 
 function openConsultationDetail(item: ConsultationRecord) {
-  selectedConsultation.value = item;
-  detailTab.value = 'basic';
+  selectedConsultation.value = findConsultationById(item.id) ?? item;
   shortExchangeFormOpen.value = false;
   resetShortExchangeDraft();
+}
+
+const shortExchangeEnabled = computed(() => selectedConsultation.value?.status !== '已结束');
+
+function endConsultation() {
+  const c = selectedConsultation.value;
+  if (!c || c.status === '已结束') return;
+  markConsultationEnded(c.id);
+  const next = findConsultationById(c.id);
+  if (next) selectedConsultation.value = next;
+  shortExchangeFormOpen.value = false;
+  resetShortExchangeDraft();
+  activeStatus.value = '已结束';
 }
 
 watch(
@@ -215,6 +206,7 @@ function closeConsultationDetail() {
 }
 
 function openShortExchangeForm() {
+  if (selectedConsultation.value?.status === '已结束') return;
   shortExchangeFormOpen.value = true;
   shortExchangeSubmitSuccess.value = false;
 }
@@ -228,7 +220,7 @@ function submitShortExchange() {
   const text = shortExchangeContent.value.trim();
   if (!text) return;
   const c = selectedConsultation.value;
-  if (!c) return;
+  if (!c || c.status === '已结束') return;
 
   const msg: ConsultationInquiryMessage = {
     id: `sx-${c.id}-${Date.now()}`,
@@ -272,10 +264,46 @@ function onShortExchangeFileChange(e: Event) {
   shortExchangeFileName.value = file?.name ?? '';
 }
 
-/** 三个 Tab 共用固定弹窗高度（以基本信息内容为基准），仅内容区滚动 */
-function selectDetailTab(tab: 'basic' | 'product' | 'quote') {
-  if (detailTab.value === tab) return;
-  detailTab.value = tab;
+function formatQuoteNumber(n: number): string {
+  return Number.isInteger(n) ? String(n) : n.toFixed(2);
+}
+
+function productForQuoteLine(line: ConsultationQuoteLineItem): Product | null {
+  const id = line.productId;
+  if (id == null || Number.isNaN(Number(id))) return null;
+  return products.find((p) => p.id === id) ?? null;
+}
+
+const canAddQuoteLinesToCart = computed(() => {
+  const lines = selectedConsultation.value?.quoteSheet?.lines;
+  if (!lines?.length) return false;
+  return lines.some((line) => productForQuoteLine(line) != null);
+});
+
+const quoteSheetAddedToCartForSelected = computed(() => {
+  const id = selectedConsultation.value?.id;
+  if (!id) return false;
+  return !!quoteSheetAddedToCartByConsultationId.value[id];
+});
+
+function addQuoteSheetLinesToCart() {
+  const c = selectedConsultation.value;
+  const sheet = c?.quoteSheet;
+  if (!c || !sheet?.lines.length) return;
+  let any = false;
+  for (const line of sheet.lines) {
+    const product = productForQuoteLine(line);
+    if (!product) continue;
+    const qty = Math.max(1, Math.floor(Number(line.quantity)) || 1);
+    emit('addToCart', product, qty);
+    any = true;
+  }
+  if (any) {
+    quoteSheetAddedToCartByConsultationId.value = {
+      ...quoteSheetAddedToCartByConsultationId.value,
+      [c.id]: true,
+    };
+  }
 }
 
 function formatConsultationField(s: string | undefined) {
@@ -286,6 +314,31 @@ function durationDaysDisplay(c: ConsultationRecord) {
   if (c.durationDays == null || Number.isNaN(c.durationDays)) return '—';
   return String(c.durationDays);
 }
+
+/** 相关资料：全屏预览当前选中的图片/视频 */
+const mediaPreview = ref<ConsultationRelatedMaterialFile | null>(null);
+
+function openMediaPreview(f: ConsultationRelatedMaterialFile) {
+  mediaPreview.value = f;
+}
+
+function closeMediaPreview() {
+  mediaPreview.value = null;
+}
+
+watchEffect((onCleanup) => {
+  if (!mediaPreview.value) return;
+  const prevOverflow = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
+  const onKey = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') closeMediaPreview();
+  };
+  window.addEventListener('keydown', onKey);
+  onCleanup(() => {
+    document.body.style.overflow = prevOverflow;
+    window.removeEventListener('keydown', onKey);
+  });
+});
 </script>
 
 <template>
@@ -468,44 +521,22 @@ function durationDaysDisplay(c: ConsultationRecord) {
           </div>
 
           <div
-            v-if="!shortExchangeFormOpen"
-            class="flex flex-shrink-0 flex-wrap items-center gap-3 px-6 pb-5 pt-1 sm:px-10 sm:pb-6 sm:pt-2"
-          >
-            <div class="flex min-w-0 flex-1 flex-wrap gap-3">
-              <button
-                v-for="tab in visibleDetailTabs"
-                :key="tab.id"
-                type="button"
-                class="rounded-full border px-6 py-2 text-sm font-bold transition-all duration-300 sm:px-8"
-                :class="
-                  detailTab === tab.id
-                    ? 'border-[#FFE600] bg-[#FFE600] text-[#260A2F] shadow-[0_0_15px_rgba(255,230,0,0.3)]'
-                    : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:bg-white/10'
-                "
-                @click="selectDetailTab(tab.id)"
-              >
-                {{ tab.label }}
-              </button>
-            </div>
-            <div
-              v-if="detailTab === 'quote'"
-              class="relative shrink-0 sm:ml-auto"
-            >
-              <button
-                type="button"
-                class="rounded-full border border-[#FFE600]/45 bg-[#FFE600]/12 px-3.5 py-1.5 text-xs font-bold text-[#FFE600] shadow-[0_0_14px_rgba(255,230,0,0.18)] transition-all hover:border-[#FFE600]/70 hover:bg-[#FFE600]/20"
-                @click.stop="openShortExchangeForm"
-              >
-                短交流
-              </button>
-            </div>
-          </div>
-
-          <div
             class="custom-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-8 sm:px-10 sm:py-10"
           >
-            <Transition name="detail-tab" mode="out-in">
-              <div v-if="detailTab === 'basic'" key="detail-basic" class="space-y-8">
+            <Transition name="short-exchange-shell" mode="out-in">
+            <div
+              v-if="!shortExchangeFormOpen"
+              key="consultation-detail-merged"
+              class="space-y-10 pb-2"
+            >
+              <section class="scroll-mt-6 space-y-4">
+                <div class="flex items-center gap-2.5">
+                  <div
+                    class="h-6 w-1.5 shrink-0 rounded-full bg-[#FFE600] shadow-[0_0_12px_rgba(255,230,0,0.35)]"
+                  />
+                  <h3 class="text-base font-bold tracking-tight text-white sm:text-lg">基本信息</h3>
+                </div>
+                <div class="space-y-8">
               <!-- 与工单详情一致：半透明玻璃卡片 -->
               <div
                 class="overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-none backdrop-blur-xl"
@@ -582,7 +613,28 @@ function durationDaysDisplay(c: ConsultationRecord) {
                           相关资料
                         </th>
                         <td class="px-4 py-3.5 leading-relaxed text-white/85" colspan="3">
-                          {{ selectedConsultation.relatedMaterials?.trim() || '暂无上传' }}
+                          <template
+                            v-if="selectedConsultation.relatedMaterialFiles?.length"
+                          >
+                            <div class="flex flex-wrap gap-2">
+                              <button
+                                v-for="(f, idx) in selectedConsultation.relatedMaterialFiles"
+                                :key="`${f.fileName}-${idx}`"
+                                type="button"
+                                class="inline-flex max-w-full min-w-0 items-center gap-2 rounded-lg border border-white/18 bg-white/[0.14] px-3 py-2 text-left text-sm font-medium text-white/90 shadow-sm backdrop-blur-sm transition hover:border-white/28 hover:bg-white/[0.2] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFE600]/50"
+                                @click="openMediaPreview(f)"
+                              >
+                                <span class="min-w-0 truncate">{{ f.fileName }}</span>
+                                <X
+                                  class="h-3.5 w-3.5 shrink-0 text-white/40 pointer-events-none"
+                                  aria-hidden="true"
+                                />
+                              </button>
+                            </div>
+                          </template>
+                          <template v-else>
+                            {{ selectedConsultation.relatedMaterials?.trim() || '暂无上传' }}
+                          </template>
                         </td>
                       </tr>
                     </tbody>
@@ -636,13 +688,20 @@ function durationDaysDisplay(c: ConsultationRecord) {
                   </table>
                 </div>
               </div>
-            </div>
+                </div>
+              </section>
 
-            <div
-              v-else-if="detailTab === 'product' && selectedConsultation.cartLineItems?.length"
-              key="detail-product"
-              class="space-y-6 text-white/90"
-            >
+              <section
+                v-if="selectedConsultation.cartLineItems?.length"
+                class="scroll-mt-6 space-y-4"
+              >
+                <div class="flex items-center gap-2.5">
+                  <div
+                    class="h-6 w-1.5 shrink-0 rounded-full bg-[#FFE600] shadow-[0_0_12px_rgba(255,230,0,0.35)]"
+                  />
+                  <h3 class="text-base font-bold tracking-tight text-white sm:text-lg">产品信息</h3>
+                </div>
+                <div class="space-y-6 text-white/90">
               <p class="text-xs text-white/50">
                 以下为您在购物车页提交咨询时，购物车内所包含的商品。
               </p>
@@ -672,19 +731,33 @@ function durationDaysDisplay(c: ConsultationRecord) {
                   </div>
                 </article>
               </div>
-            </div>
+                </div>
+              </section>
 
-            <div
-              v-else-if="detailTab === 'quote'"
-              key="detail-quote"
-              class="min-h-0 flex-1 overflow-x-hidden"
-            >
-              <Transition name="short-exchange" mode="out-in">
-                <div
-                  v-if="!shortExchangeFormOpen"
-                  key="inquiry-list"
-                  class="space-y-4 text-white/90"
-                >
+              <section class="scroll-mt-6 space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                  <div class="flex items-center gap-2.5">
+                    <div
+                      class="h-6 w-1.5 shrink-0 rounded-full bg-[#FFE600] shadow-[0_0_12px_rgba(255,230,0,0.35)]"
+                    />
+                    <h3 class="text-base font-bold tracking-tight text-white sm:text-lg">询价</h3>
+                  </div>
+                  <button
+                    v-if="shortExchangeEnabled"
+                    type="button"
+                    class="rounded-full border border-[#FFE600]/45 bg-[#FFE600]/12 px-3.5 py-1.5 text-xs font-bold text-[#FFE600] shadow-[0_0_14px_rgba(255,230,0,0.18)] transition-all hover:border-[#FFE600]/70 hover:bg-[#FFE600]/20"
+                    @click.stop="openShortExchangeForm"
+                  >
+                    短交流
+                  </button>
+                  <span
+                    v-else
+                    class="rounded-full border border-white/10 bg-white/[0.06] px-3.5 py-1.5 text-xs font-medium text-white/40"
+                  >
+                    短交流已关闭
+                  </span>
+                </div>
+                <div class="min-h-0 space-y-4 overflow-x-hidden text-white/90">
                   <div v-if="inquiryMessages.length === 0" class="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] py-16 text-center text-sm text-white/45">
                     暂无询价交流记录
                   </div>
@@ -738,8 +811,268 @@ function durationDaysDisplay(c: ConsultationRecord) {
                     </article>
                   </div>
                 </div>
+              </section>
+
+              <section class="scroll-mt-6 space-y-4">
+                <div class="flex items-center gap-2.5">
+                  <div
+                    class="h-6 w-1.5 shrink-0 rounded-full bg-[#FFE600] shadow-[0_0_12px_rgba(255,230,0,0.35)]"
+                  />
+                  <h3 class="text-base font-bold tracking-tight text-white sm:text-lg">清单</h3>
+                </div>
+                <div class="space-y-6 text-white/90">
+              <template v-if="selectedConsultation.quoteSheet">
                 <div
-                  v-else-if="shortExchangeSubmitSuccess"
+                  class="overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl"
+                >
+                  <div class="overflow-x-auto">
+                    <table class="w-full min-w-[320px] border-collapse text-sm">
+                      <tbody>
+                        <tr class="border-b border-white/10">
+                          <th
+                            class="w-[18%] min-w-[5rem] whitespace-nowrap bg-white/[0.06] px-4 py-3 font-medium text-white/55"
+                            scope="row"
+                          >
+                            报价人
+                          </th>
+                          <td class="border-r border-white/10 px-4 py-3 text-white">
+                            {{ selectedConsultation.quoteSheet.quoter?.trim() || '—' }}
+                          </td>
+                          <th
+                            class="w-[18%] min-w-[5rem] whitespace-nowrap bg-white/[0.06] px-4 py-3 font-medium text-white/55"
+                            scope="row"
+                          >
+                            联系方式
+                          </th>
+                          <td class="px-4 py-3 text-white">
+                            {{ selectedConsultation.quoteSheet.contact?.trim() || '—' }}
+                          </td>
+                        </tr>
+                        <tr class="border-b border-white/10">
+                          <th
+                            class="bg-white/[0.06] px-4 py-3 font-medium text-white/55"
+                            scope="row"
+                          >
+                            报价时间
+                          </th>
+                          <td class="border-r border-white/10 px-4 py-3 tabular-nums text-white" colspan="3">
+                            {{ selectedConsultation.quoteSheet.quoteTime }}
+                          </td>
+                        </tr>
+                        <tr>
+                          <th
+                            class="align-top bg-white/[0.06] px-4 py-3 font-medium text-white/55"
+                            scope="row"
+                          >
+                            备注
+                          </th>
+                          <td class="px-4 py-3 leading-relaxed text-white/85" colspan="3">
+                            {{ selectedConsultation.quoteSheet.remarks?.trim() || '—' }}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-end gap-2 px-0.5 py-3 sm:py-4">
+                  <button
+                    type="button"
+                    class="rounded-full border px-3.5 py-1.5 text-xs font-bold transition-all"
+                    :class="
+                      quoteSheetAddedToCartForSelected
+                        ? 'cursor-not-allowed border-white/12 bg-white/[0.05] text-white/38 opacity-70'
+                        : 'border-[#FFE600]/45 bg-[#FFE600]/12 text-[#FFE600] shadow-[0_0_14px_rgba(255,230,0,0.18)] hover:border-[#FFE600]/70 hover:bg-[#FFE600]/20 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[#FFE600]/45 disabled:hover:bg-[#FFE600]/12'
+                    "
+                    :disabled="!canAddQuoteLinesToCart || quoteSheetAddedToCartForSelected"
+                    :title="
+                      quoteSheetAddedToCartForSelected
+                        ? '已从本清单加入购物车'
+                        : '将表格中已关联商店商品的行按数量加入购物车'
+                    "
+                    @click="addQuoteSheetLinesToCart"
+                  >
+                    {{ quoteSheetAddedToCartForSelected ? '已添加' : '加入购物车' }}
+                  </button>
+                </div>
+
+                <div
+                  class="overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl"
+                >
+                  <div class="overflow-x-hidden">
+                    <table
+                      class="w-full table-fixed border-collapse text-left text-[11px] leading-snug sm:text-xs sm:leading-normal"
+                    >
+                      <thead>
+                        <tr class="border-b border-white/10 bg-white/[0.06]">
+                          <th class="px-1.5 py-2.5 font-semibold text-white/75 sm:px-2 sm:py-3">专业</th>
+                          <th class="px-1.5 py-2.5 font-semibold text-white/75 sm:px-2 sm:py-3">科目编号</th>
+                          <th class="px-1.5 py-2.5 font-semibold text-white/75 sm:px-2 sm:py-3">科目名称</th>
+                          <th class="px-1.5 py-2.5 font-semibold text-white/75 sm:px-2 sm:py-3">品牌</th>
+                          <th class="px-1.5 py-2.5 font-semibold text-white/75 sm:px-2 sm:py-3">系列/型号</th>
+                          <th class="px-1.5 py-2.5 font-semibold text-white/75 sm:px-2 sm:py-3">数量</th>
+                          <th class="px-1.5 py-2.5 font-semibold text-white/75 sm:px-2 sm:py-3">材料费</th>
+                          <th class="px-1.5 py-2.5 font-semibold text-white/75 sm:px-2 sm:py-3">安装费</th>
+                          <th class="px-1.5 py-2.5 font-semibold text-white/75 sm:px-2 sm:py-3">综合单价</th>
+                          <th class="px-1.5 py-2.5 font-semibold text-white/75 sm:px-2 sm:py-3">总价</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr
+                          v-for="(row, ri) in selectedConsultation.quoteSheet.lines"
+                          :key="ri"
+                          class="border-b border-white/10 last:border-b-0"
+                        >
+                          <td class="break-words px-1.5 py-2.5 text-white sm:px-2 sm:py-3">{{ row.specialty }}</td>
+                          <td class="break-words px-1.5 py-2.5 tabular-nums text-white sm:px-2 sm:py-3">
+                            {{ row.itemCode }}
+                          </td>
+                          <td class="break-words px-1.5 py-2.5 text-white sm:px-2 sm:py-3">{{ row.itemName }}</td>
+                          <td class="break-words px-1.5 py-2.5 text-white sm:px-2 sm:py-3">{{ row.brand }}</td>
+                          <td class="break-words px-1.5 py-2.5 text-white sm:px-2 sm:py-3">{{ row.seriesModel }}</td>
+                          <td class="break-words px-1.5 py-2.5 tabular-nums text-white sm:px-2 sm:py-3">
+                            {{ formatQuoteNumber(row.quantity) }}
+                          </td>
+                          <td class="break-words px-1.5 py-2.5 tabular-nums text-white sm:px-2 sm:py-3">
+                            {{ formatQuoteNumber(row.materialCost) }}
+                          </td>
+                          <td class="break-words px-1.5 py-2.5 tabular-nums text-white sm:px-2 sm:py-3">
+                            {{ formatQuoteNumber(row.installFee) }}
+                          </td>
+                          <td class="break-words px-1.5 py-2.5 tabular-nums text-white sm:px-2 sm:py-3">
+                            {{ formatQuoteNumber(row.unitPrice) }}
+                          </td>
+                          <td class="break-words px-1.5 py-2.5 tabular-nums text-white sm:px-2 sm:py-3">
+                            {{ formatQuoteNumber(row.totalPrice) }}
+                          </td>
+                        </tr>
+                        <tr
+                          v-for="(s, si) in selectedConsultation.quoteSheet.summary"
+                          :key="`summary-${si}`"
+                          :class="[
+                            'border-b border-white/10 bg-white/[0.04]',
+                            si === 0 ? 'border-t border-white/15' : '',
+                          ]"
+                        >
+                          <th
+                            class="bg-white/[0.06] px-3 py-3 font-medium text-white/55"
+                            scope="row"
+                            colspan="2"
+                          >
+                            专业
+                          </th>
+                          <td class="border-r border-white/10 px-3 py-3 text-white" colspan="3">
+                            {{ s.specialty }}
+                          </td>
+                          <th
+                            class="bg-white/[0.06] px-3 py-3 font-medium text-white/55"
+                            scope="row"
+                            colspan="2"
+                          >
+                            价格
+                          </th>
+                          <td class="px-3 py-3 tabular-nums text-white" colspan="3">
+                            {{ formatQuoteNumber(s.price) }}
+                          </td>
+                        </tr>
+                        <tr
+                          :class="[
+                            'border-b border-white/10',
+                            !selectedConsultation.quoteSheet.summary?.length
+                              ? 'border-t border-white/15'
+                              : '',
+                          ]"
+                        >
+                          <th
+                            class="w-1/2 bg-white/[0.06] px-3 py-3 font-medium text-white/55"
+                            scope="row"
+                            colspan="2"
+                          >
+                            税率%
+                          </th>
+                          <td class="border-r border-white/10 px-3 py-3 tabular-nums text-white" colspan="3">
+                            {{ formatQuoteNumber(selectedConsultation.quoteSheet.taxRatePercent) }}
+                          </td>
+                          <th
+                            class="w-1/2 bg-white/[0.06] px-3 py-3 font-medium text-white/55"
+                            scope="row"
+                            colspan="2"
+                          >
+                            税金
+                          </th>
+                          <td class="px-3 py-3 tabular-nums text-white" colspan="3">
+                            {{ formatQuoteNumber(selectedConsultation.quoteSheet.taxAmount) }}
+                          </td>
+                        </tr>
+                        <tr>
+                          <th class="bg-white/[0.06] px-3 py-3 font-medium text-white/55" scope="row" colspan="2">
+                            合计价格
+                          </th>
+                          <td class="border-r border-white/10 px-3 py-3 tabular-nums text-white" colspan="3">
+                            {{ formatQuoteNumber(selectedConsultation.quoteSheet.subtotalExclTax) }}
+                          </td>
+                          <th class="bg-white/[0.06] px-3 py-3 font-medium text-white/55" scope="row" colspan="2">
+                            含税价格
+                          </th>
+                          <td class="px-3 py-3 tabular-nums text-[#FFE600]" colspan="3">
+                            {{ formatQuoteNumber(selectedConsultation.quoteSheet.totalInclTax) }}
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl sm:p-5">
+                  <p class="text-base font-bold text-white">附件</p>
+                  <div
+                    v-if="selectedConsultation.quoteSheet.attachmentFiles?.length"
+                    class="mt-3 flex flex-wrap gap-2"
+                  >
+                    <button
+                      v-for="(f, ai) in selectedConsultation.quoteSheet.attachmentFiles"
+                      :key="`${f.fileName}-${ai}`"
+                      type="button"
+                      class="inline-flex max-w-full min-w-0 items-center gap-2 rounded-lg border border-white/18 bg-white/[0.14] px-3 py-2 text-left text-sm font-medium text-white/90 shadow-sm backdrop-blur-sm transition hover:border-white/28 hover:bg-white/[0.2] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFE600]/50"
+                      @click="openMediaPreview(f)"
+                    >
+                      <span class="min-w-0 truncate">{{ f.fileName }}</span>
+                      <X class="h-3.5 w-3.5 shrink-0 text-white/40 pointer-events-none" aria-hidden="true" />
+                    </button>
+                  </div>
+                  <p v-else class="mt-2 text-sm text-white/45">暂无附件</p>
+                </div>
+              </template>
+              <div
+                v-else
+                class="rounded-2xl border border-dashed border-white/15 bg-white/[0.03] py-16 text-center text-sm text-white/45"
+              >
+                暂无报价清单
+              </div>
+                </div>
+              </section>
+
+              <div class="flex justify-end border-t border-white/10 pt-5 sm:pt-6">
+                <button
+                  v-if="selectedConsultation.status !== '已结束'"
+                  type="button"
+                  class="rounded-xl border border-red-500/55 bg-red-600 px-6 py-2.5 text-sm font-bold text-white shadow-[0_0_18px_rgba(220,38,38,0.4)] transition hover:border-red-400/80 hover:bg-red-500 hover:shadow-[0_0_22px_rgba(220,38,38,0.5)] active:scale-[0.98]"
+                  @click="endConsultation"
+                >
+                  结束咨询
+                </button>
+                <span
+                  v-else
+                  class="rounded-xl border border-white/12 bg-white/[0.06] px-6 py-2.5 text-sm font-medium text-white/45"
+                >
+                  咨询已结束
+                </span>
+              </div>
+            </div>
+            <div v-else key="short-exchange-panel" class="min-h-0">
+              <Transition name="short-exchange" mode="out-in">
+                <div
+                  v-if="shortExchangeSubmitSuccess"
                   key="short-exchange-success"
                   class="-mx-2 sm:-mx-4"
                 >
@@ -816,6 +1149,44 @@ function durationDaysDisplay(c: ConsultationRecord) {
         </div>
       </div>
     </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="mediaPreview"
+        class="fixed inset-0 z-[200] bg-black"
+        role="dialog"
+        aria-modal="true"
+        aria-label="媒体全屏预览"
+      >
+        <button
+          type="button"
+          class="absolute top-4 right-4 z-20 rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/20"
+          @click="closeMediaPreview"
+        >
+          退出全览
+        </button>
+        <div
+          class="absolute inset-0 flex items-center justify-center p-4 sm:p-8"
+          @click.self="closeMediaPreview"
+        >
+          <img
+            v-if="mediaPreview.kind === 'image'"
+            :src="mediaPreview.url"
+            :alt="mediaPreview.fileName"
+            class="max-h-full max-w-full object-contain"
+            @click.stop
+          />
+          <video
+            v-else
+            :src="mediaPreview.url"
+            controls
+            playsinline
+            class="max-h-full max-w-full object-contain"
+            @click.stop
+          />
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -839,7 +1210,23 @@ function durationDaysDisplay(c: ConsultationRecord) {
   border-radius: 10px;
 }
 
-/* 询价列表 ↔ 短交流表单：先出后进，横向轻移 + 淡入淡出 */
+/* 合并详情页 ↔ 短交流全屏：淡入淡出 + 轻微位移（进入/返回同一套动效） */
+.short-exchange-shell-enter-active,
+.short-exchange-shell-leave-active {
+  transition:
+    opacity 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.48s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.short-exchange-shell-enter-from {
+  opacity: 0;
+  transform: translateY(0.6rem) scale(0.985);
+}
+.short-exchange-shell-leave-to {
+  opacity: 0;
+  transform: translateY(-0.45rem) scale(0.985);
+}
+
+/* 短交流内：成功页 ↔ 表单 */
 .short-exchange-enter-active,
 .short-exchange-leave-active {
   transition:
@@ -855,19 +1242,4 @@ function durationDaysDisplay(c: ConsultationRecord) {
   transform: translateX(-0.75rem);
 }
 
-/* 基本信息 / 产品信息 / 询价 Tab 内容切换 */
-.detail-tab-enter-active,
-.detail-tab-leave-active {
-  transition:
-    opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.42s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.detail-tab-enter-from {
-  opacity: 0;
-  transform: translateX(0.85rem);
-}
-.detail-tab-leave-to {
-  opacity: 0;
-  transform: translateX(-0.55rem);
-}
 </style>
