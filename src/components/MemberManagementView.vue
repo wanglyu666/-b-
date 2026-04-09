@@ -43,13 +43,45 @@ const customRoles = ref<string[]>([]);
 const draftRole = ref('');
 const customRoleInput = ref('');
 
+/** 权限选择（多选，与后台模块对应；分两行展示） */
+const permissionModuleOptionRows = [
+  ['维保项目管理', '订单管理', '工程项目管理', '维保报修管理', '人员管理'],
+  ['合同档案', '合同签约管理', '结算管理', '违约账单', '账单管理'],
+] as const;
+
+const draftPermissionKeys = ref<string[]>([]);
+
+/** 能否下单：null 表示未选择 */
+const draftCanPlaceOrder = ref<boolean | null>(null);
+/** 可下单金额（元），仅在「能下单」时填写 */
+const draftOrderAmountLimit = ref('');
+
+/** 成员 id → 角色配置扩展（权限、下单） */
+const memberRoleConfigExtras = ref<
+  Record<
+    number,
+    {
+      permissions: string[];
+      canPlaceOrder: boolean;
+      orderAmountLimit: string;
+    }
+  >
+>({});
+
+function toggleDraftPermission(key: string) {
+  const arr = draftPermissionKeys.value;
+  const i = arr.indexOf(key);
+  if (i === -1) arr.push(key);
+  else arr.splice(i, 1);
+}
+
 /**
  * 成员弹窗尺寸/圆角/缩放：与工程项目「项目详情」弹窗 `.modal-morph` 同一套过渡（0.8s、cubic-bezier(0.16,1,0.3,1)）。
  * 详情页含操作按钮区偏高；角色配置 / 项目分配内容区相对紧凑。
  */
 const memberModalDimensions = computed(() => {
   if (modalView.value === 'roleConfig') {
-    return { width: '768px', height: '500px', radius: '32px', scale: 1.02 };
+    return { width: '768px', height: '750px', radius: '32px', scale: 1.02 };
   }
   if (modalView.value === 'projectAssign') {
     return { width: '800px', height: '640px', radius: '32px', scale: 1.02 };
@@ -180,10 +212,23 @@ function effectiveRole(m: Member): string {
   return roleOverrides.value[m.id] ?? m.role;
 }
 
+function loadRoleConfigDraftForMember(m: Member) {
+  draftRole.value = effectiveRole(m);
+  draftPermissionKeys.value = [];
+  draftCanPlaceOrder.value = null;
+  draftOrderAmountLimit.value = '';
+  const extra = memberRoleConfigExtras.value[m.id];
+  if (extra) {
+    draftPermissionKeys.value = [...extra.permissions];
+    draftCanPlaceOrder.value = extra.canPlaceOrder;
+    draftOrderAmountLimit.value = extra.orderAmountLimit;
+  }
+}
+
 function onMemberAction(key: string) {
   if (!selectedMember.value) return;
   if (key === 'role') {
-    draftRole.value = effectiveRole(selectedMember.value);
+    loadRoleConfigDraftForMember(selectedMember.value);
     modalView.value = 'roleConfig';
     return;
   }
@@ -221,6 +266,15 @@ function confirmRoleConfig() {
   roleOverrides.value = {
     ...roleOverrides.value,
     [m.id]: draftRole.value.trim(),
+  };
+  const can = draftCanPlaceOrder.value;
+  memberRoleConfigExtras.value = {
+    ...memberRoleConfigExtras.value,
+    [m.id]: {
+      permissions: [...draftPermissionKeys.value],
+      canPlaceOrder: can === true,
+      orderAmountLimit: can === true ? draftOrderAmountLimit.value.trim() : '',
+    },
   };
   modalView.value = 'detail';
 }
@@ -517,7 +571,7 @@ onUnmounted(() => document.removeEventListener('keydown', onDocumentKeydown));
               <div
                 v-else-if="modalView === 'roleConfig'"
                 key="role"
-                class="flex min-h-[280px] flex-col gap-6"
+                class="flex min-h-[320px] flex-col gap-6"
               >
                 <p class="text-sm text-white/60">
                   为「<span class="font-semibold text-white">{{ selectedMember.name }}</span>」选择角色，可点选预设或添加自定义。
@@ -571,6 +625,90 @@ onUnmounted(() => document.removeEventListener('keydown', onDocumentKeydown));
                     添加
                   </button>
                 </div>
+
+                <div class="space-y-3">
+                  <p
+                    class="text-xs font-bold uppercase tracking-widest text-white/40"
+                  >
+                    权限选择
+                  </p>
+                  <div class="flex flex-col gap-3">
+                    <div
+                      v-for="(row, rowIdx) in permissionModuleOptionRows"
+                      :key="rowIdx"
+                      class="flex flex-wrap gap-3"
+                    >
+                      <button
+                        v-for="perm in row"
+                        :key="perm"
+                        type="button"
+                        class="rounded-full border px-4 py-2 text-sm font-bold transition-all"
+                        :class="
+                          draftPermissionKeys.includes(perm)
+                            ? 'border-[#FFE600] bg-[#FFE600]/15 text-white shadow-[0_0_12px_rgba(255,230,0,0.25)]'
+                            : 'border-white/15 bg-white/5 text-white/90 hover:bg-white/10'
+                        "
+                        @click="toggleDraftPermission(perm)"
+                      >
+                        {{ perm }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="space-y-3">
+                  <p
+                    class="text-xs font-bold uppercase tracking-widest text-white/40"
+                  >
+                    下单权限
+                  </p>
+                  <div class="flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      class="rounded-full border px-5 py-2 text-sm font-bold transition-all"
+                      :class="
+                        draftCanPlaceOrder === true
+                          ? 'border-[#FFE600] bg-[#FFE600]/15 text-white shadow-[0_0_12px_rgba(255,230,0,0.25)]'
+                          : 'border-white/15 bg-white/5 text-white/90 hover:bg-white/10'
+                      "
+                      @click="draftCanPlaceOrder = true"
+                    >
+                      能下单
+                    </button>
+                    <button
+                      type="button"
+                      class="rounded-full border px-5 py-2 text-sm font-bold transition-all"
+                      :class="
+                        draftCanPlaceOrder === false
+                          ? 'border-[#FFE600] bg-[#FFE600]/15 text-white shadow-[0_0_12px_rgba(255,230,0,0.25)]'
+                          : 'border-white/15 bg-white/5 text-white/90 hover:bg-white/10'
+                      "
+                      @click="
+                        draftCanPlaceOrder = false;
+                        draftOrderAmountLimit = '';
+                      "
+                    >
+                      不能下单
+                    </button>
+                  </div>
+                  <div v-if="draftCanPlaceOrder === true" class="pt-1">
+                    <label
+                      for="role-order-amount-limit"
+                      class="mb-1.5 block text-xs font-medium text-white/50"
+                    >
+                      可下单金额（元）
+                    </label>
+                    <input
+                      id="role-order-amount-limit"
+                      v-model="draftOrderAmountLimit"
+                      type="text"
+                      inputmode="decimal"
+                      placeholder="请输入可下单金额上限"
+                      class="w-full max-w-md rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[#FFE600]/50 focus:outline-none focus:ring-1 focus:ring-[#FFE600]/40"
+                    />
+                  </div>
+                </div>
+
                 <div class="flex flex-1 items-end justify-end pt-4">
                   <button
                     type="button"

@@ -1,4 +1,13 @@
-import { Product, Notification, Contract, Bill, Member, EngineeringProject, MaintenanceProject } from './types';
+import {
+  Product,
+  Notification,
+  Contract,
+  Bill,
+  Member,
+  EngineeringProject,
+  MaintenanceProject,
+  OrganizationTeam,
+} from './types';
 
 export const chartData = [
   { name: '1月', value: 4000 },
@@ -499,4 +508,79 @@ export const members: Member[] = [
   { id: 4, name: '刘洋', role: '机电工程师', initial: '刘', bgColor: 'bg-indigo-500', online: true, phone: '136-5566-7788', team: '维保二组', email: 'liuyang@example.com', remarks: '机电安装与调试，配合竣工验收。' },
   { id: 5, name: '陈明', role: '安全员', initial: '陈', bgColor: 'bg-rose-500', online: false, phone: '135-6677-8899', team: '维保一组', email: 'chenming@example.com', remarks: '专项安全培训与隐患整改跟踪。' },
   { id: 6, name: '赵敏', role: '资料员', initial: '赵', bgColor: 'bg-teal-500', online: true, phone: '133-7788-9900', team: '维保二组', email: 'zhaomin@example.com', remarks: '竣工资料归档与图纸版本管理。' },
+];
+
+/** 组织与架构 · 团队（团队页网格与首页侧栏共用） */
+export const organizationTeams: OrganizationTeam[] = [
+  {
+    id: 't1',
+    name: '维保一组',
+    leader: '张伟',
+    space: 'A 区 · 商业综合体',
+    createdAt: '2024-03-15',
+    members: [
+      { initial: '张', color: '#4F46E5' },
+      { initial: '李', color: '#10B981' },
+      { initial: '王', color: '#F59E0B' },
+      { initial: '江', color: '#EF4444' },
+    ],
+  },
+  {
+    id: 't2',
+    name: '维保二组',
+    leader: '李秀英',
+    space: 'B 区 · 工业园区',
+    createdAt: '2024-06-01',
+    members: [
+      { initial: '刘', color: '#8B5CF6' },
+      { initial: '陈', color: '#06B6D4' },
+      { initial: '赵', color: '#EC4899' },
+    ],
+  },
+  {
+    id: 't3',
+    name: '维保三组',
+    leader: '王强',
+    space: 'C 区 · 研发中心',
+    createdAt: '2024-08-20',
+    members: [
+      { initial: '王', color: '#F59E0B' },
+      { initial: '周', color: '#3B82F6' },
+      { initial: '吴', color: '#14B8A6' },
+    ],
+  },
+  {
+    id: 't4',
+    name: '工程支持组',
+    leader: '刘洋',
+    space: '全区域巡检',
+    createdAt: '2024-05-10',
+    members: [
+      { initial: '刘', color: '#6366F1' },
+      { initial: '郑', color: '#EAB308' },
+    ],
+  },
+  {
+    id: 't5',
+    name: '应急响应组',
+    leader: '陈明',
+    space: '机动调配',
+    createdAt: '2024-07-01',
+    members: [
+      { initial: '陈', color: '#F43F5E' },
+      { initial: '孙', color: '#0EA5E9' },
+      { initial: '钱', color: '#A855F7' },
+    ],
+  },
+  {
+    id: 't6',
+    name: '资料与合规组',
+    leader: '赵敏',
+    space: '总部大楼',
+    createdAt: '2024-09-12',
+    members: [
+      { initial: '赵', color: '#0D9488' },
+      { initial: '冯', color: '#64748B' },
+    ],
+  },
 ];

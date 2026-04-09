@@ -6,12 +6,13 @@ import {
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 import TopBarActions from './TopBarActions.vue';
-import { members } from '../data';
+import { members, organizationTeams } from '../data';
 import spaceIllustration from '../../image asset/space.png';
 import membersMgmtIllustration from '../../image asset/group icon.png';
 
 const emit = defineEmits<{
   openMemberManagement: [];
+  openTeamManagement: [];
 }>();
 
 /** 组织页「成员管理」卡片内仅展示前 3 人，布局不变 */
@@ -44,43 +45,8 @@ const SPACE_STATS_OFFSET_X_PX = -30;
 /** 「空间总数」列内容宽度（px），略大可避免数字换行 */
 const SPACE_CARD_STATS_WIDTH_PX = 92;
 
-/** 团队小卡片演示数据；后续可对接接口 */
-type TeamBlock = {
-  id: string;
-  name: string;
-  leader: string;
-  space: string;
-  createdAt: string;
-  members: { initial: string; color: string }[];
-};
-
-const teamBlocks: TeamBlock[] = [
-  {
-    id: 't1',
-    name: '维保一组',
-    leader: '张伟',
-    space: 'A 区 · 商业综合体',
-    createdAt: '2024-03-15',
-    members: [
-      { initial: '张', color: '#4F46E5' },
-      { initial: '李', color: '#10B981' },
-      { initial: '王', color: '#F59E0B' },
-      { initial: '江', color: '#EF4444' },
-    ],
-  },
-  {
-    id: 't2',
-    name: '维保二组',
-    leader: '李秀英',
-    space: 'B 区 · 工业园区',
-    createdAt: '2024-06-01',
-    members: [
-      { initial: '刘', color: '#8B5CF6' },
-      { initial: '陈', color: '#06B6D4' },
-      { initial: '赵', color: '#EC4899' },
-    ],
-  },
-];
+/** 首页侧栏仅展示前 2 个团队预览 */
+const teamBlocksPreview = computed(() => organizationTeams.slice(0, 2));
 </script>
 
 <template>
@@ -220,7 +186,12 @@ const teamBlocks: TeamBlock[] = [
 
         <!-- 4 团队：桌面跨两行；内嵌两块 50% 白小卡 + 重叠彩色头像 -->
         <div
-          class="team-outer rounded-3xl border border-gray-100 bg-white shadow-sm flex flex-col min-h-[320px] p-6 lg:min-h-0 lg:col-start-3 lg:row-start-1 lg:row-span-2"
+          role="button"
+          tabindex="0"
+          class="team-outer cursor-pointer rounded-3xl border border-gray-100 bg-white shadow-sm outline-none transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-[#9FE870]/50 flex flex-col min-h-[320px] p-6 lg:min-h-0 lg:col-start-3 lg:row-start-1 lg:row-span-2"
+          @click="emit('openTeamManagement')"
+          @keydown.enter.prevent="emit('openTeamManagement')"
+          @keydown.space.prevent="emit('openTeamManagement')"
         >
           <div class="flex justify-between items-center mb-4 shrink-0">
             <div class="flex items-center space-x-2">
@@ -235,7 +206,7 @@ const teamBlocks: TeamBlock[] = [
             class="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden pr-0.5"
           >
             <article
-              v-for="team in teamBlocks"
+              v-for="team in teamBlocksPreview"
               :key="team.id"
               class="team-inner-card flex min-h-0 flex-1 basis-0 flex-col rounded-2xl border border-gray-100 bg-gray-50/90 p-5 text-left shadow-sm ring-1 ring-gray-100/80 transition-all hover:border-[#9FE870]/50 hover:bg-white hover:shadow-md"
             >

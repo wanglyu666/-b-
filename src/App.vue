@@ -20,6 +20,7 @@ import AllConsultationsView from './components/consultation-feedback/AllConsulta
 import FeedbackRecordsView from './components/consultation-feedback/FeedbackRecordsView.vue';
 import OrganizationArchitectureView from './components/OrganizationArchitectureView.vue';
 import MemberManagementView from './components/MemberManagementView.vue';
+import TeamManagementView from './components/TeamManagementView.vue';
 import { members } from './data';
 import type { Product, CartItem } from './types';
 
@@ -366,11 +367,17 @@ watch(activeTab, () => {
       <OrganizationArchitectureView
         v-if="activeTab === 'org-architecture'"
         @open-member-management="activeTab = 'member-management'"
+        @open-team-management="activeTab = 'team-management'"
       />
 
       <MemberManagementView
         v-if="activeTab === 'member-management'"
         :members="members"
+        @back="activeTab = 'org-architecture'"
+      />
+
+      <TeamManagementView
+        v-if="activeTab === 'team-management'"
         @back="activeTab = 'org-architecture'"
       />
 

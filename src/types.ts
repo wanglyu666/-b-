@@ -50,6 +50,21 @@ export interface Bill {
   amount: string;
 }
 
+/** 组织与架构 · 团队卡片（列表与首页预览共用） */
+export interface OrganizationTeamMemberAvatar {
+  initial: string;
+  color: string;
+}
+
+export interface OrganizationTeam {
+  id: string;
+  name: string;
+  leader: string;
+  space: string;
+  createdAt: string;
+  members: OrganizationTeamMemberAvatar[];
+}
+
 export interface Member {
   id: number;
   name: string;
