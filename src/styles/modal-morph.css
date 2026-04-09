@@ -1,0 +1,56 @@
+/**
+ * ============================================================================
+ * 动效文件：modal-morph.css（路径：src/styles/modal-morph.css）
+ * ============================================================================
+ * 以后你只要说「用 modal-morph 动效」或「引用 src/styles/modal-morph.css」，
+ * 即表示：弹窗外壳使用下方 .jp-modal-morph，并通过 CSS 变量传入宽高/圆角/缩放/背景。
+ *
+ * 参数与工程项目详情弹窗（EngineeringProjectsView.vue 内 .modal-morph）一致：
+ *   - 时长 0.8s，缓动 cubic-bezier(0.16, 1, 0.3, 1)
+ *   - 过渡：width、height、transform、border-radius；背景色 0.8s ease
+ *
+ * 用法（示例）：
+ *   <div
+ *     class="jp-modal-morph flex flex-col overflow-hidden ..."
+ *     :style="{
+ *       '--jp-modal-w': '768px',
+ *       '--jp-modal-h': '760px',
+ *       '--jp-modal-radius': '40px',
+ *       '--jp-modal-scale': 1,
+ *       '--jp-modal-bg': 'rgba(255, 255, 255, 0.1)',
+ *     }"
+ *   >
+ *
+ * 变量一览（均有默认值，可按视图切换只改变量即带动效）：
+ *   --jp-modal-w        宽度，默认 768px
+ *   --jp-modal-h        高度，默认 760px
+ *   --jp-modal-w-max    max-width 上限，默认 768px（与 min(...,100vw-2rem) 配合）
+ *   --jp-modal-max-h    max-height，默认 90vh
+ *   --jp-modal-radius   圆角，默认 40px
+ *   --jp-modal-scale    scale()，默认 1
+ *   --jp-modal-bg       背景色
+ * ============================================================================
+ */
+
+:root {
+  --jp-modal-morph-duration: 0.8s;
+  --jp-modal-morph-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.jp-modal-morph {
+  width: var(--jp-modal-w, 768px) !important;
+  height: var(--jp-modal-h, 760px) !important;
+  max-width: min(var(--jp-modal-w-max, 768px), calc(100vw - 2rem));
+  max-height: var(--jp-modal-max-h, 90vh);
+  border-radius: var(--jp-modal-radius, 40px);
+  background-color: var(--jp-modal-bg, rgba(255, 255, 255, 0.1));
+  transition:
+    width var(--jp-modal-morph-duration) var(--jp-modal-morph-ease),
+    height var(--jp-modal-morph-duration) var(--jp-modal-morph-ease),
+    transform var(--jp-modal-morph-duration) var(--jp-modal-morph-ease),
+    border-radius var(--jp-modal-morph-duration) var(--jp-modal-morph-ease),
+    background-color var(--jp-modal-morph-duration) ease;
+  will-change: width, height, transform, border-radius;
+  transform: translateZ(0) scale(var(--jp-modal-scale, 1));
+  backface-visibility: hidden;
+}

@@ -59,6 +59,12 @@ export interface Member {
   online: boolean;
   /** 联系电话 */
   phone?: string;
+  /** 所属团队 */
+  team?: string;
+  /** 联系邮箱 */
+  email?: string;
+  /** 备注 */
+  remarks?: string;
 }
 
 export interface MaintenanceProject {
