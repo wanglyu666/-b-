@@ -6,7 +6,8 @@ import {
   Briefcase, 
   BarChart2, 
   MessageSquare, 
-  FileText 
+  FileText,
+  Network,
 } from 'lucide-vue-next';
 import logoDarkGreen from '../../justpai logo/justpai logo darkgreen 1.png';
 
@@ -63,6 +64,16 @@ defineEmits<{
       >
         <Briefcase :size="20" :class="activeTab === 'management' ? 'text-black' : 'text-gray-400 group-hover:text-black'" />
         <span>管理</span>
+      </div>
+
+      <div
+        @click="$emit('update:activeTab', 'org-architecture')"
+        :class="['flex items-center space-x-3 px-6 py-4 cursor-pointer transition-all duration-200 group',
+          (activeTab === 'org-architecture' || activeTab === 'member-management') ? 'text-black font-bold border-l-4 border-black bg-gray-50' : 'text-gray-500 hover:text-black hover:bg-gray-50'
+        ]"
+      >
+        <Network :size="20" :class="(activeTab === 'org-architecture' || activeTab === 'member-management') ? 'text-black' : 'text-gray-400 group-hover:text-black'" />
+        <span>组织与架构</span>
       </div>
 
       <div 

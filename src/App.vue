@@ -18,6 +18,9 @@ import OrderManagementView from './components/OrderManagementView.vue';
 import ConsultationFeedbackView from './components/consultation-feedback/ConsultationFeedbackView.vue';
 import AllConsultationsView from './components/consultation-feedback/AllConsultationsView.vue';
 import FeedbackRecordsView from './components/consultation-feedback/FeedbackRecordsView.vue';
+import OrganizationArchitectureView from './components/OrganizationArchitectureView.vue';
+import MemberManagementView from './components/MemberManagementView.vue';
+import { members } from './data';
 import type { Product, CartItem } from './types';
 
 type TodoNotification = {
@@ -358,6 +361,17 @@ watch(activeTab, () => {
         @viewMaintenanceProjects="handleViewMaintenanceProjects"
         @addRepair="handleAddRepair"
         @viewOrders="handleViewOrders"
+      />
+
+      <OrganizationArchitectureView
+        v-if="activeTab === 'org-architecture'"
+        @open-member-management="activeTab = 'member-management'"
+      />
+
+      <MemberManagementView
+        v-if="activeTab === 'member-management'"
+        :members="members"
+        @back="activeTab = 'org-architecture'"
       />
 
       <MaintenanceRepairView 

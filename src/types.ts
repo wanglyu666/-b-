@@ -57,6 +57,8 @@ export interface Member {
   initial: string;
   bgColor: string;
   online: boolean;
+  /** 联系电话 */
+  phone?: string;
 }
 
 export interface MaintenanceProject {
