@@ -2,7 +2,6 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { Search, TrendingUp, Star, ShoppingBag, Heart, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import TopBarActions from './TopBarActions.vue';
-import { products } from '../data';
 import type { Product } from '../types';
 
 const props = defineProps<{
@@ -12,6 +11,7 @@ const props = defineProps<{
   wishlistCount: number;
   wishlistItems: Product[];
   messageCount: number;
+  products: Product[];
 }>();
 
 const emit = defineEmits([
@@ -25,10 +25,10 @@ const emit = defineEmits([
 ]);
 
 const itemsPerPage = 16;
-const totalPages = Math.ceil(products.length / itemsPerPage);
+const totalPages = computed(() => Math.ceil(props.products.length / itemsPerPage));
 
 const currentProducts = computed(() => {
-  return products.slice(
+  return props.products.slice(
     (props.currentPage - 1) * itemsPerPage,
     props.currentPage * itemsPerPage
   );
@@ -56,7 +56,7 @@ const prevPage = () => {
 };
 
 const nextPage = () => {
-  if (props.currentPage < totalPages) {
+  if (props.currentPage < totalPages.value) {
     emit('update:currentPage', props.currentPage + 1);
   }
 };

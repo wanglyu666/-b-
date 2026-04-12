@@ -1,20 +1,22 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { ArrowLeft, Search, ChevronLeft, ChevronRight, X, Star, MoreHorizontal } from 'lucide-vue-next';
-import { maintenanceProjects } from '../data';
 import type { MaintenanceProject } from '../types';
+import { maintenanceProjects as maintenanceProjectsFallback } from '../data';
 import MaintenanceProjectCard from './maintenance/MaintenanceProjectCard.vue';
 import MaintenanceOverview from './maintenance/MaintenanceOverview.vue';
 import checkMarkImg from '../../image asset/check mark.png';
 
 const props = defineProps<{
   initialStatus?: string;
+  projects?: MaintenanceProject[];
 }>();
 
 const emit = defineEmits(['back']);
 
 const statuses = ['待开工', '施工中', '已完工'] as const;
 const activeStatus = ref(props.initialStatus || '待开工');
+const projectList = computed(() => props.projects ?? maintenanceProjectsFallback);
 const searchQuery = ref('');
 const selectedProject = ref<MaintenanceProject | null>(null);
 const viewMode = ref<'details' | 'evaluation' | 'evaluation_success' | 'appointment' | 'confirm_time' | 'confirm_change' | 'appointment_success' | 'order_suspended' | 'order_abnormal' | 'pending_acceptance' | 'completed'>('details');
@@ -187,14 +189,14 @@ const headerTitle = computed(() => {
 const filteredProjects = computed(() => {
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
-    return maintenanceProjects.filter(p =>
+    return projectList.value.filter(p =>
       p.name.toLowerCase().includes(query) ||
       p.no.toLowerCase().includes(query) ||
       p.manager.toLowerCase().includes(query) ||
       p.address.toLowerCase().includes(query)
     );
   }
-  return maintenanceProjects.filter(p => p.status === activeStatus.value);
+  return projectList.value.filter(p => p.status === activeStatus.value);
 });
 
 const totalPages = computed(() => Math.ceil(filteredProjects.value.length / itemsPerPage));

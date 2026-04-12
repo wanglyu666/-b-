@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { ChevronLeft, Search } from 'lucide-vue-next';
-import { organizationTeams } from '../data';
+import type { OrganizationTeam } from '../types';
+
+const props = defineProps<{
+  teams: OrganizationTeam[];
+}>();
 
 const emit = defineEmits<{
   back: [];
@@ -11,8 +15,8 @@ const searchQuery = ref('');
 
 const filteredTeams = computed(() => {
   const q = searchQuery.value.trim().toLowerCase().replace(/\s/g, '');
-  if (!q) return organizationTeams;
-  return organizationTeams.filter((t) => {
+  if (!q) return props.teams;
+  return props.teams.filter((t) => {
     const blob = `${t.name}${t.leader}${t.space}${t.createdAt}`.toLowerCase();
     return blob.replace(/\s/g, '').includes(q);
   });

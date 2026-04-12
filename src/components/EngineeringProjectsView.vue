@@ -7,8 +7,8 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-vue-next';
-import { engineeringProjects } from '../data';
 import type { EngineeringProject } from '../types';
+import { engineeringProjects as engineeringProjectsFallback } from '../data';
 import { useProjectData } from '../composables/useProjectData';
 
 import ProjectCard from './engineering/ProjectCard.vue';
@@ -36,6 +36,7 @@ const props = defineProps<{
   initialStatus?: string;
   autoOpenProjectId?: string | null;
   autoOpenViewMode?: string | null;
+  projects?: EngineeringProject[];
 }>();
 
 const emit = defineEmits(['back', 'autoOpenConsumed']);
@@ -68,6 +69,7 @@ const selectedProgressItem = ref<any>(null);
 const isImageZoomed = ref(false);
 const zoomedImageUrl = ref('');
 const searchQuery = ref('');
+const projectList = computed(() => props.projects ?? engineeringProjectsFallback);
 
 const currentPage = ref(1);
 const itemsPerPage = 9;
@@ -145,7 +147,7 @@ const headerTitle = computed(() => {
 });
 
 const filteredProjects = computed(() => {
-  let projects = engineeringProjects;
+  let projects = projectList.value;
   
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
@@ -397,7 +399,7 @@ const zoomImage = (url: string) => {
 onMounted(async () => {
   if (props.autoOpenProjectId) {
     await nextTick();
-    const target = engineeringProjects.find(p => p.id === props.autoOpenProjectId);
+    const target = projectList.value.find(p => p.id === props.autoOpenProjectId);
     if (target) {
       activeStatus.value = target.status;
       await nextTick();

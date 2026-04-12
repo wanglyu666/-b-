@@ -2,7 +2,7 @@
 import { ref, computed, watch, nextTick } from 'vue';
 import { HardHat, Clock, Wrench, CheckCircle, Banknote, Shield, ShieldAlert, AlertCircle, ClipboardList, UsersRound, MoreHorizontal, ShoppingCart, X } from 'lucide-vue-next';
 import TopBarActions from './TopBarActions.vue';
-import { members, engineeringProjects, maintenanceProjects } from '../data';
+import type { EngineeringProject, MaintenanceProject, Member } from '../types';
 import orderMgmtIllustration from '../../image asset/shopping cart icon.png';
 import membersMgmtIllustration from '../../image asset/group icon.png';
 import checkMarkImg from '../../image asset/check mark.png';
@@ -13,10 +13,16 @@ const props = withDefaults(
     repairOrderCount: number;
     /** 订单管理总订单数（订单模块未接入前为占位，接入后改为真实值） */
     orderTotalCount: number;
+    members: Member[];
+    engineeringProjects: EngineeringProject[];
+    maintenanceProjects: MaintenanceProject[];
   }>(),
   {
     repairOrderCount: 0,
     orderTotalCount: 0,
+    members: () => [],
+    engineeringProjects: () => [],
+    maintenanceProjects: () => [],
   }
 );
 
@@ -26,23 +32,23 @@ const countByStatus = <T extends { status: string }>(list: readonly T[], status:
   list.filter((p) => p.status === status).length;
 
 /** 维保项目：各状态数量（与 data 中 maintenanceProjects 一致） */
-const maintenancePendingCount = computed(() => countByStatus(maintenanceProjects, '待开工'));
-const maintenanceInProgressCount = computed(() => countByStatus(maintenanceProjects, '施工中'));
-const maintenanceCompletedCount = computed(() => countByStatus(maintenanceProjects, '已完工'));
+const maintenancePendingCount = computed(() => countByStatus(props.maintenanceProjects, '待开工'));
+const maintenanceInProgressCount = computed(() => countByStatus(props.maintenanceProjects, '施工中'));
+const maintenanceCompletedCount = computed(() => countByStatus(props.maintenanceProjects, '已完工'));
 
-const engPendingCount = computed(() => countByStatus(engineeringProjects, '待开工'));
-const engInProgressCount = computed(() => countByStatus(engineeringProjects, '施工中'));
-const engCompletedCount = computed(() => countByStatus(engineeringProjects, '已完工'));
-const engSettledCount = computed(() => countByStatus(engineeringProjects, '已结算'));
-const engWarrantyInCount = computed(() => countByStatus(engineeringProjects, '保修中'));
-const engWarrantyOutCount = computed(() => countByStatus(engineeringProjects, '保修外'));
+const engPendingCount = computed(() => countByStatus(props.engineeringProjects, '待开工'));
+const engInProgressCount = computed(() => countByStatus(props.engineeringProjects, '施工中'));
+const engCompletedCount = computed(() => countByStatus(props.engineeringProjects, '已完工'));
+const engSettledCount = computed(() => countByStatus(props.engineeringProjects, '已结算'));
+const engWarrantyInCount = computed(() => countByStatus(props.engineeringProjects, '保修中'));
+const engWarrantyOutCount = computed(() => countByStatus(props.engineeringProjects, '保修外'));
 
 const showAddModal = ref(false);
 const modalStep = ref<'form' | 'success'>('form');
 
 // Filter projects for the dropdown
 const availableProjects = computed(() => {
-  return engineeringProjects.filter(p => 
+  return props.engineeringProjects.filter(p =>
     ['待开工', '施工中', '已完工'].includes(p.status)
   );
 });
@@ -330,7 +336,7 @@ const closeAddModal = () => {
                 </div>
 
                 <div class="flex-shrink-0 flex flex-col gap-0.5 mb-2">
-                   <div v-for="member in members" :key="member.id" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
+                   <div v-for="member in props.members" :key="member.id" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
                       <div class="flex items-center space-x-3">
                          <div :class="['w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs', member.bgColor]">
                             {{ member.initial }}

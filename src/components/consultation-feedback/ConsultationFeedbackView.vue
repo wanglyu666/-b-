@@ -10,7 +10,8 @@ import {
   X,
 } from 'lucide-vue-next';
 import TopBarActions from '../TopBarActions.vue';
-import { engineeringProjects } from '../../data';
+import { engineeringProjects as engineeringProjectsFallback } from '../../data';
+import type { EngineeringProject } from '../../types';
 import {
   CONSULTATION_STATUSES,
   type ConsultationSheetStatus,
@@ -46,6 +47,15 @@ const emit = defineEmits<{
   /** 进入反馈记录全表；若从表格「⋯」进入可带 openConsultationId 以自动弹出详情 */
   openFeedbackRecords: [payload?: { openConsultationId?: string }];
 }>();
+
+const props = withDefaults(
+  defineProps<{
+    engineeringProjects?: EngineeringProject[];
+  }>(),
+  {
+    engineeringProjects: () => engineeringProjectsFallback,
+  },
+);
 
 const consultationSheetStatus = ref<ConsultationSheetStatus>('待回复');
 const statusOptions = CONSULTATION_STATUSES;
@@ -653,7 +663,7 @@ function submitConsultationForm() {
                 class="feedback-modal-project-select w-full min-w-0 rounded-lg border border-[#E8C84B] bg-white px-3 py-2.5 text-sm text-gray-800 shadow-sm focus:border-[#FFEB69] focus:outline-none focus:ring-2 focus:ring-[#FFEB69]/40"
               >
                 <option value="" disabled>请选择</option>
-                <option v-for="p in engineeringProjects" :key="p.id" :value="p.id">
+                <option v-for="p in props.engineeringProjects" :key="p.id" :value="p.id">
                   {{ p.name }}（{{ p.no }}）
                 </option>
               </select>

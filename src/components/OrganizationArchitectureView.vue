@@ -6,9 +6,14 @@ import {
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 import TopBarActions from './TopBarActions.vue';
-import { members, organizationTeams } from '../data';
 import spaceIllustration from '../../image asset/space.png';
 import membersMgmtIllustration from '../../image asset/group icon.png';
+import type { Member, OrganizationTeam } from '../types';
+
+const props = defineProps<{
+  members: Member[];
+  teams: OrganizationTeam[];
+}>();
 
 const emit = defineEmits<{
   openMemberManagement: [];
@@ -16,7 +21,7 @@ const emit = defineEmits<{
 }>();
 
 /** 组织页「成员管理」卡片内仅展示前 3 人，布局不变 */
-const membersPreview = computed(() => members.slice(0, 3));
+const membersPreview = computed(() => props.members.slice(0, 3));
 
 /**
  * 底部「审批配置」「团队」占位区域的最小高度（像素）。
@@ -46,7 +51,7 @@ const SPACE_STATS_OFFSET_X_PX = -30;
 const SPACE_CARD_STATS_WIDTH_PX = 92;
 
 /** 首页侧栏仅展示前 2 个团队预览 */
-const teamBlocksPreview = computed(() => organizationTeams.slice(0, 2));
+const teamBlocksPreview = computed(() => props.teams.slice(0, 2));
 </script>
 
 <template>
