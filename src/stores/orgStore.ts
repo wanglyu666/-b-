@@ -1,11 +1,16 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
-import { fetchMembers, fetchOrganizationTeams } from '../api/orgApi';
-import type { Member, OrganizationTeam } from '../types';
+import {
+  fetchMembers,
+  fetchOrganizationSpaces,
+  fetchOrganizationTeams,
+} from '../api/orgApi';
+import type { Member, OrganizationSpace, OrganizationTeam } from '../types';
 
 export const useOrgStore = defineStore('org', () => {
   const members = ref<Member[]>([]);
   const teams = ref<OrganizationTeam[]>([]);
+  const spaces = ref<OrganizationSpace[]>([]);
   const loading = ref(false);
   const loaded = ref(false);
   const error = ref<string | null>(null);
@@ -15,12 +20,14 @@ export const useOrgStore = defineStore('org', () => {
     loading.value = true;
     error.value = null;
     try {
-      const [memberList, teamList] = await Promise.all([
+      const [memberList, teamList, spaceList] = await Promise.all([
         fetchMembers(),
         fetchOrganizationTeams(),
+        fetchOrganizationSpaces(),
       ]);
       members.value = memberList;
       teams.value = teamList;
+      spaces.value = spaceList;
       loaded.value = true;
     } catch (e) {
       error.value = e instanceof Error ? e.message : '组织数据加载失败';
@@ -31,15 +38,18 @@ export const useOrgStore = defineStore('org', () => {
 
   const memberCount = computed(() => members.value.length);
   const teamCount = computed(() => teams.value.length);
+  const spaceCount = computed(() => spaces.value.length);
 
   return {
     members,
     teams,
+    spaces,
     loading,
     loaded,
     error,
     memberCount,
     teamCount,
+    spaceCount,
     loadOrganizationData,
   };
 });

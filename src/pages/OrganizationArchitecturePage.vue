@@ -16,7 +16,9 @@ onMounted(() => {
   <OrganizationArchitectureView
     :members="orgStore.members"
     :teams="orgStore.teams"
+    :space-count="orgStore.spaceCount"
     @open-member-management="router.push({ name: 'member-management' })"
     @open-team-management="router.push({ name: 'team-management' })"
+    @open-space-management="router.push({ name: 'space-management' })"
   />
 </template>

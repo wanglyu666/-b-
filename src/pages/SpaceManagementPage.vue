@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import MemberManagementView from '../components/MemberManagementView.vue';
+import SpaceManagementView from '../components/SpaceManagementView.vue';
 import { useOrgStore } from '../stores/orgStore';
 
 const router = useRouter();
@@ -13,9 +13,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <MemberManagementView
-    :members="orgStore.members"
-    :teams="orgStore.teams"
+  <SpaceManagementView
     :spaces="orgStore.spaces"
     @back="router.push({ name: 'org-architecture' })"
   />

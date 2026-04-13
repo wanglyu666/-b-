@@ -7,6 +7,7 @@ import {
   EngineeringProject,
   MaintenanceProject,
   OrganizationTeam,
+  OrganizationSpace,
 } from './types';
 
 export const chartData = [
@@ -502,12 +503,12 @@ export const maintenanceProjects: MaintenanceProject[] = [
 ];
 
 export const members: Member[] = [
-  { id: 1, name: '张伟', role: '项目经理', initial: '张', bgColor: 'bg-blue-500', online: true, phone: '138-0013-8001', team: '维保一组', email: 'zhangwei@example.com', remarks: '负责 A 区商业综合体项目统筹与对外协调。' },
-  { id: 2, name: '李秀英', role: '高级工程师', initial: '李', bgColor: 'bg-green-500', online: false, phone: '139-2234-5678', team: '维保一组', email: 'lixiuying@example.com', remarks: '暖通方案审核与节能改造技术支持。' },
-  { id: 3, name: '王强', role: '现场监理', initial: '王', bgColor: 'bg-yellow-500', online: true, phone: '137-3344-9900', team: '维保二组', email: 'wangqiang@example.com', remarks: '现场安全巡检与施工质量验收。' },
-  { id: 4, name: '刘洋', role: '机电工程师', initial: '刘', bgColor: 'bg-indigo-500', online: true, phone: '136-5566-7788', team: '维保二组', email: 'liuyang@example.com', remarks: '机电安装与调试，配合竣工验收。' },
-  { id: 5, name: '陈明', role: '安全员', initial: '陈', bgColor: 'bg-rose-500', online: false, phone: '135-6677-8899', team: '维保一组', email: 'chenming@example.com', remarks: '专项安全培训与隐患整改跟踪。' },
-  { id: 6, name: '赵敏', role: '资料员', initial: '赵', bgColor: 'bg-teal-500', online: true, phone: '133-7788-9900', team: '维保二组', email: 'zhaomin@example.com', remarks: '竣工资料归档与图纸版本管理。' },
+  { id: 1, name: '张伟', role: '项目经理', initial: '张', bgColor: 'bg-blue-500', online: true, phone: '138-0013-8001', team: '维保一组', email: 'zhangwei@example.com', memberType: '内部成员', remarks: '负责 A 区商业综合体项目统筹与对外协调。', responsibleSpace: 'A 区 · 商业综合体、B 区 · 写字楼群' },
+  { id: 2, name: '李秀英', role: '高级工程师', initial: '李', bgColor: 'bg-green-500', online: false, phone: '139-2234-5678', team: '维保一组', email: 'lixiuying@example.com', memberType: '内部成员', remarks: '暖通方案审核与节能改造技术支持。', responsibleSpace: 'A 区 · 商业综合体' },
+  { id: 3, name: '王强', role: '现场监理', initial: '王', bgColor: 'bg-yellow-500', online: true, phone: '137-3344-9900', team: '维保二组', email: 'wangqiang@example.com', memberType: '外部成员', remarks: '现场安全巡检与施工质量验收。', responsibleSpace: '工业园区 · 配电中心', company: '宏达机电工程有限公司' },
+  { id: 4, name: '刘洋', role: '机电工程师', initial: '刘', bgColor: 'bg-indigo-500', online: true, phone: '136-5566-7788', team: '维保二组', email: 'liuyang@example.com', memberType: '内部成员', remarks: '机电安装与调试，配合竣工验收。', responsibleSpace: 'C 区 · 产业园一期' },
+  { id: 5, name: '陈明', role: '安全员', initial: '陈', bgColor: 'bg-rose-500', online: false, phone: '135-6677-8899', team: '维保一组', email: 'chenming@example.com', memberType: '内部成员', remarks: '专项安全培训与隐患整改跟踪。', responsibleSpace: '全区域安全巡检' },
+  { id: 6, name: '赵敏', role: '资料员', initial: '赵', bgColor: 'bg-teal-500', online: true, phone: '133-7788-9900', team: '维保二组', email: 'zhaomin@example.com', memberType: '内部成员', remarks: '竣工资料归档与图纸版本管理。', responsibleSpace: '总部档案室、项目资料库' },
 ];
 
 /** 组织与架构 · 团队（团队页网格与首页侧栏共用） */
@@ -582,5 +583,49 @@ export const organizationTeams: OrganizationTeam[] = [
       { initial: '赵', color: '#0D9488' },
       { initial: '冯', color: '#64748B' },
     ],
+  },
+];
+
+/** 组织与架构 · 空间列表 */
+export const organizationSpaces: OrganizationSpace[] = [
+  {
+    id: 's1',
+    name: '北京总部',
+    owner: '张伟',
+    province: '北京市',
+    city: '北京市',
+    district: '朝阳区',
+    address: '住邦2000商务中心4号楼5层',
+    area: '1000㎡',
+  },
+  {
+    id: 's2',
+    name: '上海运营中心',
+    owner: '李秀英',
+    province: '上海市',
+    city: '上海市',
+    district: '浦东新区',
+    address: '陆家嘴环路1000号恒生银行大厦15层',
+    area: '850㎡',
+  },
+  {
+    id: 's3',
+    name: '深圳研发中心',
+    owner: '刘洋',
+    province: '广东省',
+    city: '深圳市',
+    district: '南山区',
+    address: '科技园南区深南大道9988号',
+    area: '1200㎡',
+  },
+  {
+    id: 's4',
+    name: '成都备件仓',
+    owner: '陈明',
+    province: '四川省',
+    city: '成都市',
+    district: '双流区',
+    address: '航空港物流园B区7号库',
+    area: '3200㎡',
   },
 ];

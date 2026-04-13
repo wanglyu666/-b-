@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import {
-  UsersRound,
+  ClipboardList,
   MoreHorizontal,
   ShoppingCart,
+  UsersRound,
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 import TopBarActions from './TopBarActions.vue';
@@ -13,18 +14,21 @@ import type { Member, OrganizationTeam } from '../types';
 const props = defineProps<{
   members: Member[];
   teams: OrganizationTeam[];
+  /** 空间总数（与空间管理列表一致） */
+  spaceCount: number;
 }>();
 
 const emit = defineEmits<{
   openMemberManagement: [];
   openTeamManagement: [];
+  openSpaceManagement: [];
 }>();
 
 /** 组织页「成员管理」卡片内仅展示前 3 人，布局不变 */
 const membersPreview = computed(() => props.members.slice(0, 3));
 
 /**
- * 底部「审批配置」「团队」占位区域的最小高度（像素）。
+ * 底部「审批配置」与「团队」所在行的最小高度（像素）。
  * 数值越大，这两块卡片从底部向下越长（与上排 400px 卡片之间的空隙由 gap-6 固定）。
  * 修改后保存即可生效。
  */
@@ -52,6 +56,24 @@ const SPACE_CARD_STATS_WIDTH_PX = 92;
 
 /** 首页侧栏仅展示前 2 个团队预览 */
 const teamBlocksPreview = computed(() => props.teams.slice(0, 2));
+
+/** 审批配置 · 左右小卡预览（示意数据） */
+const approvalCardLeft = {
+  type: '下单审批',
+  initiator: 'XXXX',
+  time: '2026年4月10日',
+  /** 流程图中间节点展示姓名 */
+  currentApprover: '李四',
+} as const;
+
+const approvalCardRight = {
+  type: '下单审批',
+  initiator: 'YYYY',
+  time: '2026年4月11日',
+  currentApprover: '王五',
+} as const;
+
+const approvalBlocks = [approvalCardLeft, approvalCardRight];
 </script>
 
 <template>
@@ -66,9 +88,9 @@ const teamBlocksPreview = computed(() => props.teams.slice(0, 2));
       </header>
 
       <!--
-        桌面：上排左成员、上排中空间（同高 400px）；下排左跨两列审批；右侧团队跨两行。
-        小屏：自上而下 成员 → 空间 → 审批 → 团队。
-        底部占位高度由脚本中 BOTTOM_PLACEHOLDER_MIN_PX 控制（见下方 style）。
+        桌面：上排左成员、上排中空间（同高 400px）；下排左跨两列审批配置；右侧团队跨两行。
+        小屏：自上而下 成员 → 空间 → 审批配置 → 团队。
+        底部区域最小高度由脚本中 BOTTOM_PLACEHOLDER_MIN_PX 控制（见下方 style）。
       -->
       <div
         class="org-arch-grid grid grid-cols-1 gap-6 lg:grid-cols-3"
@@ -129,14 +151,19 @@ const teamBlocksPreview = computed(() => props.teams.slice(0, 2));
           </button>
         </div>
 
-        <!-- 2 空间：左图右统计，底部长条「新增」 -->
+        <!-- 2 空间：左图右统计，底部长条「新增」；点击卡片进入空间管理页 -->
         <div
-          class="bg-white/50 p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-[400px] overflow-visible lg:col-start-2 lg:row-start-1"
+          role="button"
+          tabindex="0"
+          class="flex h-[400px] cursor-pointer flex-col overflow-visible rounded-3xl border border-gray-100 bg-white/50 p-6 shadow-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9FE870]/50 lg:col-start-2 lg:row-start-1"
+          @click="emit('openSpaceManagement')"
+          @keydown.enter.prevent="emit('openSpaceManagement')"
+          @keydown.space.prevent="emit('openSpaceManagement')"
         >
-          <div class="flex justify-between items-center mb-4 shrink-0">
+          <div class="mb-4 flex shrink-0 items-center justify-between">
             <div class="flex items-center space-x-2">
-              <div class="w-1 h-5 bg-[#FFEB69] rounded-full" />
-              <h3 class="font-bold text-lg text-gray-800">空间</h3>
+              <div class="h-5 w-1 rounded-full bg-[#FFEB69]" />
+              <h3 class="text-lg font-bold text-gray-800">空间</h3>
             </div>
             <ShoppingCart :size="18" class="text-gray-400" />
           </div>
@@ -169,25 +196,102 @@ const teamBlocksPreview = computed(() => props.teams.slice(0, 2));
                 }"
               >
                 <span class="text-sm font-medium text-gray-500">空间总数</span>
-                <span class="font-bold text-5xl tabular-nums leading-none text-gray-900">
-                  0
+                <span
+                  class="text-5xl font-bold tabular-nums leading-none text-gray-900"
+                >
+                  {{ spaceCount }}
                 </span>
               </div>
             </div>
             <button
               type="button"
               class="w-full shrink-0 rounded-full border border-[#9FE870]/50 bg-[#9FE870] px-6 py-3 text-center text-base font-bold text-[#163300] shadow-sm transition hover:brightness-[0.97] active:scale-[0.99]"
+              @click.stop
             >
               新增
             </button>
           </div>
         </div>
 
-        <!-- 3 审批配置：仅占位（高度随 BOTTOM_PLACEHOLDER_MIN_PX）；底 50% 白 -->
+        <!-- 3 审批配置：外层 50% 白；内左右小卡对齐管理中心维保「施工中」卡（slate/10） -->
         <div
-          class="org-arch-placeholder rounded-3xl border border-gray-100 bg-white/50 shadow-sm lg:col-span-2 lg:col-start-1 lg:row-start-2"
-          aria-hidden="true"
-        />
+          class="org-arch-placeholder flex min-h-0 flex-col rounded-3xl border border-gray-100 bg-white/50 p-6 shadow-sm lg:col-span-2 lg:col-start-1 lg:row-start-2"
+        >
+          <div class="mb-4 flex shrink-0 items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <div class="h-5 w-1 rounded-full bg-[#FFEB69]" />
+              <h3 class="text-lg font-bold text-gray-800">审批配置</h3>
+            </div>
+            <ClipboardList :size="18" class="text-gray-400" />
+          </div>
+          <div
+            class="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row lg:gap-5"
+          >
+            <article
+              v-for="(block, idx) in approvalBlocks"
+              :key="idx"
+              class="flex min-h-0 min-w-0 flex-1 flex-col rounded-3xl border border-slate-400/10 bg-slate-500/10 p-4 shadow-sm ring-1 ring-slate-400/5 sm:p-5"
+            >
+              <div class="space-y-2.5 text-sm text-gray-800">
+                <div class="flex gap-2">
+                  <span class="shrink-0 text-gray-500">审批类型</span>
+                  <span class="font-medium">{{ block.type }}</span>
+                </div>
+                <div class="flex gap-2">
+                  <span class="shrink-0 text-gray-500">发起人</span>
+                  <span class="font-medium">{{ block.initiator }}</span>
+                </div>
+                <div class="flex gap-2">
+                  <span class="shrink-0 text-gray-500">发起时间</span>
+                  <span class="font-medium tabular-nums">{{ block.time }}</span>
+                </div>
+              </div>
+              <div
+                class="mt-4 flex min-h-0 flex-1 flex-col justify-end border-t border-slate-400/10 pt-3"
+              >
+                <!-- 开始 — 虚线 — 当前审批人 — 虚线 — 结束 -->
+                <div class="flex w-full min-w-0 items-center gap-1 sm:gap-2">
+                  <div
+                    class="shrink-0 rounded-xl border border-white/40 bg-white/50 px-3 py-2 text-center text-xs font-bold text-gray-800 shadow-sm backdrop-blur-sm sm:px-4 sm:text-sm"
+                  >
+                    开始
+                  </div>
+                  <div
+                    class="relative flex min-h-[2px] min-w-[0.75rem] flex-1 items-center"
+                    aria-hidden="true"
+                  >
+                    <div
+                      class="h-0 w-full border-t-2 border-dashed border-gray-500/50"
+                    />
+                  </div>
+                  <div
+                    class="flex shrink-0 flex-col items-center gap-1 px-0.5"
+                  >
+                    <div
+                      class="min-w-[3.5rem] rounded-xl border border-white/40 bg-white/50 px-3 py-2 text-center text-xs font-bold text-gray-900 shadow-sm backdrop-blur-sm sm:min-w-[4.5rem] sm:px-4 sm:py-2.5 sm:text-sm"
+                    >
+                      {{ block.currentApprover }}
+                    </div>
+                    <span class="text-[10px] text-gray-500">当前</span>
+                  </div>
+                  <div
+                    class="relative flex min-h-[2px] min-w-[0.75rem] flex-1 items-center"
+                    aria-hidden="true"
+                  >
+                    <div
+                      class="h-0 w-full border-t-2 border-dashed border-gray-500/50"
+                    />
+                  </div>
+                  <div
+                    class="shrink-0 rounded-xl border border-white/40 bg-white/50 px-3 py-2 text-center text-xs font-bold text-gray-800 shadow-sm backdrop-blur-sm sm:px-4 sm:text-sm"
+                  >
+                    结束
+                  </div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </div>
 
         <!-- 4 团队：桌面跨两行；内嵌两块 50% 白小卡 + 重叠彩色头像 -->
         <div

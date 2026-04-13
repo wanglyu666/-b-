@@ -65,6 +65,22 @@ export interface OrganizationTeam {
   members: OrganizationTeamMemberAvatar[];
 }
 
+/** 组织与架构 · 空间（空间管理列表） */
+export interface OrganizationSpace {
+  id: string;
+  name: string;
+  /** 负责人 */
+  owner: string;
+  province: string;
+  city: string;
+  /** 区/县 */
+  district: string;
+  /** 具体位置 */
+  address: string;
+  /** 面积展示，如 1000㎡ */
+  area: string;
+}
+
 export interface Member {
   id: number;
   name: string;
@@ -78,8 +94,14 @@ export interface Member {
   team?: string;
   /** 联系邮箱 */
   email?: string;
+  /** 成员类型：内部 / 外部 */
+  memberType?: '内部成员' | '外部成员';
   /** 备注 */
   remarks?: string;
+  /** 负责空间（成员详情「完整显示」） */
+  responsibleSpace?: string;
+  /** 所属公司（仅外部成员展示） */
+  company?: string;
 }
 
 export interface MaintenanceProject {

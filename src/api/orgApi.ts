@@ -1,5 +1,5 @@
-import { members, organizationTeams } from '../data';
-import type { Member, OrganizationTeam } from '../types';
+import { members, organizationSpaces, organizationTeams } from '../data';
+import type { Member, OrganizationSpace, OrganizationTeam } from '../types';
 import { mockLatency } from './mockUtils';
 
 export async function fetchMembers(): Promise<Member[]> {
@@ -13,4 +13,9 @@ export async function fetchOrganizationTeams(): Promise<OrganizationTeam[]> {
     ...t,
     members: t.members.map((m) => ({ ...m })),
   }));
+}
+
+export async function fetchOrganizationSpaces(): Promise<OrganizationSpace[]> {
+  await mockLatency();
+  return organizationSpaces.map((s) => ({ ...s }));
 }

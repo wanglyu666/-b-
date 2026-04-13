@@ -21,6 +21,90 @@ View your app in AI Studio: https://ai.studio/apps/a0050aee-d105-4034-9cf9-65ffb
 
 ---
 
+## 前端架构速查（Vue Router / Pinia / API）
+
+写新页面时建议按本节约定：**页面组件只做路由与数据编排**，业务 UI 放在 `src/components/` 下的 **View** 里；跨页共享数据走 **Pinia**，异步数据入口统一走 **`src/api/`**。
+
+### 技术栈与入口
+
+| 依赖 | 作用 |
+|------|------|
+| `vue-router`（约 5.x） | 声明式路由、`meta`、编程式导航 |
+| `pinia`（约 3.x） | 全局状态、按需 `loadXxx` 拉数 |
+
+- **应用挂载**：`src/main.ts` 中顺序为 `createApp` → `app.use(pinia)` → `app.use(router)` → **`await usePermissionStore().loadDynamicRoutes(router)`** → **`await router.isReady()`** → `mount`。这样动态路由（若后端下发）在首屏前注册完毕。
+- **壳层**：`src/App.vue` 只负责侧栏 + `<RouterView />`；`onMounted` 里调用 **`useAppStore().loadGlobalModules()`**，预拉全局业务模块（商品、通知、维保工单、订单、工程项目等）。路由切换时会把主内容区滚动条置顶。
+
+### 路由结构（静态路由）
+
+静态路由集中在 **`src/router/index.ts`**。约定：
+
+- **`path`**：URL；根路径 `/` **重定向** 到 `/home`。
+- **`name`**：编程式导航优先用 **`router.push({ name: '...' })`**，避免硬编码路径。
+- **`meta.activeTab`**：与侧栏高亮一致，取值需与 `App.vue` 里 `tabRouteMap` 的 key 对齐（如 `home`、`shop`、`management`、`org-architecture`、`contracts`、`consultation-feedback`）。
+
+当前主要路径一览（节选）：
+
+| 路径 | name | activeTab |
+|------|------|-----------|
+| `/home` | `home` | `home` |
+| `/messages` | `messages` | `home` |
+| `/shop` 及子路径 | `shop`、`product-detail`、`cart`、`wishlist` | `shop` |
+| `/management` 及子路径 | `management`、`maintenance-repair`、`maintenance-projects`、`order-management`、`engineering-projects` | `management` |
+| `/org`、`/org/members`、`/org/teams` | `org-architecture`、`member-management`、`team-management` | `org-architecture` |
+| `/contracts` | `contracts` | `contracts` |
+| `/consultation-feedback` 及子路径 | `consultation-feedback`、`all-consultations`、`feedback-records` | `consultation-feedback` |
+
+侧栏点击 Tab 时，`App.vue` 的 `onSidebarNavigate` 只跳到各 Tab 的「默认首页」（例如管理 → `/management`），子路由由各页面内 `router.push` 进入。
+
+### 动态路由（可选，后端菜单）
+
+- **`src/api/permissionApi.ts`**：`fetchBackendRoutes()` 返回 `BackendRouteConfig[]`（`name`、`path`、`componentKey`、`meta`）。当前实现返回 **空数组**，仅占位。
+- **`src/router/dynamicRegistry.ts`**：`componentKey` → 真实 Vue 组件的映射表；**新增动态页时**需在此注册 `componentKey`，并在后端（或本地模拟）返回对应配置。
+- **`src/stores/permissionStore.ts`**：`loadDynamicRoutes(router)` 会遍历后端路由，用 `router.addRoute` 注册，并避免重复 `name`。
+
+### Pinia Store 职责
+
+| Store | 文件 | 职责摘要 |
+|-------|------|----------|
+| `useAppStore` | `src/stores/appStore.ts` | 购物车/心愿单/商城分页与滚动、**全局模块数据**（`loadGlobalModules` 并行拉取商品、待办通知、维保维修单、订单、工程/维保项目等）、工程/维保/咨询相关的跨页「待打开」状态 |
+| `useOrgStore` | `src/stores/orgStore.ts` | 成员与团队：`loadOrganizationData()` → 写入 `members`、`teams` |
+| `usePermissionStore` | `src/stores/permissionStore.ts` | 启动时合并后端动态路由 |
+
+页面级需要组织数据时，在对应 **Page** 的 `onMounted` 里调用 `orgStore.loadOrganizationData()`（与 `ManagementPage`、组织页一致）。需要全局列表时依赖 `appStore.loadGlobalModules()`（根组件已调一次，Page 里可再调以兼容直达刷新）。
+
+### API 层约定（`src/api/`）
+
+| 模块 | 文件 | 说明 |
+|------|------|------|
+| 通用 | `mockUtils.ts` | 例如 `mockLatency()`，模拟网络延迟 |
+| 组织 | `orgApi.ts` | `fetchMembers`、`fetchOrganizationTeams` |
+| 商品 | `commerceApi.ts` | `fetchProducts` |
+| 项目 | `projectApi.ts` | `fetchEngineeringProjects`、`fetchMaintenanceProjects` |
+| 运营 | `operationApi.ts` | `fetchMaintenanceRepairOrders`、`fetchOrders` |
+| 通知 | `notificationApi.ts` | `fetchTodoNotifications` |
+| 权限/菜单 | `permissionApi.ts` | `fetchBackendRoutes`（动态路由配置） |
+
+约定：对外导出 **async 函数**，返回 Promise；内部可从 `src/data` 读本地种子数据并拷贝，再接真实 HTTP 时只改各 `*.ts` 实现，**Store 与页面尽量不改**。共享类型可放在 `src/types/`（如 `app-domain.ts`）。
+
+### 页面（Page）与视图（View）
+
+- **`src/pages/*.vue`**：**薄封装**。负责 `useAppStore` / `useOrgStore`、`useRouter`，在 `onMounted` 中按需 `loadXxx`，把 store 中的数据 **用 props 传给** `src/components/**` 下的业务 View；事件里做 `router.push` 或再写回 store。
+- **`src/components/**`**：具体 UI 与交互；尽量 **不直接依赖路由**，通过 emit 让 Page 导航，便于复用与测试。
+
+参考：`src/pages/ManagementPage.vue`、`OrganizationArchitecturePage.vue`、`ConsultationFeedbackPage.vue`。
+
+### 新增静态页面 checklist
+
+1. 在 `src/components/` 实现或复用业务 **View**（接收 props、对外 emit）。
+2. 新建 **`src/pages/YourPage.vue`**：注入 store、绑定 props/事件、`onMounted` 拉数。
+3. 在 **`src/router/index.ts`** 增加一条 `route`：`path`、`name`、`component`、`meta.activeTab`。
+4. 若需侧栏一级入口：改 **`src/App.vue`** 的 `tabRouteMap`（及侧栏组件配置，如有）。
+5. 若数据来自新后端：在 **`src/api/`** 新增函数 → 在对应 Store 或 Page 中调用；类型补 **`src/types`**。
+6. 若需 **动态路由**：后端返回 `componentKey` → **`dynamicRegistry.ts`** 注册组件 → **`permissionApi.ts`** 改为真实请求。
+
+---
+
 ## UI 复用：深色毛玻璃详情弹窗（维保项目 / 成员详情）
 
 项目里「维保项目管理」点击卡片后的 **项目详情** 弹窗，与「成员管理」点击人员卡片后的 **成员详情** 弹窗，共用同一套视觉规范。后续做新弹窗时可按此描述对齐，便于 AI 或人工快速复用。
