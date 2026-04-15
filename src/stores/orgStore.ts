@@ -40,6 +40,11 @@ export const useOrgStore = defineStore('org', () => {
   const teamCount = computed(() => teams.value.length);
   const spaceCount = computed(() => spaces.value.length);
 
+  /** 空间管理页本地新增（演示；持久化需对接后端） */
+  function addSpace(space: OrganizationSpace) {
+    spaces.value = [...spaces.value, space];
+  }
+
   return {
     members,
     teams,
@@ -51,5 +56,6 @@ export const useOrgStore = defineStore('org', () => {
     teamCount,
     spaceCount,
     loadOrganizationData,
+    addSpace,
   };
 });

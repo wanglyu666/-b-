@@ -43,16 +43,6 @@ const orgGridStyle = computed(() => ({
  */
 const SPACE_IMG_WIDTH_PX = 450;
 const SPACE_IMG_HEIGHT_PX = 450;
-/**
- * 插图水平偏移（px）：正值向右、负值向左（相对左列起始位置）。
- */
-const SPACE_IMG_OFFSET_X_PX = 0;
-/**
- * 「空间总数」区块水平偏移（px）：正值向右、负值向左（相对默认靠右位置）。
- */
-const SPACE_STATS_OFFSET_X_PX = -30;
-/** 「空间总数」列内容宽度（px），略大可避免数字换行 */
-const SPACE_CARD_STATS_WIDTH_PX = 92;
 
 /** 首页侧栏仅展示前 2 个团队预览 */
 const teamBlocksPreview = computed(() => props.teams.slice(0, 2));
@@ -151,7 +141,7 @@ const approvalBlocks = [approvalCardLeft, approvalCardRight];
           </button>
         </div>
 
-        <!-- 2 空间：左图右统计，底部长条「新增」；点击卡片进入空间管理页 -->
+        <!-- 2 空间：插图居中，下方空间总数；点击卡片进入空间管理页 -->
         <div
           role="button"
           tabindex="0"
@@ -168,48 +158,28 @@ const approvalBlocks = [approvalCardLeft, approvalCardRight];
             <ShoppingCart :size="18" class="text-gray-400" />
           </div>
 
-          <div class="flex min-h-0 flex-1 flex-col gap-4 overflow-visible">
-            <!-- 左：固定 px 尺寸插图（可溢出容器）；右：空间总数，各自 translate 微调左右 -->
-            <div
-              class="relative z-0 flex min-h-0 flex-1 items-center gap-2 overflow-visible sm:gap-3"
-            >
-              <div
-                class="flex min-h-0 min-w-0 flex-1 items-center justify-start overflow-visible"
-              >
-                <img
-                  :src="spaceIllustration"
-                  alt=""
-                  class="pointer-events-none shrink-0"
-                  :style="{
-                    width: `${SPACE_IMG_WIDTH_PX}px`,
-                    height: `${SPACE_IMG_HEIGHT_PX}px`,
-                    objectFit: 'contain',
-                    transform: `translateX(${SPACE_IMG_OFFSET_X_PX}px)`,
-                  }"
-                />
-              </div>
-              <div
-                class="flex shrink-0 flex-col items-end justify-center gap-1.5 text-right"
+          <div
+            class="flex min-h-0 flex-1 flex-col items-center justify-center gap-5 overflow-visible"
+          >
+            <div class="flex w-full min-h-0 flex-1 items-center justify-center overflow-visible">
+              <img
+                :src="spaceIllustration"
+                alt=""
+                class="pointer-events-none max-h-full max-w-full shrink-0 object-contain"
                 :style="{
-                  width: `${SPACE_CARD_STATS_WIDTH_PX}px`,
-                  transform: `translateX(${SPACE_STATS_OFFSET_X_PX}px)`,
+                  width: `${SPACE_IMG_WIDTH_PX}px`,
+                  height: `${SPACE_IMG_HEIGHT_PX}px`,
                 }"
-              >
-                <span class="text-sm font-medium text-gray-500">空间总数</span>
-                <span
-                  class="text-5xl font-bold tabular-nums leading-none text-gray-900"
-                >
-                  {{ spaceCount }}
-                </span>
-              </div>
+              />
             </div>
-            <button
-              type="button"
-              class="w-full shrink-0 rounded-full border border-[#9FE870]/50 bg-[#9FE870] px-6 py-3 text-center text-base font-bold text-[#163300] shadow-sm transition hover:brightness-[0.97] active:scale-[0.99]"
-              @click.stop
-            >
-              新增
-            </button>
+            <div class="flex shrink-0 flex-col items-center gap-1.5 text-center">
+              <span class="text-sm font-medium text-gray-500">空间总数</span>
+              <span
+                class="text-5xl font-bold tabular-nums leading-none text-gray-900"
+              >
+                {{ spaceCount }}
+              </span>
+            </div>
           </div>
         </div>
 

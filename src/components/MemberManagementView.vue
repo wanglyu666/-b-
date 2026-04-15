@@ -69,6 +69,8 @@ const memberInfoOverrides = ref<
       remarks: string;
       phone: string;
       memberType: '内部成员' | '外部成员';
+      /** 仅外部成员；确认时写入 */
+      company?: string;
     }
   >
 >({});
@@ -78,6 +80,7 @@ const draftInfoEmail = ref('');
 const draftInfoRemarks = ref('');
 const draftInfoPhone = ref('');
 const draftInfoMemberType = ref<'内部成员' | '外部成员'>('内部成员');
+const draftInfoCompany = ref('');
 
 /** 进入信息修改页时的表单快照，用于判断是否有任意修改 */
 const infoEditBaseline = ref<{
@@ -86,6 +89,7 @@ const infoEditBaseline = ref<{
   remarks: string;
   phone: string;
   memberType: '内部成员' | '外部成员';
+  company: string;
 } | null>(null);
 
 const infoEditHasChanges = computed(() => {
@@ -96,7 +100,8 @@ const infoEditHasChanges = computed(() => {
     draftInfoEmail.value.trim() !== b.email ||
     draftInfoRemarks.value.trim() !== b.remarks ||
     draftInfoPhone.value.trim() !== b.phone ||
-    draftInfoMemberType.value !== b.memberType
+    draftInfoMemberType.value !== b.memberType ||
+    draftInfoCompany.value.trim() !== b.company
   );
 });
 
@@ -259,6 +264,7 @@ function toggleMemberTypeDropdown() {
 
 function selectMemberType(opt: '内部成员' | '外部成员') {
   draftInfoMemberType.value = opt;
+  if (opt === '内部成员') draftInfoCompany.value = '';
   memberTypeDropdownOpen.value = false;
 }
 
@@ -342,7 +348,11 @@ function effectiveResponsibleSpace(m: Member): string {
 }
 
 function effectiveCompany(m: Member): string {
-  return m.company ?? '—';
+  const o = memberInfoOverrides.value[m.id];
+  const mt = o?.memberType ?? m.memberType ?? '内部成员';
+  if (mt === '内部成员') return '—';
+  const c = o?.company !== undefined ? o.company : m.company;
+  return c?.trim() ? c.trim() : '—';
 }
 
 /** 成员 id → 已选团队 id 列表（确认后写入，与团队页数据一致） */
@@ -599,6 +609,9 @@ function openInfoEdit() {
   draftInfoRemarks.value = effectiveRemarks(m);
   draftInfoPhone.value = effectivePhone(m);
   draftInfoMemberType.value = effectiveMemberType(m);
+  const co = memberInfoOverrides.value[m.id]?.company;
+  draftInfoCompany.value =
+    co !== undefined ? co : (m.company ?? '');
   memberTypeDropdownOpen.value = false;
   infoEditBaseline.value = {
     name: draftInfoName.value.trim(),
@@ -606,6 +619,7 @@ function openInfoEdit() {
     remarks: draftInfoRemarks.value.trim(),
     phone: draftInfoPhone.value.trim(),
     memberType: draftInfoMemberType.value,
+    company: draftInfoCompany.value.trim(),
   };
   modalView.value = 'infoEdit';
 }
@@ -623,6 +637,9 @@ function confirmInfoEdit() {
       remarks: draftInfoRemarks.value.trim(),
       phone: draftInfoPhone.value.trim(),
       memberType: draftInfoMemberType.value,
+      ...(draftInfoMemberType.value === '外部成员'
+        ? { company: draftInfoCompany.value.trim() }
+        : {}),
     },
   };
   modalView.value = 'infoEditSuccess';
@@ -1653,6 +1670,25 @@ onUnmounted(() => {
                       </button>
                     </div>
                   </div>
+                </div>
+                <div
+                  v-if="draftInfoMemberType === '外部成员'"
+                  class="space-y-2 sm:max-w-md"
+                >
+                  <label
+                    for="member-edit-company"
+                    class="block text-xs font-bold uppercase tracking-widest text-white/40"
+                  >
+                    公司名称
+                  </label>
+                  <input
+                    id="member-edit-company"
+                    v-model="draftInfoCompany"
+                    type="text"
+                    maxlength="128"
+                    autocomplete="organization"
+                    class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[#FFE600]/50 focus:outline-none focus:ring-1 focus:ring-[#FFE600]/40"
+                  />
                 </div>
                 <div class="space-y-2 sm:col-span-2">
                   <label

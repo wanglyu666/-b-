@@ -45,12 +45,11 @@
   border-radius: var(--jp-modal-radius, 40px);
   background-color: var(--jp-modal-bg, rgba(255, 255, 255, 0.1));
   transition:
-    width var(--jp-modal-morph-duration) var(--jp-modal-morph-ease),
-    height var(--jp-modal-morph-duration) var(--jp-modal-morph-ease),
-    transform var(--jp-modal-morph-duration) var(--jp-modal-morph-ease),
-    border-radius var(--jp-modal-morph-duration) var(--jp-modal-morph-ease),
-    background-color var(--jp-modal-morph-duration) ease;
-  will-change: width, height, transform, border-radius;
+    width var(--jp-modal-morph-duration, 0.8s) var(--jp-modal-morph-ease, cubic-bezier(0.16, 1, 0.3, 1)),
+    height var(--jp-modal-morph-duration, 0.8s) var(--jp-modal-morph-ease, cubic-bezier(0.16, 1, 0.3, 1)),
+    transform var(--jp-modal-morph-duration, 0.8s) var(--jp-modal-morph-ease, cubic-bezier(0.16, 1, 0.3, 1)),
+    border-radius var(--jp-modal-morph-duration, 0.8s) var(--jp-modal-morph-ease, cubic-bezier(0.16, 1, 0.3, 1)),
+    background-color var(--jp-modal-morph-duration, 0.8s) ease;
   transform: translateZ(0) scale(var(--jp-modal-scale, 1));
   backface-visibility: hidden;
 }

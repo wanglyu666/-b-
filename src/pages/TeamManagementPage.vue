@@ -15,6 +15,7 @@ onMounted(() => {
 <template>
   <TeamManagementView
     :teams="orgStore.teams"
+    :members="orgStore.members"
     @back="router.push({ name: 'org-architecture' })"
   />
 </template>

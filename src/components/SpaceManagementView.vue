@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { ChevronLeft, MoreHorizontal, Search } from 'lucide-vue-next';
-import type { OrganizationSpace } from '../types';
+import { ChevronLeft, MoreHorizontal, Plus, Search, X } from 'lucide-vue-next';
+import { useOrgStore } from '../stores/orgStore';
+import checkMarkImg from '../../image asset/check mark.png';
 
-const props = defineProps<{
-  spaces: OrganizationSpace[];
-}>();
+const orgStore = useOrgStore();
 
 const emit = defineEmits<{
   back: [];
@@ -15,10 +14,32 @@ const searchQuery = ref('');
 const currentPage = ref(1);
 const itemsPerPage = 8;
 
+/** 新增空间弹窗 */
+const addSpaceModalOpen = ref(false);
+const addSpaceStep = ref<'form' | 'success'>('form');
+
+const draftAddName = ref('');
+const draftAddProvince = ref('');
+const draftAddCity = ref('');
+const draftAddDistrict = ref('');
+const draftAddAddress = ref('');
+const draftAddArea = ref('');
+
+const addSpaceFormValid = computed(
+  () =>
+    draftAddName.value.trim() !== '' &&
+    draftAddProvince.value.trim() !== '' &&
+    draftAddCity.value.trim() !== '' &&
+    draftAddDistrict.value.trim() !== '' &&
+    draftAddAddress.value.trim() !== '' &&
+    draftAddArea.value.trim() !== '',
+);
+
 const filteredData = computed(() => {
-  if (!searchQuery.value.trim()) return props.spaces;
+  const list = orgStore.spaces;
+  if (!searchQuery.value.trim()) return list;
   const q = searchQuery.value.toLowerCase();
-  return props.spaces.filter(
+  return list.filter(
     (row) =>
       row.name.toLowerCase().includes(q) ||
       row.owner.toLowerCase().includes(q) ||
@@ -41,13 +62,56 @@ const paginatedData = computed(() => {
 watch(searchQuery, () => {
   currentPage.value = 1;
 });
+
+function normalizeAreaDisplay(raw: string): string {
+  const t = raw.trim();
+  if (!t) return t;
+  if (/[㎡m²]/i.test(t)) return t;
+  return `${t}㎡`;
+}
+
+function openAddSpaceModal() {
+  draftAddName.value = '';
+  draftAddProvince.value = '';
+  draftAddCity.value = '';
+  draftAddDistrict.value = '';
+  draftAddAddress.value = '';
+  draftAddArea.value = '';
+  addSpaceStep.value = 'form';
+  addSpaceModalOpen.value = true;
+}
+
+function closeAddSpaceModal() {
+  addSpaceModalOpen.value = false;
+  addSpaceStep.value = 'form';
+}
+
+function confirmAddSpace() {
+  if (!addSpaceFormValid.value) return;
+  orgStore.addSpace({
+    id: `s-${Date.now()}`,
+    name: draftAddName.value.trim(),
+    /** 负责人在成员管理中分配，此处不设置 */
+    owner: '—',
+    province: draftAddProvince.value.trim(),
+    city: draftAddCity.value.trim(),
+    district: draftAddDistrict.value.trim(),
+    address: draftAddAddress.value.trim(),
+    area: normalizeAreaDisplay(draftAddArea.value),
+  });
+  addSpaceStep.value = 'success';
+}
+
+function onSuccessClose() {
+  closeAddSpaceModal();
+}
 </script>
 
 <template>
   <div
     class="mx-auto max-w-[1600px] space-y-6 p-8 animate-in fade-in slide-in-from-bottom-4 duration-700"
   >
-    <header class="mb-8 flex items-center justify-between">
+    <header class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div class="flex items-center space-x-4">
         <button
           type="button"
@@ -62,17 +126,27 @@ watch(searchQuery, () => {
         </div>
       </div>
 
-      <div class="relative">
-        <Search
-          :size="18"
-          class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-        />
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="搜索名称/负责人/地址..."
-          class="w-64 rounded-xl border border-white/20 bg-white/50 py-2 pl-10 pr-4 backdrop-blur-md transition-all focus:border-white/20 focus:outline-none focus:ring-0 focus-visible:ring-0"
-        />
+      <div class="flex w-full flex-shrink-0 items-center justify-end gap-3 sm:w-auto">
+        <button
+          type="button"
+          class="flex shrink-0 items-center justify-center gap-2 rounded-full border border-gray-200/80 bg-gray-100/80 px-5 py-2.5 text-sm font-bold text-gray-800 shadow-inner transition hover:bg-white/90 focus:outline-none focus:ring-2 focus:ring-[#9FE870]/40 active:scale-[0.99]"
+          @click="openAddSpaceModal"
+        >
+          <Plus :size="18" class="text-gray-600" aria-hidden="true" />
+          新增
+        </button>
+        <div class="relative min-w-0 flex-1 sm:min-w-[16rem] sm:flex-initial">
+          <Search
+            :size="18"
+            class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          />
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="搜索名称/负责人/地址..."
+            class="w-full rounded-xl border border-white/20 bg-white/50 py-2 pl-10 pr-4 backdrop-blur-md transition-all focus:border-white/20 focus:outline-none focus:ring-0 focus-visible:ring-0 sm:w-64"
+          />
+        </div>
       </div>
     </header>
 
@@ -182,5 +256,197 @@ watch(searchQuery, () => {
         </div>
       </div>
     </div>
+
+    <Teleport to="body">
+      <div
+        v-if="addSpaceModalOpen"
+        class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-md animate-in fade-in duration-300 sm:p-6"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="
+          addSpaceStep === 'form' ? 'space-add-title' : 'space-add-success-title'
+        "
+        @click.self="closeAddSpaceModal"
+      >
+        <div
+          class="jp-modal-morph flex max-h-[min(92vh,860px)] w-full max-w-xl flex-col overflow-hidden border border-white/20 shadow-2xl backdrop-blur-2xl"
+          :style="{
+            '--jp-modal-w': '560px',
+            '--jp-modal-w-max': '560px',
+            '--jp-modal-h': addSpaceStep === 'form' ? '680px' : '520px',
+            '--jp-modal-radius': '32px',
+            '--jp-modal-scale': '1',
+            '--jp-modal-bg': 'rgba(255, 255, 255, 0.15)',
+          }"
+          @click.stop
+        >
+          <template v-if="addSpaceStep === 'form'">
+            <div
+              class="flex shrink-0 items-center justify-between border-b border-white/10 px-6 py-5 sm:px-8 sm:py-6"
+            >
+              <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+                <div
+                  class="h-6 w-1.5 shrink-0 rounded-full bg-[#FFE600] shadow-[0_0_15px_rgba(255,230,0,0.5)]"
+                />
+                <h2
+                  id="space-add-title"
+                  class="truncate text-xl font-bold tracking-tight text-white sm:text-2xl"
+                >
+                  新增空间
+                </h2>
+              </div>
+              <button
+                type="button"
+                class="rounded-full p-2 text-white/70 transition-all hover:bg-white/10 hover:text-white"
+                aria-label="关闭"
+                @click="closeAddSpaceModal"
+              >
+                <X :size="24" />
+              </button>
+            </div>
+            <div
+              class="custom-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-6 sm:p-8"
+            >
+              <div class="flex flex-col gap-5">
+                <p class="text-sm text-white/60">
+                  填写空间信息。负责人请在「成员管理」中通过空间分配设置，此处无需填写。
+                </p>
+                <div class="space-y-2">
+                  <label
+                    for="space-add-name"
+                    class="block text-xs font-bold uppercase tracking-widest text-white/40"
+                  >
+                    名称
+                  </label>
+                  <input
+                    id="space-add-name"
+                    v-model="draftAddName"
+                    type="text"
+                    maxlength="128"
+                    class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[#FFE600]/50 focus:outline-none focus:ring-1 focus:ring-[#FFE600]/40"
+                  />
+                </div>
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <div class="space-y-2">
+                    <label
+                      for="space-add-province"
+                      class="block text-xs font-bold uppercase tracking-widest text-white/40"
+                    >
+                      省
+                    </label>
+                    <input
+                      id="space-add-province"
+                      v-model="draftAddProvince"
+                      type="text"
+                      maxlength="64"
+                      class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[#FFE600]/50 focus:outline-none focus:ring-1 focus:ring-[#FFE600]/40"
+                    />
+                  </div>
+                  <div class="space-y-2">
+                    <label
+                      for="space-add-city"
+                      class="block text-xs font-bold uppercase tracking-widest text-white/40"
+                    >
+                      市
+                    </label>
+                    <input
+                      id="space-add-city"
+                      v-model="draftAddCity"
+                      type="text"
+                      maxlength="64"
+                      class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[#FFE600]/50 focus:outline-none focus:ring-1 focus:ring-[#FFE600]/40"
+                    />
+                  </div>
+                  <div class="space-y-2">
+                    <label
+                      for="space-add-district"
+                      class="block text-xs font-bold uppercase tracking-widest text-white/40"
+                    >
+                      区/县
+                    </label>
+                    <input
+                      id="space-add-district"
+                      v-model="draftAddDistrict"
+                      type="text"
+                      maxlength="64"
+                      class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[#FFE600]/50 focus:outline-none focus:ring-1 focus:ring-[#FFE600]/40"
+                    />
+                  </div>
+                  <div class="space-y-2">
+                    <label
+                      for="space-add-area"
+                      class="block text-xs font-bold uppercase tracking-widest text-white/40"
+                    >
+                      面积
+                    </label>
+                    <input
+                      id="space-add-area"
+                      v-model="draftAddArea"
+                      type="text"
+                      maxlength="32"
+                      placeholder="如 1000 或 1000㎡"
+                      class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[#FFE600]/50 focus:outline-none focus:ring-1 focus:ring-[#FFE600]/40"
+                    />
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <label
+                    for="space-add-address"
+                    class="block text-xs font-bold uppercase tracking-widest text-white/40"
+                  >
+                    具体位置
+                  </label>
+                  <textarea
+                    id="space-add-address"
+                    v-model="draftAddAddress"
+                    rows="3"
+                    maxlength="500"
+                    class="w-full resize-y rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm leading-relaxed text-white placeholder:text-white/35 focus:border-[#FFE600]/50 focus:outline-none focus:ring-1 focus:ring-[#FFE600]/40"
+                  />
+                </div>
+                <div class="flex justify-end border-t border-white/10 pt-5">
+                  <button
+                    type="button"
+                    class="rounded-xl bg-[#FFE600] px-8 py-2.5 text-sm font-bold text-[#260A2F] shadow-[0_0_15px_rgba(255,230,0,0.25)] transition hover:brightness-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+                    :disabled="!addSpaceFormValid"
+                    @click="confirmAddSpace"
+                  >
+                    确认
+                  </button>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <template v-else>
+            <div
+              class="flex min-h-[min(420px,52vh)] flex-col items-center justify-center px-6 py-10 sm:px-10"
+            >
+              <img
+                :src="checkMarkImg"
+                alt=""
+                class="mb-6 h-36 w-56 object-contain"
+              />
+              <h2
+                id="space-add-success-title"
+                class="mb-4 text-3xl font-bold tracking-tight text-white"
+              >
+                已完成提交
+              </h2>
+              <p class="mb-10 max-w-md text-center text-white/60">
+                新空间信息已成功添加至系统中。负责人请在成员管理中分配。
+              </p>
+              <button
+                type="button"
+                class="rounded-xl border border-white/10 bg-white/10 px-8 py-3 font-bold text-white transition-colors hover:bg-white/20"
+                @click="onSuccessClose"
+              >
+                返回空间列表
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>

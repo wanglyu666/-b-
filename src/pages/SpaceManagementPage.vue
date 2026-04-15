@@ -13,8 +13,5 @@ onMounted(() => {
 </script>
 
 <template>
-  <SpaceManagementView
-    :spaces="orgStore.spaces"
-    @back="router.push({ name: 'org-architecture' })"
-  />
+  <SpaceManagementView @back="router.push({ name: 'org-architecture' })" />
 </template>
