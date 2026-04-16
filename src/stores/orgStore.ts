@@ -45,6 +45,21 @@ export const useOrgStore = defineStore('org', () => {
     spaces.value = [...spaces.value, space];
   }
 
+  /** 空间管理页本地更新（演示；负责人请在成员管理中分配，此处不修改 owner） */
+  function updateSpace(
+    id: string,
+    patch: Omit<Partial<OrganizationSpace>, 'id' | 'owner'>,
+  ) {
+    spaces.value = spaces.value.map((s) =>
+      s.id === id ? { ...s, ...patch } : s,
+    );
+  }
+
+  /** 团队管理页本地新增（演示；持久化需对接后端） */
+  function addTeam(team: OrganizationTeam) {
+    teams.value = [...teams.value, team];
+  }
+
   return {
     members,
     teams,
@@ -57,5 +72,7 @@ export const useOrgStore = defineStore('org', () => {
     spaceCount,
     loadOrganizationData,
     addSpace,
+    updateSpace,
+    addTeam,
   };
 });

@@ -9,6 +9,7 @@ import { computed } from 'vue';
 import TopBarActions from './TopBarActions.vue';
 import spaceIllustration from '../../image asset/space.png';
 import membersMgmtIllustration from '../../image asset/group icon.png';
+import { approvalFlowCardsOrgPreview } from '../data/approvalFlowCards';
 import type { Member, OrganizationTeam } from '../types';
 
 const props = defineProps<{
@@ -20,8 +21,10 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   openMemberManagement: [];
-  openTeamManagement: [];
+  /** 不传 id：仅进入团队页；传团队 id：进入团队页并打开该团队详情 */
+  openTeamManagement: [teamId?: string];
   openSpaceManagement: [];
+  openApprovalConfiguration: [];
 }>();
 
 /** 组织页「成员管理」卡片内仅展示前 3 人，布局不变 */
@@ -44,26 +47,25 @@ const orgGridStyle = computed(() => ({
 const SPACE_IMG_WIDTH_PX = 450;
 const SPACE_IMG_HEIGHT_PX = 450;
 
-/** 首页侧栏仅展示前 2 个团队预览 */
-const teamBlocksPreview = computed(() => props.teams.slice(0, 2));
+/** 组织页团队区：按创建时间从新到旧，仅展示最新的 2 个团队 */
+function teamCreatedAtMs(t: OrganizationTeam): number {
+  const d = t.createdAt?.trim();
+  if (!d) return 0;
+  const ms = Date.parse(d);
+  if (Number.isFinite(ms)) return ms;
+  const m = d.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return 0;
+}
 
-/** 审批配置 · 左右小卡预览（示意数据） */
-const approvalCardLeft = {
-  type: '下单审批',
-  initiator: 'XXXX',
-  time: '2026年4月10日',
-  /** 流程图中间节点展示姓名 */
-  currentApprover: '李四',
-} as const;
+const teamBlocksPreview = computed(() =>
+  [...props.teams]
+    .sort((a, b) => teamCreatedAtMs(b) - teamCreatedAtMs(a))
+    .slice(0, 2),
+);
 
-const approvalCardRight = {
-  type: '下单审批',
-  initiator: 'YYYY',
-  time: '2026年4月11日',
-  currentApprover: '王五',
-} as const;
-
-const approvalBlocks = [approvalCardLeft, approvalCardRight];
+/** 审批配置 · 左右小卡预览（与审批配置页同源，见 approvalFlowCards.ts） */
+const approvalBlocks = approvalFlowCardsOrgPreview;
 </script>
 
 <template>
@@ -183,9 +185,14 @@ const approvalBlocks = [approvalCardLeft, approvalCardRight];
           </div>
         </div>
 
-        <!-- 3 审批配置：外层 50% 白；内左右小卡对齐管理中心维保「施工中」卡（slate/10） -->
+        <!-- 3 审批配置：点击进入审批配置页；内左右小卡与列表页卡片样式一致 -->
         <div
-          class="org-arch-placeholder flex min-h-0 flex-col rounded-3xl border border-gray-100 bg-white/50 p-6 shadow-sm lg:col-span-2 lg:col-start-1 lg:row-start-2"
+          role="button"
+          tabindex="0"
+          class="org-arch-placeholder flex min-h-0 flex-col cursor-pointer rounded-3xl border border-gray-100 bg-white/50 p-6 shadow-sm outline-none transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-[#9FE870]/50 lg:col-span-2 lg:col-start-1 lg:row-start-2"
+          @click="emit('openApprovalConfiguration')"
+          @keydown.enter.prevent="emit('openApprovalConfiguration')"
+          @keydown.space.prevent="emit('openApprovalConfiguration')"
         >
           <div class="mb-4 flex shrink-0 items-center justify-between">
             <div class="flex items-center space-x-2">
@@ -198,8 +205,8 @@ const approvalBlocks = [approvalCardLeft, approvalCardRight];
             class="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row lg:gap-5"
           >
             <article
-              v-for="(block, idx) in approvalBlocks"
-              :key="idx"
+              v-for="block in approvalBlocks"
+              :key="block.id"
               class="flex min-h-0 min-w-0 flex-1 flex-col rounded-3xl border border-slate-400/10 bg-slate-500/10 p-4 shadow-sm ring-1 ring-slate-400/5 sm:p-5"
             >
               <div class="space-y-2.5 text-sm text-gray-800">
@@ -219,8 +226,20 @@ const approvalBlocks = [approvalCardLeft, approvalCardRight];
               <div
                 class="mt-4 flex min-h-0 flex-1 flex-col justify-end border-t border-slate-400/10 pt-3"
               >
-                <!-- 开始 — 虚线 — 当前审批人 — 虚线 — 结束 -->
-                <div class="flex w-full min-w-0 items-center gap-1 sm:gap-2">
+                <div
+                  v-if="block.status === 'completed'"
+                  class="flex w-full min-h-[3.25rem] items-center justify-center"
+                >
+                  <div
+                    class="rounded-2xl bg-emerald-500/35 px-6 py-2 text-center text-xs font-bold text-emerald-900 shadow-inner ring-1 ring-emerald-400/40 backdrop-blur-sm sm:px-8 sm:py-2.5 sm:text-sm"
+                  >
+                    已完成
+                  </div>
+                </div>
+                <div
+                  v-else
+                  class="flex w-full min-w-0 items-center gap-1 sm:gap-2"
+                >
                   <div
                     class="shrink-0 rounded-xl border border-white/40 bg-white/50 px-3 py-2 text-center text-xs font-bold text-gray-800 shadow-sm backdrop-blur-sm sm:px-4 sm:text-sm"
                   >
@@ -238,7 +257,7 @@ const approvalBlocks = [approvalCardLeft, approvalCardRight];
                     class="flex shrink-0 flex-col items-center gap-1 px-0.5"
                   >
                     <div
-                      class="min-w-[3.5rem] rounded-xl border border-white/40 bg-white/50 px-3 py-2 text-center text-xs font-bold text-gray-900 shadow-sm backdrop-blur-sm sm:min-w-[4.5rem] sm:px-4 sm:py-2.5 sm:text-sm"
+                      class="min-w-[3.5rem] rounded-xl border border-amber-200/80 bg-amber-50/90 px-3 py-2 text-center text-xs font-bold text-amber-900 shadow-sm backdrop-blur-sm sm:min-w-[4.5rem] sm:px-4 sm:py-2.5 sm:text-sm"
                     >
                       {{ block.currentApprover }}
                     </div>
@@ -287,7 +306,12 @@ const approvalBlocks = [approvalCardLeft, approvalCardRight];
             <article
               v-for="team in teamBlocksPreview"
               :key="team.id"
-              class="team-inner-card flex min-h-0 flex-1 basis-0 flex-col rounded-2xl border border-gray-100 bg-gray-50/90 p-5 text-left shadow-sm ring-1 ring-gray-100/80 transition-all hover:border-[#9FE870]/50 hover:bg-white hover:shadow-md"
+              role="button"
+              tabindex="0"
+              class="team-inner-card flex min-h-0 flex-1 basis-0 flex-col cursor-pointer rounded-2xl border border-gray-100 bg-gray-50/90 p-5 text-left shadow-sm ring-1 ring-gray-100/80 transition-all hover:border-[#9FE870]/50 hover:bg-white hover:shadow-md outline-none focus-visible:ring-2 focus-visible:ring-[#9FE870]/50"
+              @click.stop="emit('openTeamManagement', team.id)"
+              @keydown.enter.prevent.stop="emit('openTeamManagement', team.id)"
+              @keydown.space.prevent.stop="emit('openTeamManagement', team.id)"
             >
               <h3 class="mb-4 line-clamp-2 text-base font-bold leading-snug text-gray-900">
                 {{ team.name }}
@@ -329,7 +353,7 @@ const approvalBlocks = [approvalCardLeft, approvalCardRight];
                     <div
                       v-for="(m, i) in team.members"
                       :key="`${team.id}-${i}`"
-                      class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-sm ring-1 ring-gray-900/15 sm:h-12 sm:w-12 sm:text-base"
+                      class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-sm ring-1 ring-gray-900/10 sm:h-12 sm:w-12 sm:text-base"
                       :class="i > 0 ? '-ml-3 sm:-ml-3.5' : ''"
                       :style="{
                         backgroundColor: m.color,

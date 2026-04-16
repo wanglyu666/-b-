@@ -511,6 +511,20 @@ export const members: Member[] = [
   { id: 6, name: '赵敏', role: '资料员', initial: '赵', bgColor: 'bg-teal-500', online: true, phone: '133-7788-9900', team: '维保二组', email: 'zhaomin@example.com', memberType: '内部成员', remarks: '竣工资料归档与图纸版本管理。', responsibleSpace: '总部档案室、项目资料库' },
 ];
 
+/**
+ * 团队「包含人员」头像彩圈仅用色（与 UI 色板一致，禁止其它色值）
+ */
+export const TEAM_MEMBER_AVATAR_COLORS = [
+  '#B9D8AB',
+  '#9BC07C',
+  '#519B61',
+  '#D2D47B',
+  '#B0D4C5',
+  '#B2C4D7',
+] as const;
+
+const C = TEAM_MEMBER_AVATAR_COLORS;
+
 /** 组织与架构 · 团队（团队页网格与首页侧栏共用） */
 export const organizationTeams: OrganizationTeam[] = [
   {
@@ -520,10 +534,10 @@ export const organizationTeams: OrganizationTeam[] = [
     space: 'A 区 · 商业综合体',
     createdAt: '2024-03-15',
     members: [
-      { initial: '张', color: '#4F46E5' },
-      { initial: '李', color: '#10B981' },
-      { initial: '王', color: '#F59E0B' },
-      { initial: '江', color: '#EF4444' },
+      { initial: '张', color: C[0] },
+      { initial: '李', color: C[1] },
+      { initial: '王', color: C[2] },
+      { initial: '江', color: C[3] },
     ],
   },
   {
@@ -533,9 +547,9 @@ export const organizationTeams: OrganizationTeam[] = [
     space: 'B 区 · 工业园区',
     createdAt: '2024-06-01',
     members: [
-      { initial: '刘', color: '#8B5CF6' },
-      { initial: '陈', color: '#06B6D4' },
-      { initial: '赵', color: '#EC4899' },
+      { initial: '刘', color: C[4] },
+      { initial: '陈', color: C[5] },
+      { initial: '赵', color: C[0] },
     ],
   },
   {
@@ -545,9 +559,9 @@ export const organizationTeams: OrganizationTeam[] = [
     space: 'C 区 · 研发中心',
     createdAt: '2024-08-20',
     members: [
-      { initial: '王', color: '#F59E0B' },
-      { initial: '周', color: '#3B82F6' },
-      { initial: '吴', color: '#14B8A6' },
+      { initial: '王', color: C[1] },
+      { initial: '周', color: C[2] },
+      { initial: '吴', color: C[3] },
     ],
   },
   {
@@ -557,8 +571,8 @@ export const organizationTeams: OrganizationTeam[] = [
     space: '全区域巡检',
     createdAt: '2024-05-10',
     members: [
-      { initial: '刘', color: '#6366F1' },
-      { initial: '郑', color: '#EAB308' },
+      { initial: '刘', color: C[4] },
+      { initial: '郑', color: C[5] },
     ],
   },
   {
@@ -568,9 +582,9 @@ export const organizationTeams: OrganizationTeam[] = [
     space: '机动调配',
     createdAt: '2024-07-01',
     members: [
-      { initial: '陈', color: '#F43F5E' },
-      { initial: '孙', color: '#0EA5E9' },
-      { initial: '钱', color: '#A855F7' },
+      { initial: '陈', color: C[0] },
+      { initial: '孙', color: C[1] },
+      { initial: '钱', color: C[2] },
     ],
   },
   {
@@ -580,8 +594,8 @@ export const organizationTeams: OrganizationTeam[] = [
     space: '总部大楼',
     createdAt: '2024-09-12',
     members: [
-      { initial: '赵', color: '#0D9488' },
-      { initial: '冯', color: '#64748B' },
+      { initial: '赵', color: C[3] },
+      { initial: '冯', color: C[4] },
     ],
   },
 ];

@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { ChevronLeft, MoreHorizontal, Plus, Search, X } from 'lucide-vue-next';
 import { useOrgStore } from '../stores/orgStore';
+import type { OrganizationSpace } from '../types';
 import checkMarkImg from '../../image asset/check mark.png';
 
 const orgStore = useOrgStore();
@@ -105,6 +106,65 @@ function confirmAddSpace() {
 function onSuccessClose() {
   closeAddSpaceModal();
 }
+
+/** 编辑空间（除负责人外可改，与新增字段一致） */
+const editSpaceModalOpen = ref(false);
+const editSpaceStep = ref<'form' | 'success'>('form');
+const editingSpaceId = ref('');
+const draftEditName = ref('');
+const draftEditProvince = ref('');
+const draftEditCity = ref('');
+const draftEditDistrict = ref('');
+const draftEditAddress = ref('');
+const draftEditArea = ref('');
+/** 仅展示，不可编辑 */
+const draftEditOwnerDisplay = ref('');
+
+const editSpaceFormValid = computed(
+  () =>
+    draftEditName.value.trim() !== '' &&
+    draftEditProvince.value.trim() !== '' &&
+    draftEditCity.value.trim() !== '' &&
+    draftEditDistrict.value.trim() !== '' &&
+    draftEditAddress.value.trim() !== '' &&
+    draftEditArea.value.trim() !== '',
+);
+
+function openEditSpace(row: OrganizationSpace) {
+  editingSpaceId.value = row.id;
+  draftEditName.value = row.name;
+  draftEditProvince.value = row.province;
+  draftEditCity.value = row.city;
+  draftEditDistrict.value = row.district;
+  draftEditAddress.value = row.address;
+  draftEditArea.value = row.area.replace(/㎡$|m²$/i, '').trim();
+  draftEditOwnerDisplay.value = row.owner;
+  editSpaceStep.value = 'form';
+  editSpaceModalOpen.value = true;
+}
+
+function closeEditSpaceModal() {
+  editSpaceModalOpen.value = false;
+  editSpaceStep.value = 'form';
+  editingSpaceId.value = '';
+}
+
+function confirmEditSpace() {
+  if (!editSpaceFormValid.value || !editingSpaceId.value) return;
+  orgStore.updateSpace(editingSpaceId.value, {
+    name: draftEditName.value.trim(),
+    province: draftEditProvince.value.trim(),
+    city: draftEditCity.value.trim(),
+    district: draftEditDistrict.value.trim(),
+    address: draftEditAddress.value.trim(),
+    area: normalizeAreaDisplay(draftEditArea.value),
+  });
+  editSpaceStep.value = 'success';
+}
+
+function onEditSpaceSuccessClose() {
+  closeEditSpaceModal();
+}
 </script>
 
 <template>
@@ -202,7 +262,8 @@ function onSuccessClose() {
                 <button
                   type="button"
                   class="rounded-lg p-2 text-gray-400 transition-all hover:bg-white/50 hover:text-[#E2943A]"
-                  aria-label="更多操作"
+                  aria-label="编辑空间"
+                  @click.stop="openEditSpace(row)"
                 >
                   <MoreHorizontal :size="20" />
                 </button>
@@ -440,6 +501,224 @@ function onSuccessClose() {
                 type="button"
                 class="rounded-xl border border-white/10 bg-white/10 px-8 py-3 font-bold text-white transition-colors hover:bg-white/20"
                 @click="onSuccessClose"
+              >
+                返回空间列表
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="editSpaceModalOpen"
+        class="fixed inset-0 z-[101] flex items-center justify-center bg-black/40 p-4 backdrop-blur-md animate-in fade-in duration-300 sm:p-6"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="
+          editSpaceStep === 'form' ? 'space-edit-title' : 'space-edit-success-title'
+        "
+        @click.self="closeEditSpaceModal"
+      >
+        <div
+          class="jp-modal-morph flex max-h-[min(92vh,860px)] w-full max-w-xl flex-col overflow-hidden border border-white/20 shadow-2xl backdrop-blur-2xl"
+          :style="{
+            '--jp-modal-w': '560px',
+            '--jp-modal-w-max': '560px',
+            '--jp-modal-h': editSpaceStep === 'form' ? '720px' : '520px',
+            '--jp-modal-radius': '32px',
+            '--jp-modal-scale': '1',
+            '--jp-modal-bg': 'rgba(255, 255, 255, 0.15)',
+          }"
+          @click.stop
+        >
+          <template v-if="editSpaceStep === 'form'">
+            <div
+              class="flex shrink-0 items-center justify-between border-b border-white/10 px-6 py-5 sm:px-8 sm:py-6"
+            >
+              <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+                <div
+                  class="h-6 w-1.5 shrink-0 rounded-full bg-[#FFE600] shadow-[0_0_15px_rgba(255,230,0,0.5)]"
+                />
+                <h2
+                  id="space-edit-title"
+                  class="truncate text-xl font-bold tracking-tight text-white sm:text-2xl"
+                >
+                  编辑空间
+                </h2>
+              </div>
+              <div class="flex shrink-0 items-center gap-3 sm:gap-4">
+                <button
+                  type="button"
+                  class="text-sm font-bold text-white/80 transition-colors hover:text-white"
+                  aria-label="返回"
+                  @click="closeEditSpaceModal"
+                >
+                  返回
+                </button>
+                <button
+                  type="button"
+                  class="rounded-full p-2 text-white/70 transition-all hover:bg-white/10 hover:text-white"
+                  aria-label="关闭"
+                  @click="closeEditSpaceModal"
+                >
+                  <X :size="24" />
+                </button>
+              </div>
+            </div>
+            <div
+              class="custom-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-6 sm:p-8"
+            >
+              <div class="flex flex-col gap-5">
+                <p class="text-sm text-white/60">
+                  可修改除负责人外的字段。负责人请在「成员管理」中通过空间分配设置。
+                </p>
+                <div class="space-y-2">
+                  <label
+                    for="space-edit-owner"
+                    class="block text-xs font-bold uppercase tracking-widest text-white/40"
+                  >
+                    负责人（只读）
+                  </label>
+                  <input
+                    id="space-edit-owner"
+                    type="text"
+                    readonly
+                    tabindex="-1"
+                    :value="draftEditOwnerDisplay"
+                    class="w-full cursor-not-allowed rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 text-sm text-white/55"
+                  />
+                </div>
+                <div class="space-y-2">
+                  <label
+                    for="space-edit-name"
+                    class="block text-xs font-bold uppercase tracking-widest text-white/40"
+                  >
+                    名称
+                  </label>
+                  <input
+                    id="space-edit-name"
+                    v-model="draftEditName"
+                    type="text"
+                    maxlength="128"
+                    class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[#FFE600]/50 focus:outline-none focus:ring-1 focus:ring-[#FFE600]/40"
+                  />
+                </div>
+                <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                  <div class="space-y-2">
+                    <label
+                      for="space-edit-province"
+                      class="block text-xs font-bold uppercase tracking-widest text-white/40"
+                    >
+                      省
+                    </label>
+                    <input
+                      id="space-edit-province"
+                      v-model="draftEditProvince"
+                      type="text"
+                      maxlength="64"
+                      class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[#FFE600]/50 focus:outline-none focus:ring-1 focus:ring-[#FFE600]/40"
+                    />
+                  </div>
+                  <div class="space-y-2">
+                    <label
+                      for="space-edit-city"
+                      class="block text-xs font-bold uppercase tracking-widest text-white/40"
+                    >
+                      市
+                    </label>
+                    <input
+                      id="space-edit-city"
+                      v-model="draftEditCity"
+                      type="text"
+                      maxlength="64"
+                      class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[#FFE600]/50 focus:outline-none focus:ring-1 focus:ring-[#FFE600]/40"
+                    />
+                  </div>
+                  <div class="space-y-2">
+                    <label
+                      for="space-edit-district"
+                      class="block text-xs font-bold uppercase tracking-widest text-white/40"
+                    >
+                      区/县
+                    </label>
+                    <input
+                      id="space-edit-district"
+                      v-model="draftEditDistrict"
+                      type="text"
+                      maxlength="64"
+                      class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[#FFE600]/50 focus:outline-none focus:ring-1 focus:ring-[#FFE600]/40"
+                    />
+                  </div>
+                  <div class="space-y-2">
+                    <label
+                      for="space-edit-area"
+                      class="block text-xs font-bold uppercase tracking-widest text-white/40"
+                    >
+                      面积
+                    </label>
+                    <input
+                      id="space-edit-area"
+                      v-model="draftEditArea"
+                      type="text"
+                      maxlength="32"
+                      placeholder="如 1000 或 1000㎡"
+                      class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[#FFE600]/50 focus:outline-none focus:ring-1 focus:ring-[#FFE600]/40"
+                    />
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <label
+                    for="space-edit-address"
+                    class="block text-xs font-bold uppercase tracking-widest text-white/40"
+                  >
+                    具体位置
+                  </label>
+                  <textarea
+                    id="space-edit-address"
+                    v-model="draftEditAddress"
+                    rows="3"
+                    maxlength="500"
+                    class="w-full resize-y rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm leading-relaxed text-white placeholder:text-white/35 focus:border-[#FFE600]/50 focus:outline-none focus:ring-1 focus:ring-[#FFE600]/40"
+                  />
+                </div>
+                <div class="flex justify-end border-t border-white/10 pt-5">
+                  <button
+                    type="button"
+                    class="rounded-xl bg-[#FFE600] px-8 py-2.5 text-sm font-bold text-[#260A2F] shadow-[0_0_15px_rgba(255,230,0,0.25)] transition hover:brightness-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+                    :disabled="!editSpaceFormValid"
+                    @click="confirmEditSpace"
+                  >
+                    确认
+                  </button>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <template v-else>
+            <div
+              class="flex min-h-[min(420px,52vh)] flex-col items-center justify-center px-6 py-10 sm:px-10"
+            >
+              <img
+                :src="checkMarkImg"
+                alt=""
+                class="mb-6 h-36 w-56 object-contain"
+              />
+              <h2
+                id="space-edit-success-title"
+                class="mb-4 text-3xl font-bold tracking-tight text-white"
+              >
+                已完成提交
+              </h2>
+              <p class="mb-10 max-w-md text-center text-white/60">
+                空间信息已成功更新至系统中。
+              </p>
+              <button
+                type="button"
+                class="rounded-xl border border-white/10 bg-white/10 px-8 py-3 font-bold text-white transition-colors hover:bg-white/20"
+                @click="onEditSpaceSuccessClose"
               >
                 返回空间列表
               </button>

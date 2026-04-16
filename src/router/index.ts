@@ -15,6 +15,7 @@ import OrganizationArchitecturePage from '../pages/OrganizationArchitecturePage.
 import MemberManagementPage from '../pages/MemberManagementPage.vue';
 import TeamManagementPage from '../pages/TeamManagementPage.vue';
 import SpaceManagementPage from '../pages/SpaceManagementPage.vue';
+import ApprovalConfigurationPage from '../pages/ApprovalConfigurationPage.vue';
 import ConsultationFeedbackPage from '../pages/ConsultationFeedbackPage.vue';
 import AllConsultationsPage from '../pages/AllConsultationsPage.vue';
 import FeedbackRecordsPage from '../pages/FeedbackRecordsPage.vue';
@@ -38,6 +39,7 @@ const routes = [
   { path: '/org/members', name: 'member-management', component: MemberManagementPage, meta: { activeTab: 'org-architecture' } },
   { path: '/org/teams', name: 'team-management', component: TeamManagementPage, meta: { activeTab: 'org-architecture' } },
   { path: '/org/spaces', name: 'space-management', component: SpaceManagementPage, meta: { activeTab: 'org-architecture' } },
+  { path: '/org/approvals', name: 'approval-configuration', component: ApprovalConfigurationPage, meta: { activeTab: 'org-architecture' } },
 
   { path: '/contracts', name: 'contracts', component: ContractAndSettlementView, meta: { activeTab: 'contracts' } },
   { path: '/consultation-feedback', name: 'consultation-feedback', component: ConsultationFeedbackPage, meta: { activeTab: 'consultation-feedback' } },

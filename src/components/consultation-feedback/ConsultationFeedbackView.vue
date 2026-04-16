@@ -591,7 +591,7 @@ function submitConsultationForm() {
                     <td class="py-3 text-right sm:py-4">
                       <button
                         type="button"
-                        class="inline-flex rounded-md border border-gray-200 bg-white p-1.5 text-gray-500 shadow-sm transition-colors hover:text-[#A1D573] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9FE870]/40"
+                        class="inline-flex rounded-md border border-gray-200 bg-white p-1.5 text-gray-500 opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 focus-visible:opacity-100 hover:text-[#A1D573] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9FE870]/40"
                         aria-label="查看反馈详情"
                         @click.stop="emit('openFeedbackRecords', { openConsultationId: row.id })"
                       >

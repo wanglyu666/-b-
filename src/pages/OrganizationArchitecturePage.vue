@@ -18,7 +18,16 @@ onMounted(() => {
     :teams="orgStore.teams"
     :space-count="orgStore.spaceCount"
     @open-member-management="router.push({ name: 'member-management' })"
-    @open-team-management="router.push({ name: 'team-management' })"
+    @open-team-management="
+      (teamId) =>
+        router.push({
+          name: 'team-management',
+          ...(teamId != null && teamId !== ''
+            ? { query: { team: teamId } }
+            : {}),
+        })
+    "
     @open-space-management="router.push({ name: 'space-management' })"
+    @open-approval-configuration="router.push({ name: 'approval-configuration' })"
   />
 </template>

@@ -1,8 +1,23 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { ChevronLeft, Search, X } from 'lucide-vue-next';
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  watch,
+} from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { ChevronDown, ChevronLeft, Plus, Search, X } from 'lucide-vue-next';
 import checkMarkImg from '../../image asset/check mark.png';
-import type { Member, OrganizationTeam } from '../types';
+import { useOrgStore } from '../stores/orgStore';
+import type {
+  Member,
+  OrganizationSpace,
+  OrganizationTeam,
+} from '../types';
+
+const orgStore = useOrgStore();
 
 const props = defineProps<{
   teams: OrganizationTeam[];
@@ -13,6 +28,129 @@ const props = defineProps<{
 const emit = defineEmits<{
   back: [];
 }>();
+
+const route = useRoute();
+const router = useRouter();
+
+/** 新增团队弹窗 */
+const addTeamModalOpen = ref(false);
+const addTeamStep = ref<'form' | 'success'>('form');
+const draftAddTeamName = ref('');
+/** 空间管理列表中的空间 id，与 orgStore.spaces 一致 */
+const draftAddSpaceId = ref('');
+
+function todayYmd(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+const addTeamFormValid = computed(
+  () =>
+    draftAddTeamName.value.trim() !== '' && draftAddSpaceId.value !== '',
+);
+
+function openAddTeamModal() {
+  draftAddTeamName.value = '';
+  draftAddSpaceId.value = '';
+  addTeamSpaceDropdownOpen.value = false;
+  addTeamStep.value = 'form';
+  addTeamModalOpen.value = true;
+}
+
+function closeAddTeamModal() {
+  addTeamSpaceDropdownOpen.value = false;
+  addTeamModalOpen.value = false;
+  addTeamStep.value = 'form';
+}
+
+/** 负责空间：与「新增成员 · 类型」一致的下拉（Teleport + 磨砂列表） */
+const addTeamSpaceDropdownOpen = ref(false);
+const addTeamSpaceTriggerEl = ref<HTMLElement | null>(null);
+const addTeamSpaceDropdownStyle = ref<Record<string, string>>({});
+
+function formatSpaceOptionLabel(s: OrganizationSpace): string {
+  return `${s.name}（${s.province}${s.city}${s.district}）`;
+}
+
+const draftAddSpaceLabel = computed(() => {
+  const id = draftAddSpaceId.value;
+  if (!id) return '';
+  const s = orgStore.spaces.find((x) => x.id === id);
+  return s ? formatSpaceOptionLabel(s) : '';
+});
+
+function updateAddTeamSpaceDropdownPosition() {
+  const el = addTeamSpaceTriggerEl.value;
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  const maxListH = Math.min(window.innerHeight * 0.4, 256);
+  const spaceBelow = window.innerHeight - r.bottom - 8;
+  const openUp = spaceBelow < maxListH && r.top > maxListH + 16;
+  const topPx = openUp ? Math.max(8, r.top - maxListH - 4) : r.bottom + 4;
+  addTeamSpaceDropdownStyle.value = {
+    position: 'fixed',
+    left: `${r.left}px`,
+    top: `${topPx}px`,
+    width: `${r.width}px`,
+    zIndex: '200',
+    maxHeight: `${maxListH}px`,
+  };
+}
+
+function toggleAddTeamSpaceDropdown() {
+  if (orgStore.spaces.length === 0) return;
+  addTeamSpaceDropdownOpen.value = !addTeamSpaceDropdownOpen.value;
+  if (addTeamSpaceDropdownOpen.value) {
+    nextTick(() => updateAddTeamSpaceDropdownPosition());
+  }
+}
+
+function selectAddTeamSpace(id: string) {
+  draftAddSpaceId.value = id;
+  addTeamSpaceDropdownOpen.value = false;
+}
+
+function closeAddTeamSpaceDropdownOnScroll() {
+  addTeamSpaceDropdownOpen.value = false;
+}
+
+watch(addTeamSpaceDropdownOpen, (open) => {
+  if (open) {
+    window.addEventListener('scroll', closeAddTeamSpaceDropdownOnScroll, true);
+    window.addEventListener('resize', updateAddTeamSpaceDropdownPosition);
+  } else {
+    window.removeEventListener(
+      'scroll',
+      closeAddTeamSpaceDropdownOnScroll,
+      true,
+    );
+    window.removeEventListener('resize', updateAddTeamSpaceDropdownPosition);
+  }
+});
+
+watch(addTeamModalOpen, (open) => {
+  if (!open) addTeamSpaceDropdownOpen.value = false;
+});
+
+function confirmAddTeam() {
+  if (!addTeamFormValid.value) return;
+  const space = orgStore.spaces.find((s) => s.id === draftAddSpaceId.value);
+  if (!space) return;
+  orgStore.addTeam({
+    id: `t-${Date.now()}`,
+    name: draftAddTeamName.value.trim(),
+    /** 新增表单已取消组长填写，与成员管理关联后再展示 */
+    leader: '—',
+    space: space.name,
+    createdAt: todayYmd(),
+    members: [],
+  });
+  addTeamStep.value = 'success';
+}
+
+function onAddTeamSuccessClose() {
+  closeAddTeamModal();
+}
 
 const searchQuery = ref('');
 const selectedTeam = ref<OrganizationTeam | null>(null);
@@ -91,6 +229,35 @@ function openTeamDetail(team: OrganizationTeam) {
   activeApprovalLabel.value = null;
 }
 
+/** 从组织页「团队」小卡带入的 ?team=<id>：进入本页后自动打开对应团队详情弹窗 */
+function tryOpenTeamFromQuery() {
+  const raw = route.query.team;
+  if (raw === undefined || raw === null || raw === '') return;
+  const id = (Array.isArray(raw) ? raw[0] : raw) as string;
+  if (!id) return;
+  const team = props.teams.find((t) => t.id === id);
+  const { team: _drop, ...restQuery } = route.query;
+  if (!team) {
+    if ('team' in route.query) {
+      router.replace({ name: 'team-management', query: restQuery });
+    }
+    return;
+  }
+  openTeamDetail(team);
+  if ('team' in route.query) {
+    router.replace({ name: 'team-management', query: restQuery });
+  }
+}
+
+watch(
+  () => [props.teams, route.query.team] as const,
+  () => {
+    if (props.teams.length === 0) return;
+    tryOpenTeamFromQuery();
+  },
+  { immediate: true, flush: 'post' },
+);
+
 function closeTeamDetail() {
   selectedTeam.value = null;
   teamDetailInnerView.value = 'overview';
@@ -108,8 +275,16 @@ function onTeamDetailBack() {
   backToTeamOverview();
 }
 
-function onTeamDetailKeydown(e: KeyboardEvent) {
+function onDocumentKeydown(e: KeyboardEvent) {
   if (e.key !== 'Escape') return;
+  if (addTeamSpaceDropdownOpen.value) {
+    addTeamSpaceDropdownOpen.value = false;
+    return;
+  }
+  if (addTeamModalOpen.value) {
+    closeAddTeamModal();
+    return;
+  }
   if (teamDetailInnerView.value === 'approvalSuccess') {
     backToTeamOverview();
     return;
@@ -121,10 +296,12 @@ function onTeamDetailKeydown(e: KeyboardEvent) {
   closeTeamDetail();
 }
 
-onMounted(() => document.addEventListener('keydown', onTeamDetailKeydown));
-onUnmounted(() =>
-  document.removeEventListener('keydown', onTeamDetailKeydown),
-);
+onMounted(() => document.addEventListener('keydown', onDocumentKeydown));
+onUnmounted(() => {
+  document.removeEventListener('keydown', onDocumentKeydown);
+  window.removeEventListener('scroll', closeAddTeamSpaceDropdownOnScroll, true);
+  window.removeEventListener('resize', updateAddTeamSpaceDropdownPosition);
+});
 
 /** 团队详情 · 审批配置入口 */
 const teamApprovalPillLabels = [
@@ -328,19 +505,29 @@ function confirmApprovalFlow() {
         </div>
 
         <div
-          class="relative w-full shrink-0 sm:mt-1 sm:ml-auto sm:w-auto sm:min-w-[280px] lg:min-w-[320px]"
+          class="flex w-full shrink-0 flex-col gap-3 sm:mt-1 sm:ml-auto sm:w-auto sm:flex-row sm:items-center sm:justify-end"
         >
-          <Search
-            class="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-400"
-            :size="18"
-            aria-hidden="true"
-          />
-          <input
-            v-model="searchQuery"
-            type="search"
-            placeholder="搜索团队名称、组长、负责空间…"
-            class="w-full rounded-full border border-gray-200/80 bg-gray-100/80 py-2.5 pl-10 pr-4 text-sm text-gray-800 shadow-inner placeholder:text-gray-400 focus:border-[#9FE870]/50 focus:outline-none focus:ring-2 focus:ring-[#9FE870]/40"
-          />
+          <button
+            type="button"
+            class="flex shrink-0 items-center justify-center gap-2 rounded-full border border-gray-200/80 bg-gray-100/80 px-5 py-2.5 text-sm font-bold text-gray-800 shadow-inner transition hover:bg-white/90 focus:outline-none focus:ring-2 focus:ring-[#9FE870]/40 active:scale-[0.99]"
+            @click="openAddTeamModal"
+          >
+            <Plus :size="18" class="text-gray-600" aria-hidden="true" />
+            新增团队
+          </button>
+          <div class="relative w-full min-w-0 sm:min-w-[280px] lg:min-w-[320px]">
+            <Search
+              class="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-400"
+              :size="18"
+              aria-hidden="true"
+            />
+            <input
+              v-model="searchQuery"
+              type="search"
+              placeholder="搜索团队名称、组长、负责空间…"
+              class="w-full rounded-full border border-gray-200/80 bg-gray-100/80 py-2.5 pl-10 pr-4 text-sm text-gray-800 shadow-inner placeholder:text-gray-400 focus:border-[#9FE870]/50 focus:outline-none focus:ring-2 focus:ring-[#9FE870]/40"
+            />
+          </div>
         </div>
       </header>
 
@@ -394,7 +581,7 @@ function confirmApprovalFlow() {
               <div
                 v-for="(m, i) in team.members"
                 :key="`${team.id}-${i}`"
-                class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-sm ring-1 ring-gray-900/15 sm:h-12 sm:w-12 sm:text-base"
+                class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-sm ring-1 ring-gray-900/10 sm:h-12 sm:w-12 sm:text-base"
                 :class="i > 0 ? '-ml-3 sm:-ml-3.5' : ''"
                 :style="{
                   backgroundColor: m.color,
@@ -452,14 +639,15 @@ function confirmApprovalFlow() {
                 <template v-else>团队详情</template>
               </h2>
             </div>
-            <div class="flex shrink-0 items-center gap-1 sm:gap-2">
+            <div class="flex shrink-0 items-center gap-3 sm:gap-4">
               <button
                 v-if="
                   teamDetailInnerView === 'approvalFlow' ||
                   teamDetailInnerView === 'approvalSuccess'
                 "
                 type="button"
-                class="rounded-lg px-2 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/10 sm:text-base"
+                class="text-sm font-bold text-white/80 transition-colors hover:text-white"
+                aria-label="返回团队详情"
                 @click="onTeamDetailBack"
               >
                 返回
@@ -730,6 +918,206 @@ function confirmApprovalFlow() {
           </div>
         </div>
       </div>
+    </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="addTeamModalOpen"
+        class="fixed inset-0 z-[101] flex items-center justify-center bg-black/40 p-4 backdrop-blur-md animate-in fade-in duration-300 sm:p-6"
+        role="dialog"
+        aria-modal="true"
+        :aria-labelledby="
+          addTeamStep === 'form' ? 'team-add-title' : 'team-add-success-title'
+        "
+        @click.self="closeAddTeamModal"
+      >
+        <div
+          class="jp-modal-morph flex max-h-[min(92vh,860px)] w-full max-w-xl flex-col overflow-hidden border border-white/20 shadow-2xl backdrop-blur-2xl"
+          :style="{
+            '--jp-modal-w': '560px',
+            '--jp-modal-w-max': '560px',
+            '--jp-modal-h': addTeamStep === 'form' ? '470px' : '520px',
+            '--jp-modal-radius': '32px',
+            '--jp-modal-scale': '1',
+            '--jp-modal-bg': 'rgba(255, 255, 255, 0.15)',
+          }"
+          @click.stop
+        >
+          <template v-if="addTeamStep === 'form'">
+            <div
+              class="flex shrink-0 items-center justify-between border-b border-white/10 px-6 py-5 sm:px-8 sm:py-6"
+            >
+              <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+                <div
+                  class="h-6 w-1.5 shrink-0 rounded-full bg-[#FFE600] shadow-[0_0_15px_rgba(255,230,0,0.5)]"
+                />
+                <h2
+                  id="team-add-title"
+                  class="truncate text-xl font-bold tracking-tight text-white sm:text-2xl"
+                >
+                  新增团队
+                </h2>
+              </div>
+              <button
+                type="button"
+                class="rounded-full p-2 text-white/70 transition-all hover:bg-white/10 hover:text-white"
+                aria-label="关闭"
+                @click="closeAddTeamModal"
+              >
+                <X :size="24" />
+              </button>
+            </div>
+            <div
+              class="custom-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-6 sm:p-8"
+            >
+              <div class="flex flex-col gap-5">
+                <p class="text-sm text-white/60">
+                  填写团队名称并选择负责空间（与空间管理列表一致）。创建时间将在提交时自动记录为当前系统日期。成员与组长可在成员管理中关联。
+                </p>
+                <div class="space-y-2">
+                  <label
+                    for="team-add-name"
+                    class="block text-xs font-bold uppercase tracking-widest text-white/40"
+                  >
+                    团队名称
+                  </label>
+                  <input
+                    id="team-add-name"
+                    v-model="draftAddTeamName"
+                    type="text"
+                    maxlength="64"
+                    placeholder="如 维保四组"
+                    class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[#FFE600]/50 focus:outline-none focus:ring-1 focus:ring-[#FFE600]/40"
+                  />
+                </div>
+                <div class="space-y-2">
+                  <span
+                    id="team-add-space-label"
+                    class="block text-xs font-bold uppercase tracking-widest text-white/40"
+                  >
+                    负责空间
+                  </span>
+                  <div class="relative">
+                    <button
+                      id="team-add-space"
+                      ref="addTeamSpaceTriggerEl"
+                      type="button"
+                      class="flex w-full min-h-[42px] items-center justify-between gap-2 rounded-xl border border-white/15 bg-white/5 px-3 py-2.5 text-left text-sm font-bold text-white shadow-inner backdrop-blur-xl transition focus:outline-none focus:ring-1 focus:ring-[#FFE600]/40 disabled:cursor-not-allowed disabled:opacity-50"
+                      :class="
+                        addTeamSpaceDropdownOpen
+                          ? 'border-[#FFE600]/50 ring-1 ring-[#FFE600]/40'
+                          : 'hover:border-white/25'
+                      "
+                      aria-haspopup="listbox"
+                      :aria-expanded="addTeamSpaceDropdownOpen"
+                      aria-labelledby="team-add-space-label"
+                      :disabled="orgStore.spaces.length === 0"
+                      @click="toggleAddTeamSpaceDropdown"
+                    >
+                      <span
+                        class="min-w-0 flex-1 truncate"
+                        :class="draftAddSpaceLabel ? '' : 'font-normal text-white/45'"
+                      >
+                        {{
+                          draftAddSpaceLabel ||
+                            (orgStore.spaces.length === 0
+                              ? '暂无空间可选'
+                              : '请选择空间')
+                        }}
+                      </span>
+                      <ChevronDown
+                        :size="18"
+                        class="shrink-0 text-white/70 transition-transform duration-200"
+                        :class="addTeamSpaceDropdownOpen ? 'rotate-180' : ''"
+                        aria-hidden="true"
+                      />
+                    </button>
+                  </div>
+                  <p
+                    v-if="orgStore.spaces.length === 0"
+                    class="text-xs text-amber-200/90"
+                  >
+                    暂无空间数据，请先在「空间管理」中新增空间。
+                  </p>
+                </div>
+                <div class="flex justify-end border-t border-white/10 pt-5">
+                  <button
+                    type="button"
+                    class="rounded-xl bg-[#FFE600] px-8 py-2.5 text-sm font-bold text-[#260A2F] shadow-[0_0_15px_rgba(255,230,0,0.25)] transition hover:brightness-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+                    :disabled="!addTeamFormValid"
+                    @click="confirmAddTeam"
+                  >
+                    确认
+                  </button>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <template v-else>
+            <div
+              class="flex min-h-[min(420px,52vh)] flex-col items-center justify-center px-6 py-10 sm:px-10"
+            >
+              <img
+                :src="checkMarkImg"
+                alt=""
+                class="mb-6 h-36 w-56 object-contain"
+              />
+              <h2
+                id="team-add-success-title"
+                class="mb-4 text-3xl font-bold tracking-tight text-white"
+              >
+                已完成提交
+              </h2>
+              <p class="mb-10 max-w-md text-center text-white/60">
+                新团队已成功添加至系统中。可在下方列表中查看，成员请在「成员管理」中关联。
+              </p>
+              <button
+                type="button"
+                class="rounded-xl border border-white/10 bg-white/10 px-8 py-3 font-bold text-white transition-colors hover:bg-white/20"
+                @click="onAddTeamSuccessClose"
+              >
+                返回团队列表
+              </button>
+            </div>
+          </template>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- 新增团队 · 负责空间下拉（与新增成员 · 类型一致：Teleport 避免被弹窗裁切） -->
+    <Teleport to="body">
+      <template v-if="addTeamSpaceDropdownOpen && addTeamModalOpen">
+        <div
+          class="fixed inset-0 z-[199]"
+          aria-hidden="true"
+          @click="addTeamSpaceDropdownOpen = false"
+        />
+        <ul
+          role="listbox"
+          aria-labelledby="team-add-space-label"
+          :style="addTeamSpaceDropdownStyle"
+          class="max-h-[min(40vh,16rem)] overflow-y-auto rounded-xl border border-white/20 bg-white/10 py-1 shadow-2xl backdrop-blur-2xl"
+          @click.stop
+        >
+          <li
+            v-for="s in orgStore.spaces"
+            :key="s.id"
+            role="option"
+            :aria-selected="draftAddSpaceId === s.id"
+            class="cursor-pointer px-3 py-2.5 text-sm font-bold text-white transition hover:bg-white/15"
+            :class="
+              draftAddSpaceId === s.id ? 'bg-white/10 text-[#FFE600]' : ''
+            "
+            :title="formatSpaceOptionLabel(s)"
+            @click="selectAddTeamSpace(s.id)"
+          >
+            <span class="line-clamp-2 text-left leading-snug">{{
+              formatSpaceOptionLabel(s)
+            }}</span>
+          </li>
+        </ul>
+      </template>
     </Teleport>
   </div>
 </template>
