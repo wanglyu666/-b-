@@ -17,7 +17,15 @@ onMounted(() => {
     :members="orgStore.members"
     :teams="orgStore.teams"
     :space-count="orgStore.spaceCount"
-    @open-member-management="router.push({ name: 'member-management' })"
+    @open-member-management="
+      (memberId) =>
+        router.push({
+          name: 'member-management',
+          ...(memberId != null
+            ? { query: { member: String(memberId) } }
+            : {}),
+        })
+    "
     @open-team-management="
       (teamId) =>
         router.push({

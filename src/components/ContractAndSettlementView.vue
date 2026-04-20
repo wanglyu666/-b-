@@ -25,7 +25,7 @@ const filteredBills = computed(() => {
     </header>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      <div class="lg:col-span-8 bg-white rounded-3xl p-8 shadow-sm border border-gray-100 h-[380px] flex flex-col">
+      <div class="lg:col-span-8 bg-white/50 rounded-3xl p-8 shadow-sm border border-gray-100 h-[380px] flex flex-col backdrop-blur-sm">
           <div class="flex justify-between items-center mb-6">
               <div class="flex items-center space-x-2">
                   <div class="w-1 h-5 bg-[#A1D573] rounded-full"></div>
@@ -68,7 +68,7 @@ const filteredBills = computed(() => {
       </div>
 
       <div class="lg:col-span-4 flex flex-col gap-6 h-[380px]">
-          <div class="flex-1 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-center">
+          <div class="flex-1 bg-white/50 rounded-3xl p-6 shadow-sm border border-gray-100 flex flex-col justify-center backdrop-blur-sm">
               <div class="flex justify-between items-center mb-4">
                   <div class="flex items-center space-x-2">
                       <div class="w-1 h-5 bg-[#163300] rounded-full"></div>
@@ -132,7 +132,7 @@ const filteredBills = computed(() => {
           </div>
       </div>
 
-      <div class="lg:col-span-8 bg-white rounded-3xl p-8 shadow-sm border border-gray-100 h-[350px] flex flex-col">
+      <div class="lg:col-span-8 bg-white/50 rounded-3xl p-8 shadow-sm border border-gray-100 h-[350px] flex flex-col backdrop-blur-sm">
           <div class="flex justify-between items-center mb-6">
               <div class="flex items-center space-x-2">
                   <div class="w-1 h-5 bg-[#FFEB69] rounded-full"></div>

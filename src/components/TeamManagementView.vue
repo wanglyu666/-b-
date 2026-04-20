@@ -16,6 +16,11 @@ import type {
   OrganizationSpace,
   OrganizationTeam,
 } from '../types';
+import {
+  memberBelongsToTeam,
+  teamsWithMemberAvatars,
+  TEAM_CARD_AVATAR_DISPLAY_CAP,
+} from '../utils/memberTeam';
 
 const orgStore = useOrgStore();
 
@@ -190,29 +195,18 @@ const teamDetailModalStyle = computed(() => {
   } as Record<string, string>;
 });
 
+const teamsSynced = computed(() =>
+  teamsWithMemberAvatars(props.teams, props.members),
+);
+
 const filteredTeams = computed(() => {
   const q = searchQuery.value.trim().toLowerCase().replace(/\s/g, '');
-  if (!q) return props.teams;
-  return props.teams.filter((t) => {
+  if (!q) return teamsSynced.value;
+  return teamsSynced.value.filter((t) => {
     const blob = `${t.name}${t.leader}${t.space}${t.createdAt}`.toLowerCase();
     return blob.replace(/\s/g, '').includes(q);
   });
 });
-
-/** 成员.team 与团队名称一致或为「、」分隔多团队时视为属于该团队（与成员管理展示一致） */
-function memberBelongsToTeam(m: Member, teamName: string): boolean {
-  const raw = m.team?.trim();
-  if (!raw) return false;
-  if (raw === teamName) return true;
-  if (raw.includes('、')) {
-    return raw
-      .split('、')
-      .map((s) => s.trim())
-      .filter(Boolean)
-      .includes(teamName);
-  }
-  return false;
-}
 
 const membersForSelectedTeam = computed(() => {
   const t = selectedTeam.value;
@@ -235,7 +229,7 @@ function tryOpenTeamFromQuery() {
   if (raw === undefined || raw === null || raw === '') return;
   const id = (Array.isArray(raw) ? raw[0] : raw) as string;
   if (!id) return;
-  const team = props.teams.find((t) => t.id === id);
+  const team = teamsSynced.value.find((t) => t.id === id);
   const { team: _drop, ...restQuery } = route.query;
   if (!team) {
     if ('team' in route.query) {
@@ -532,14 +526,14 @@ function confirmApprovalFlow() {
       </header>
 
       <div
-        class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3"
+        class="grid grid-cols-1 items-stretch gap-6 sm:grid-cols-2 lg:grid-cols-3"
       >
         <article
           v-for="team in filteredTeams"
           :key="team.id"
           role="button"
           tabindex="0"
-          class="flex cursor-pointer flex-col rounded-3xl border border-gray-100 bg-white/50 p-6 text-left shadow-sm backdrop-blur-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9FE870]/50"
+          class="flex h-full cursor-pointer flex-col rounded-3xl border border-gray-100 bg-white/50 p-6 text-left shadow-sm backdrop-blur-sm transition-shadow hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#9FE870]/50"
           @click="openTeamDetail(team)"
           @keydown.enter.prevent="openTeamDetail(team)"
           @keydown.space.prevent="openTeamDetail(team)"
@@ -569,23 +563,28 @@ function confirmApprovalFlow() {
             <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">
               负责空间
             </p>
-            <p class="mt-1.5 text-sm leading-relaxed text-gray-600">
+            <p class="mt-1.5 line-clamp-3 text-sm leading-relaxed text-gray-600">
               {{ team.space }}
             </p>
           </div>
-          <div class="mt-auto flex flex-col">
+          <!-- 无成员时仍保留彩圈行高度；同行卡片由 grid stretch + h-full 拉高时 mt-auto 让底部区块贴齐 -->
+          <div class="mt-auto flex w-full flex-col">
             <p class="text-[10px] font-bold uppercase tracking-wider text-gray-400">
               包含人员
             </p>
-            <div class="mt-3 flex flex-wrap items-center gap-0">
+            <div
+              class="mt-3 flex min-h-[3.25rem] flex-wrap items-center gap-0 sm:min-h-[3.5rem]"
+            >
               <div
-                v-for="(m, i) in team.members"
-                :key="`${team.id}-${i}`"
+                v-for="(m, i) in team.members.slice(0, TEAM_CARD_AVATAR_DISPLAY_CAP)"
+                :key="m.memberId ?? `${team.id}-${i}`"
                 class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-sm ring-1 ring-gray-900/10 sm:h-12 sm:w-12 sm:text-base"
                 :class="i > 0 ? '-ml-3 sm:-ml-3.5' : ''"
                 :style="{
                   backgroundColor: m.color,
-                  zIndex: team.members.length - i,
+                  zIndex:
+                    Math.min(team.members.length, TEAM_CARD_AVATAR_DISPLAY_CAP) -
+                    i,
                 }"
               >
                 {{ m.initial }}

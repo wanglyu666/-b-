@@ -21,7 +21,7 @@ import type {
   OrganizationSpace,
   OrganizationTeam,
 } from '../types';
-import { engineeringProjects } from '../data';
+import { engineeringProjects, TEAM_MEMBER_AVATAR_COLORS } from '../data';
 import checkMarkImg from '../../image asset/check mark.png';
 
 const props = defineProps<{
@@ -30,10 +30,14 @@ const props = defineProps<{
   teams: OrganizationTeam[];
   /** 与「空间管理」同源，用于成员详情内空间分配 */
   spaces: OrganizationSpace[];
+  /** 从路由 ?member=id 进入时自动打开对应成员详情 */
+  initialOpenMemberId?: number;
 }>();
 
 const emit = defineEmits<{
   back: [];
+  /** 已根据 initialOpenMemberId 打开详情，父级可清除 query */
+  initialMemberOpened: [];
 }>();
 
 /** 本页新增的成员（与 props 合并展示；持久化需对接后端） */
@@ -134,15 +138,6 @@ const addMemberModalStyle = computed(
     }) as Record<string, string>,
 );
 
-const AVATAR_BG_ROTATION = [
-  'bg-blue-500',
-  'bg-green-500',
-  'bg-yellow-500',
-  'bg-indigo-500',
-  'bg-rose-500',
-  'bg-teal-500',
-] as const;
-
 function openAddMemberModal() {
   draftAddName.value = '';
   draftAddPhone.value = '';
@@ -164,7 +159,8 @@ function confirmAddMember() {
   const ids = [...props.members, ...localAddedMembers.value].map((m) => m.id);
   const id = Math.max(0, ...ids) + 1;
   const initial = name.slice(0, 1) || '·';
-  const bgColor = AVATAR_BG_ROTATION[id % AVATAR_BG_ROTATION.length];
+  const bgColor =
+    TEAM_MEMBER_AVATAR_COLORS[id % TEAM_MEMBER_AVATAR_COLORS.length];
   const newMember: Member = {
     id,
     name,
@@ -849,6 +845,28 @@ function closeMemberDetail() {
   modalView.value = 'detail';
 }
 
+/** 避免 members 多次刷新时对同一 ?member= 重复打开 */
+const initialOpenHandledForId = ref<number | null>(null);
+
+/** 组织与架构页点成员预览进入：成员列表就绪后打开详情并通知父级去掉 ?member= */
+watch(
+  () => [props.members, props.initialOpenMemberId] as const,
+  () => {
+    const id = props.initialOpenMemberId;
+    if (id == null || !Number.isFinite(id)) {
+      initialOpenHandledForId.value = null;
+      return;
+    }
+    if (initialOpenHandledForId.value === id) return;
+    const m = allMembers.value.find((x) => x.id === id);
+    if (!m) return;
+    openMemberDetail(m);
+    initialOpenHandledForId.value = id;
+    emit('initialMemberOpened');
+  },
+  { immediate: true, flush: 'post' },
+);
+
 function onDocumentKeydown(e: KeyboardEvent) {
   if (e.key !== 'Escape') return;
   if (addMemberModalOpen.value) {
@@ -956,10 +974,8 @@ onUnmounted(() => {
           @click="openMemberDetail(m)"
         >
           <div
-            :class="[
-              'mb-5 flex h-24 w-24 shrink-0 items-center justify-center rounded-full text-2xl font-bold text-white shadow-sm',
-              m.bgColor,
-            ]"
+            class="mb-5 flex h-24 w-24 shrink-0 items-center justify-center rounded-full text-2xl font-bold text-white shadow-sm ring-1 ring-gray-900/10"
+            :style="{ backgroundColor: m.bgColor }"
           >
             {{ m.initial }}
           </div>

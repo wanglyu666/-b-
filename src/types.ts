@@ -54,6 +54,8 @@ export interface Bill {
 export interface OrganizationTeamMemberAvatar {
   initial: string;
   color: string;
+  /** 成员 id，用于列表 key；由成员数据推导时填入 */
+  memberId?: number;
 }
 
 export interface OrganizationTeam {
@@ -86,6 +88,7 @@ export interface Member {
   name: string;
   role: string;
   initial: string;
+  /** 头像彩圈背景色（#RRGGBB，与组织成员色板一致） */
   bgColor: string;
   online: boolean;
   /** 联系电话 */

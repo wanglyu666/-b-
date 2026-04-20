@@ -11,6 +11,10 @@ import spaceIllustration from '../../image asset/space.png';
 import membersMgmtIllustration from '../../image asset/group icon.png';
 import { approvalFlowCardsOrgPreview } from '../data/approvalFlowCards';
 import type { Member, OrganizationTeam } from '../types';
+import {
+  teamsWithMemberAvatars,
+  TEAM_CARD_AVATAR_DISPLAY_CAP,
+} from '../utils/memberTeam';
 
 const props = defineProps<{
   members: Member[];
@@ -20,7 +24,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  openMemberManagement: [];
+  /** 不传 id：仅进入成员管理页；传成员 id：进入成员管理页并打开该成员详情 */
+  openMemberManagement: [memberId?: number];
   /** 不传 id：仅进入团队页；传团队 id：进入团队页并打开该团队详情 */
   openTeamManagement: [teamId?: string];
   openSpaceManagement: [];
@@ -58,8 +63,12 @@ function teamCreatedAtMs(t: OrganizationTeam): number {
   return 0;
 }
 
+const teamsSynced = computed(() =>
+  teamsWithMemberAvatars(props.teams, props.members),
+);
+
 const teamBlocksPreview = computed(() =>
-  [...props.teams]
+  [...teamsSynced.value]
     .sort((a, b) => teamCreatedAtMs(b) - teamCreatedAtMs(a))
     .slice(0, 2),
 );
@@ -118,11 +127,17 @@ const approvalBlocks = approvalFlowCardsOrgPreview;
               <div
                 v-for="m in membersPreview"
                 :key="m.id"
-                class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors"
+                role="button"
+                tabindex="0"
+                class="flex items-center justify-between rounded-xl p-1.5 transition-colors hover:bg-gray-50 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-[#9FE870]/50"
+                @click.stop="emit('openMemberManagement', m.id)"
+                @keydown.enter.prevent="emit('openMemberManagement', m.id)"
+                @keydown.space.prevent="emit('openMemberManagement', m.id)"
               >
                 <div class="flex items-center space-x-3">
                   <div
-                    :class="['w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs', m.bgColor]"
+                    class="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm ring-1 ring-gray-900/10"
+                    :style="{ backgroundColor: m.bgColor }"
                   >
                     {{ m.initial }}
                   </div>
@@ -351,13 +366,20 @@ const approvalBlocks = approvalFlowCardsOrgPreview;
                 >
                   <div class="flex items-center justify-center">
                     <div
-                      v-for="(m, i) in team.members"
-                      :key="`${team.id}-${i}`"
+                      v-for="(m, i) in team.members.slice(
+                        0,
+                        TEAM_CARD_AVATAR_DISPLAY_CAP,
+                      )"
+                      :key="m.memberId ?? `${team.id}-${i}`"
                       class="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white shadow-sm ring-1 ring-gray-900/10 sm:h-12 sm:w-12 sm:text-base"
                       :class="i > 0 ? '-ml-3 sm:-ml-3.5' : ''"
                       :style="{
                         backgroundColor: m.color,
-                        zIndex: team.members.length - i,
+                        zIndex:
+                          Math.min(
+                            team.members.length,
+                            TEAM_CARD_AVATAR_DISPLAY_CAP,
+                          ) - i,
                       }"
                     >
                       {{ m.initial }}

@@ -502,17 +502,8 @@ export const maintenanceProjects: MaintenanceProject[] = [
   { id: 'M-51', no: 'WB-2023-034', name: '医院手术室洁净空调维保', address: '市第一人民医院 3 号楼', manager: '王建国', contact: '138-0013-8001', status: '已完工' },
 ];
 
-export const members: Member[] = [
-  { id: 1, name: '张伟', role: '项目经理', initial: '张', bgColor: 'bg-blue-500', online: true, phone: '138-0013-8001', team: '维保一组', email: 'zhangwei@example.com', memberType: '内部成员', remarks: '负责 A 区商业综合体项目统筹与对外协调。', responsibleSpace: 'A 区 · 商业综合体、B 区 · 写字楼群' },
-  { id: 2, name: '李秀英', role: '高级工程师', initial: '李', bgColor: 'bg-green-500', online: false, phone: '139-2234-5678', team: '维保一组', email: 'lixiuying@example.com', memberType: '内部成员', remarks: '暖通方案审核与节能改造技术支持。', responsibleSpace: 'A 区 · 商业综合体' },
-  { id: 3, name: '王强', role: '现场监理', initial: '王', bgColor: 'bg-yellow-500', online: true, phone: '137-3344-9900', team: '维保二组', email: 'wangqiang@example.com', memberType: '外部成员', remarks: '现场安全巡检与施工质量验收。', responsibleSpace: '工业园区 · 配电中心', company: '宏达机电工程有限公司' },
-  { id: 4, name: '刘洋', role: '机电工程师', initial: '刘', bgColor: 'bg-indigo-500', online: true, phone: '136-5566-7788', team: '维保二组', email: 'liuyang@example.com', memberType: '内部成员', remarks: '机电安装与调试，配合竣工验收。', responsibleSpace: 'C 区 · 产业园一期' },
-  { id: 5, name: '陈明', role: '安全员', initial: '陈', bgColor: 'bg-rose-500', online: false, phone: '135-6677-8899', team: '维保一组', email: 'chenming@example.com', memberType: '内部成员', remarks: '专项安全培训与隐患整改跟踪。', responsibleSpace: '全区域安全巡检' },
-  { id: 6, name: '赵敏', role: '资料员', initial: '赵', bgColor: 'bg-teal-500', online: true, phone: '133-7788-9900', team: '维保二组', email: 'zhaomin@example.com', memberType: '内部成员', remarks: '竣工资料归档与图纸版本管理。', responsibleSpace: '总部档案室、项目资料库' },
-];
-
 /**
- * 团队「包含人员」头像彩圈仅用色（与 UI 色板一致，禁止其它色值）
+ * 成员 / 团队头像彩圈仅用色（与 UI 色板一致，禁止其它色值）
  */
 export const TEAM_MEMBER_AVATAR_COLORS = [
   '#B9D8AB',
@@ -525,7 +516,19 @@ export const TEAM_MEMBER_AVATAR_COLORS = [
 
 const C = TEAM_MEMBER_AVATAR_COLORS;
 
-/** 组织与架构 · 团队（团队页网格与首页侧栏共用） */
+export const members: Member[] = [
+  { id: 1, name: '张伟', role: '项目经理', initial: '张', bgColor: C[0], online: true, phone: '138-0013-8001', team: '维保一组、资料与合规组', email: 'zhangwei@example.com', memberType: '内部成员', remarks: '负责 A 区商业综合体项目统筹与对外协调。', responsibleSpace: 'A 区 · 商业综合体、B 区 · 写字楼群' },
+  { id: 2, name: '李秀英', role: '高级工程师', initial: '李', bgColor: C[1], online: false, phone: '139-2234-5678', team: '维保一组、资料与合规组', email: 'lixiuying@example.com', memberType: '内部成员', remarks: '暖通方案审核与节能改造技术支持。', responsibleSpace: 'A 区 · 商业综合体' },
+  { id: 3, name: '王强', role: '现场监理', initial: '王', bgColor: C[2], online: true, phone: '137-3344-9900', team: '维保二组', email: 'wangqiang@example.com', memberType: '外部成员', remarks: '现场安全巡检与施工质量验收。', responsibleSpace: '工业园区 · 配电中心', company: '宏达机电工程有限公司' },
+  { id: 4, name: '刘洋', role: '机电工程师', initial: '刘', bgColor: C[3], online: true, phone: '136-5566-7788', team: '维保二组', email: 'liuyang@example.com', memberType: '内部成员', remarks: '机电安装与调试，配合竣工验收。', responsibleSpace: 'C 区 · 产业园一期' },
+  { id: 5, name: '陈明', role: '安全员', initial: '陈', bgColor: C[4], online: false, phone: '135-6677-8899', team: '维保一组、资料与合规组', email: 'chenming@example.com', memberType: '内部成员', remarks: '专项安全培训与隐患整改跟踪。', responsibleSpace: '全区域安全巡检' },
+  { id: 6, name: '赵敏', role: '资料员', initial: '赵', bgColor: C[5], online: true, phone: '133-7788-9900', team: '资料与合规组、维保二组', email: 'zhaomin@example.com', memberType: '内部成员', remarks: '竣工资料归档与图纸版本管理。', responsibleSpace: '总部档案室、项目资料库' },
+];
+
+/**
+ * 组织与架构 · 团队（团队页网格与组织页预览共用）
+ * members 占位为空：重叠头像由界面根据 members 表中 team 字段与 initial/bgColor 实时推导。
+ */
 export const organizationTeams: OrganizationTeam[] = [
   {
     id: 't1',
@@ -533,12 +536,7 @@ export const organizationTeams: OrganizationTeam[] = [
     leader: '张伟',
     space: 'A 区 · 商业综合体',
     createdAt: '2024-03-15',
-    members: [
-      { initial: '张', color: C[0] },
-      { initial: '李', color: C[1] },
-      { initial: '王', color: C[2] },
-      { initial: '江', color: C[3] },
-    ],
+    members: [],
   },
   {
     id: 't2',
@@ -546,11 +544,7 @@ export const organizationTeams: OrganizationTeam[] = [
     leader: '李秀英',
     space: 'B 区 · 工业园区',
     createdAt: '2024-06-01',
-    members: [
-      { initial: '刘', color: C[4] },
-      { initial: '陈', color: C[5] },
-      { initial: '赵', color: C[0] },
-    ],
+    members: [],
   },
   {
     id: 't3',
@@ -558,11 +552,7 @@ export const organizationTeams: OrganizationTeam[] = [
     leader: '王强',
     space: 'C 区 · 研发中心',
     createdAt: '2024-08-20',
-    members: [
-      { initial: '王', color: C[1] },
-      { initial: '周', color: C[2] },
-      { initial: '吴', color: C[3] },
-    ],
+    members: [],
   },
   {
     id: 't4',
@@ -570,10 +560,7 @@ export const organizationTeams: OrganizationTeam[] = [
     leader: '刘洋',
     space: '全区域巡检',
     createdAt: '2024-05-10',
-    members: [
-      { initial: '刘', color: C[4] },
-      { initial: '郑', color: C[5] },
-    ],
+    members: [],
   },
   {
     id: 't5',
@@ -581,11 +568,7 @@ export const organizationTeams: OrganizationTeam[] = [
     leader: '陈明',
     space: '机动调配',
     createdAt: '2024-07-01',
-    members: [
-      { initial: '陈', color: C[0] },
-      { initial: '孙', color: C[1] },
-      { initial: '钱', color: C[2] },
-    ],
+    members: [],
   },
   {
     id: 't6',
@@ -593,10 +576,7 @@ export const organizationTeams: OrganizationTeam[] = [
     leader: '赵敏',
     space: '总部大楼',
     createdAt: '2024-09-12',
-    members: [
-      { initial: '赵', color: C[3] },
-      { initial: '冯', color: C[4] },
-    ],
+    members: [],
   },
 ];
 

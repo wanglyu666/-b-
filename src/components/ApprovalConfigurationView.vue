@@ -1,16 +1,37 @@
 <script setup lang="ts">
 import { ChevronLeft, X } from 'lucide-vue-next';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import {
   approvalFlowCards,
   type ApprovalFlowCard,
 } from '../data/approvalFlowCards';
+import type { Member } from '../types';
+import { resolveApprovalStepAvatar } from '../utils/resolveApprovalAvatar';
+
+const props = withDefaults(
+  defineProps<{
+    /** 与成员管理同源，按审批人姓名匹配彩圈与字 */
+    members?: Member[];
+  }>(),
+  { members: () => [] },
+);
 
 const emit = defineEmits<{
   back: [];
 }>();
 
 const selectedCard = ref<ApprovalFlowCard | null>(null);
+
+/** 弹窗时间轴：头像与成员管理对齐（姓名命中则用 bgColor / initial） */
+const modalTimelineRows = computed(() => {
+  const card = selectedCard.value;
+  if (!card) return [];
+  return card.timeline.map((step, index) => ({
+    step,
+    index,
+    avatar: resolveApprovalStepAvatar(step, props.members),
+  }));
+});
 
 function openRecordModal(card: ApprovalFlowCard) {
   selectedCard.value = card;
@@ -188,16 +209,21 @@ function closeRecordModal() {
           >
             <div v-if="selectedCard" class="space-y-0">
               <div
-                v-for="(step, i) in selectedCard.timeline"
-                :key="i"
+                v-for="(row, i) in modalTimelineRows"
+                :key="row.index"
                 class="flex gap-5 pb-9 last:pb-0"
               >
                 <div class="flex w-14 shrink-0 flex-col items-center">
                   <div
-                    class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-base font-bold text-white shadow-md"
-                    :class="step.avatarBg"
+                    class="flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-base font-bold text-white shadow-md ring-1 ring-white/15"
+                    :class="row.avatar.useHex ? '' : row.avatar.tailwindClass"
+                    :style="
+                      row.avatar.useHex
+                        ? { backgroundColor: row.avatar.hex }
+                        : undefined
+                    "
                   >
-                    {{ step.avatarInitial }}
+                    {{ row.avatar.initial }}
                   </div>
                   <div
                     v-if="i < selectedCard.timeline.length - 1"
@@ -209,14 +235,14 @@ function closeRecordModal() {
                   <p class="text-base leading-relaxed text-white/95">
                     <span class="text-white/45">审批人：</span>
                     <span class="font-semibold text-white">{{
-                      step.approverName
+                      row.step.approverName
                     }}</span>
-                    <span class="text-white/75">（{{ step.role }}）</span>
+                    <span class="text-white/75">（{{ row.step.role }}）</span>
                   </p>
                   <p class="mt-2 text-base">
                     <span class="text-white/45">审批时间：</span>
                     <span class="tabular-nums text-white/90">{{
-                      step.time
+                      row.step.time
                     }}</span>
                   </p>
                   <p class="mt-2 flex flex-wrap items-center gap-2 text-base">
@@ -224,22 +250,22 @@ function closeRecordModal() {
                     <span
                       class="inline-flex rounded-full px-3 py-1 text-sm font-semibold ring-1"
                       :class="
-                        step.result === '同意'
+                        row.step.result === '同意'
                           ? 'bg-emerald-500/25 text-emerald-200 ring-emerald-400/30'
-                          : step.result === '待审批'
+                          : row.step.result === '待审批'
                             ? 'bg-amber-500/30 text-amber-100 ring-amber-400/40'
                             : 'bg-white/10 text-white/55 ring-white/20'
                       "
                     >
-                      {{ step.result }}
+                      {{ row.step.result }}
                     </span>
                   </p>
                   <div
-                    v-if="step.comment && step.comment !== '—'"
+                    v-if="row.step.comment && row.step.comment !== '—'"
                     class="mt-4 rounded-xl border border-white/10 bg-white/5 p-4 text-base leading-relaxed text-white/85 backdrop-blur-sm"
                   >
                     <span class="text-white/45">审批意见：</span
-                    >{{ step.comment }}
+                    >{{ row.step.comment }}
                   </div>
                 </div>
               </div>

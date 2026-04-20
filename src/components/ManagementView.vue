@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue';
-import { HardHat, Clock, Wrench, CheckCircle, Banknote, Shield, ShieldAlert, AlertCircle, ClipboardList, UsersRound, MoreHorizontal, ShoppingCart, X } from 'lucide-vue-next';
+import { HardHat, Clock, Wrench, CheckCircle, Banknote, Shield, ShieldAlert, AlertCircle, ClipboardList, ShoppingCart, X } from 'lucide-vue-next';
 import TopBarActions from './TopBarActions.vue';
 import type { EngineeringProject, MaintenanceProject, Member } from '../types';
 import orderMgmtIllustration from '../../image asset/shopping cart icon.png';
-import membersMgmtIllustration from '../../image asset/group icon.png';
 import checkMarkImg from '../../image asset/check mark.png';
+import engProjectWrenchImg from '../../image asset/wrench.png';
 
 const props = withDefaults(
   defineProps<{
@@ -253,105 +253,115 @@ const closeAddModal = () => {
            </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-6">
-          <!-- 工程项目管理 (粉色框) -->
-          <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-[400px]">
-             <div class="flex justify-between items-center mb-4">
-                <div class="flex items-center space-x-2">
-                   <div class="w-1 h-5 bg-[#FFEB69] rounded-full"></div>
-                   <h3 class="font-bold text-lg text-gray-800">工程项目管理</h3>
-                </div>
-                <HardHat :size="18" class="text-gray-400" />
-             </div>
-             
-             <div class="flex-1 flex flex-col justify-between py-0.5">
-                <div @click="$emit('viewProjects', '待开工')" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
-                   <div class="flex items-center space-x-3">
-                      <div class="p-1.5 bg-[#f8c91c]/15 text-[#f8c91c] rounded-full"><Clock :size="14" /></div>
-                      <span class="text-gray-600 font-medium text-sm">待开工</span>
-                   </div>
-                   <span class="font-bold text-lg text-gray-900">{{ engPendingCount }}</span>
-                </div>
-
-                <div @click="$emit('viewProjects', '施工中')" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
-                   <div class="flex items-center space-x-3">
-                      <div class="p-1.5 bg-[#f8c91c]/15 text-[#f8c91c] rounded-full"><Wrench :size="14" /></div>
-                      <span class="text-gray-600 font-medium text-sm">施工中</span>
-                   </div>
-                   <span class="font-bold text-lg text-gray-900">{{ engInProgressCount }}</span>
-                </div>
-
-                <div @click="$emit('viewProjects', '已完工')" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
-                   <div class="flex items-center space-x-3">
-                      <div class="p-1.5 bg-[#f8c91c]/15 text-[#f8c91c] rounded-full"><CheckCircle :size="14" /></div>
-                      <span class="text-gray-600 font-medium text-sm">已完工</span>
-                   </div>
-                   <span class="font-bold text-lg text-gray-900">{{ engCompletedCount }}</span>
-                </div>
-
-                <div @click="$emit('viewProjects', '已结算')" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
-                   <div class="flex items-center space-x-3">
-                      <div class="p-1.5 bg-[#f8c91c]/15 text-[#f8c91c] rounded-full"><Banknote :size="14" /></div>
-                      <span class="text-gray-600 font-medium text-sm">已结算</span>
-                   </div>
-                   <span class="font-bold text-lg text-gray-900">{{ engSettledCount }}</span>
-                </div>
-
-                <div @click="$emit('viewProjects', '保修中')" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
-                   <div class="flex items-center space-x-3">
-                      <div class="p-1.5 bg-[#f8c91c]/15 text-[#f8c91c] rounded-full"><Shield :size="14" /></div>
-                      <span class="text-gray-600 font-medium text-sm">保修中</span>
-                   </div>
-                   <span class="font-bold text-lg text-gray-900">{{ engWarrantyInCount }}</span>
-                </div>
-
-                <div @click="$emit('viewProjects', '保修外')" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
-                   <div class="flex items-center space-x-3">
-                      <div class="p-1.5 bg-[#f8c91c]/15 text-[#f8c91c] rounded-full"><ShieldAlert :size="14" /></div>
-                      <span class="text-gray-600 font-medium text-sm">保修外</span>
-                   </div>
-                   <span class="font-bold text-lg text-gray-900">{{ engWarrantyOutCount }}</span>
-                </div>
-             </div>
+        <!-- 工程项目管理：整行拉满；左列为后三项，右列底部为前三项（原成员卡区域） -->
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-[400px]">
+          <div class="flex justify-between items-center mb-4 shrink-0">
+            <div class="flex items-center space-x-2">
+              <div class="w-1 h-5 bg-[#FFEB69] rounded-full"></div>
+              <h3 class="font-bold text-lg text-gray-800">工程项目管理</h3>
+            </div>
+            <HardHat :size="18" class="text-gray-400" />
           </div>
 
-          <!-- 成员管理 (绿色框) -->
-          <div class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col h-[400px]">
-             <div class="flex justify-between items-center mb-4">
-                <div class="flex items-center space-x-2">
-                   <div class="w-1 h-5 bg-[#FFEB69] rounded-full"></div>
-                   <h3 class="font-bold text-lg text-gray-800">成员管理</h3>
-                </div>
-                <UsersRound :size="18" class="text-gray-400" />
-             </div>
-             
-             <div class="flex-1 min-h-0 flex flex-col gap-2">
-                <!-- 图片仅在上方剩余空间内缩放，再大也不会挤占成员列表 -->
-                <div class="min-h-0 flex-1 flex items-center justify-center overflow-hidden">
-                   <img
-                     :src="membersMgmtIllustration"
-                     alt=""
-                     class="max-h-full max-w-full w-auto h-auto object-contain"
-                   />
-                </div>
+          <div class="flex min-h-0 flex-1 flex-col gap-3">
+            <!-- 与示意红框一致：卡片内容区上半部、全宽、扁长条插图 -->
+            <div
+              class="flex h-[100px] w-full shrink-0 items-center justify-center overflow-hidden px-2 sm:h-[118px]"
+            >
+              <img
+                :src="engProjectWrenchImg"
+                alt=""
+                class="h-full w-full max-h-[92px] sm:max-h-[108px] object-contain object-center"
+              />
+            </div>
 
-                <div class="flex-shrink-0 flex flex-col gap-0.5 mb-2">
-                   <div v-for="member in props.members" :key="member.id" class="flex items-center justify-between p-1.5 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer">
-                      <div class="flex items-center space-x-3">
-                         <div :class="['w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-xs', member.bgColor]">
-                            {{ member.initial }}
-                         </div>
-                         <div class="flex flex-col">
-                            <span class="font-bold text-gray-900 text-xs">{{ member.name }}</span>
-                            <span class="text-[10px] text-gray-500">{{ member.role }}</span>
-                         </div>
-                      </div>
-                   </div>
+            <div class="flex min-h-0 flex-1 flex-col gap-4 sm:flex-row sm:gap-8">
+            <div
+              class="flex min-h-0 flex-1 flex-col justify-end gap-2 sm:max-w-[50%]"
+            >
+              <div
+                @click="$emit('viewProjects', '已结算')"
+                class="flex cursor-pointer items-center justify-between rounded-xl p-1.5 transition-colors hover:bg-gray-50"
+              >
+                <div class="flex items-center space-x-3">
+                  <div class="rounded-full bg-[#f8c91c]/15 p-1.5 text-[#f8c91c]">
+                    <Banknote :size="14" />
+                  </div>
+                  <span class="text-sm font-medium text-gray-600">已结算</span>
                 </div>
-             </div>
-             <button class="text-xs font-medium text-gray-400 hover:text-gray-800 transition-colors py-1.5 flex justify-center items-center gap-1 w-full border-t border-gray-50 pt-2">
-                <MoreHorizontal :size="12" /> 查看全部成员
-             </button>
+                <span class="text-lg font-bold text-gray-900">{{ engSettledCount }}</span>
+              </div>
+
+              <div
+                @click="$emit('viewProjects', '保修中')"
+                class="flex cursor-pointer items-center justify-between rounded-xl p-1.5 transition-colors hover:bg-gray-50"
+              >
+                <div class="flex items-center space-x-3">
+                  <div class="rounded-full bg-[#f8c91c]/15 p-1.5 text-[#f8c91c]">
+                    <Shield :size="14" />
+                  </div>
+                  <span class="text-sm font-medium text-gray-600">保修中</span>
+                </div>
+                <span class="text-lg font-bold text-gray-900">{{ engWarrantyInCount }}</span>
+              </div>
+
+              <div
+                @click="$emit('viewProjects', '保修外')"
+                class="flex cursor-pointer items-center justify-between rounded-xl p-1.5 transition-colors hover:bg-gray-50"
+              >
+                <div class="flex items-center space-x-3">
+                  <div class="rounded-full bg-[#f8c91c]/15 p-1.5 text-[#f8c91c]">
+                    <ShieldAlert :size="14" />
+                  </div>
+                  <span class="text-sm font-medium text-gray-600">保修外</span>
+                </div>
+                <span class="text-lg font-bold text-gray-900">{{ engWarrantyOutCount }}</span>
+              </div>
+            </div>
+
+            <div
+              class="flex min-h-0 flex-1 flex-col justify-end gap-2 border-t border-gray-100 pt-4 sm:border-t-0 sm:pt-0"
+            >
+              <div
+                @click="$emit('viewProjects', '待开工')"
+                class="flex cursor-pointer items-center justify-between rounded-xl p-1.5 transition-colors hover:bg-gray-50"
+              >
+                <div class="flex items-center space-x-3">
+                  <div class="rounded-full bg-[#f8c91c]/15 p-1.5 text-[#f8c91c]">
+                    <Clock :size="14" />
+                  </div>
+                  <span class="text-sm font-medium text-gray-600">待开工</span>
+                </div>
+                <span class="text-lg font-bold text-gray-900">{{ engPendingCount }}</span>
+              </div>
+
+              <div
+                @click="$emit('viewProjects', '施工中')"
+                class="flex cursor-pointer items-center justify-between rounded-xl p-1.5 transition-colors hover:bg-gray-50"
+              >
+                <div class="flex items-center space-x-3">
+                  <div class="rounded-full bg-[#f8c91c]/15 p-1.5 text-[#f8c91c]">
+                    <Wrench :size="14" />
+                  </div>
+                  <span class="text-sm font-medium text-gray-600">施工中</span>
+                </div>
+                <span class="text-lg font-bold text-gray-900">{{ engInProgressCount }}</span>
+              </div>
+
+              <div
+                @click="$emit('viewProjects', '已完工')"
+                class="flex cursor-pointer items-center justify-between rounded-xl p-1.5 transition-colors hover:bg-gray-50"
+              >
+                <div class="flex items-center space-x-3">
+                  <div class="rounded-full bg-[#f8c91c]/15 p-1.5 text-[#f8c91c]">
+                    <CheckCircle :size="14" />
+                  </div>
+                  <span class="text-sm font-medium text-gray-600">已完工</span>
+                </div>
+                <span class="text-lg font-bold text-gray-900">{{ engCompletedCount }}</span>
+              </div>
+            </div>
+            </div>
           </div>
         </div>
       </div>

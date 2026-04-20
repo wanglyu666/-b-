@@ -55,7 +55,7 @@ function completedThree(
     case 1:
       return [
         step(
-          '李四',
+          '李秀英',
           '部门主管',
           '李',
           'bg-blue-500',
@@ -64,7 +64,7 @@ function completedThree(
           '资料完整，符合采购流程，同意申请。',
         ),
         step(
-          '王五',
+          '王强',
           '财务主管',
           '王',
           'bg-emerald-500',
@@ -103,9 +103,9 @@ function completedThree(
           '同意结算。',
         ),
         step(
-          '孙丽',
+          '陈明',
           '财务总监',
-          '孙',
+          '陈',
           'bg-violet-500',
           '同意',
           '2026-04-13 16:45:30',
@@ -133,9 +133,9 @@ function completedThree(
           '批准付款。',
         ),
         step(
-          '周杰',
+          '王强',
           '出纳',
-          '周',
+          '王',
           'bg-amber-500',
           '同意',
           '2026-04-14 18:20:00',
@@ -147,17 +147,17 @@ function completedThree(
 
 /** 完整列表：含多条「进行中」演示 + 「已完成」 */
 export const approvalFlowCards: ApprovalFlowCard[] = [
-  /** 进行中：李四已通过，当前待王五 */
+  /** 进行中：李秀英已通过，当前待王强 */
   {
     id: 'a1',
     type: '下单审批',
-    initiator: 'XXXX',
+    initiator: '张伟',
     time: '2026年4月10日',
     status: 'pending',
-    currentApprover: '王五',
+    currentApprover: '王强',
     timeline: [
       step(
-        '李四',
+        '李秀英',
         '部门主管',
         '李',
         'bg-blue-500',
@@ -166,7 +166,7 @@ export const approvalFlowCards: ApprovalFlowCard[] = [
         '资料完整，符合采购流程，同意申请。',
       ),
       step(
-        '王五',
+        '王强',
         '财务主管',
         '王',
         'bg-emerald-500',
@@ -185,17 +185,17 @@ export const approvalFlowCards: ApprovalFlowCard[] = [
       ),
     ],
   },
-  /** 进行中：王五已通过，当前待刘洋 */
+  /** 进行中：王强已通过，当前待刘洋 */
   {
     id: 'a2',
     type: '下单审批',
-    initiator: 'YYYY',
+    initiator: '李秀英',
     time: '2026年4月11日',
     status: 'pending',
     currentApprover: '刘洋',
     timeline: [
       step(
-        '王五',
+        '王强',
         '部门主管',
         '王',
         'bg-blue-500',
@@ -251,9 +251,9 @@ export const approvalFlowCards: ApprovalFlowCard[] = [
         '该节点尚未开启。',
       ),
       step(
-        '周杰',
+        '王强',
         '部门经理',
-        '周',
+        '王',
         'bg-cyan-500',
         '未开始',
         '—',
@@ -268,25 +268,25 @@ export const approvalFlowCards: ApprovalFlowCard[] = [
     initiator: '刘洋',
     time: '2026年4月13日',
     status: 'completed',
-    currentApprover: '孙丽',
+    currentApprover: '赵敏',
     timeline: completedThree(1),
   },
   {
     id: 'a5',
     type: '支付审批',
-    initiator: '周杰',
+    initiator: '张伟',
     time: '2026年4月14日',
     status: 'completed',
-    currentApprover: '周杰',
+    currentApprover: '陈明',
     timeline: completedThree(2),
   },
   {
     id: 'a6',
     type: '下单审批',
-    initiator: '孙丽',
+    initiator: '李秀英',
     time: '2026年4月15日',
     status: 'completed',
-    currentApprover: '刘洋',
+    currentApprover: '王强',
     timeline: completedThree(3),
   },
 ];
