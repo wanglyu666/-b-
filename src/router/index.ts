@@ -1,5 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import ContractAndSettlementView from '../components/ContractAndSettlementView.vue';
+import ContractArchivesPage from '../pages/ContractArchivesPage.vue';
+import ContractSigningManagementPage from '../pages/ContractSigningManagementPage.vue';
 import HomePage from '../pages/HomePage.vue';
 import ShopPage from '../pages/ShopPage.vue';
 import ProductDetailPage from '../pages/ProductDetailPage.vue';
@@ -42,6 +44,8 @@ const routes = [
   { path: '/org/approvals', name: 'approval-configuration', component: ApprovalConfigurationPage, meta: { activeTab: 'org-architecture' } },
 
   { path: '/contracts', name: 'contracts', component: ContractAndSettlementView, meta: { activeTab: 'contracts' } },
+  { path: '/contracts/archives', name: 'contract-archives', component: ContractArchivesPage, meta: { activeTab: 'contracts' } },
+  { path: '/contracts/signing', name: 'contract-signing', component: ContractSigningManagementPage, meta: { activeTab: 'contracts' } },
   { path: '/consultation-feedback', name: 'consultation-feedback', component: ConsultationFeedbackPage, meta: { activeTab: 'consultation-feedback' } },
   { path: '/consultation-feedback/all', name: 'all-consultations', component: AllConsultationsPage, meta: { activeTab: 'consultation-feedback' } },
   { path: '/consultation-feedback/records', name: 'feedback-records', component: FeedbackRecordsPage, meta: { activeTab: 'consultation-feedback' } },

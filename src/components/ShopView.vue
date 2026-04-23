@@ -3,6 +3,22 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { Search, TrendingUp, Star, ShoppingBag, Heart, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import TopBarActions from './TopBarActions.vue';
 import type { Product } from '../types';
+import post1Img from '../../image asset/post1.png';
+import post2Img from '../../image asset/post2.png';
+
+/** 右侧特惠图布局：直接改这里的数字即可 */
+const POST2_BANNER = {
+  /** 图片宽度占卡片宽度的百分比（越小越「小」） */
+  widthPercent: 100,
+  /** 图片最大高度占卡片高度的百分比 */
+  maxHeightPercent: 100,
+  /** 图片整体缩放（1.5 = 放大 50%） */
+  scale: 1.35,
+  /** 水平位移（负数 = 往左） */
+  offsetXPx: -40,
+  /** 左侧留白（像素） */
+  paddingLeftPx: 8,
+};
 
 const props = defineProps<{
   currentPage: number;
@@ -85,12 +101,52 @@ const nextPage = () => {
     </header>
 
     <section>
-      <h2 class="text-2xl font-bold text-gray-800 mb-6">特惠活动</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="h-64 rounded-3xl bg-white/50 backdrop-blur-md border border-white/20 relative overflow-hidden">
+          <img
+            :src="post1Img"
+            alt=""
+            class="h-full w-full object-cover"
+          />
+          <div
+            class="absolute left-10 top-[40%] -translate-y-1/2 space-y-2 select-none"
+            style="color: #000;"
+          >
+            <div class="text-5xl font-extrabold tracking-wide leading-tight">
+              所售皆<span class="text-[#9FE870]">精品</span>
+            </div>
+            <div class="text-5xl font-extrabold tracking-wide leading-tight">
+              所装皆<span class="text-[#9FE870]">作品</span>
+            </div>
+          </div>
         </div>
 
-        <div class="h-64 rounded-3xl bg-white/50 backdrop-blur-md border border-white/20 relative overflow-hidden">
+        <div
+          class="relative flex h-64 items-center justify-start overflow-hidden rounded-3xl border border-white/20 bg-white/50 backdrop-blur-md"
+          :style="{ paddingLeft: `${POST2_BANNER.paddingLeftPx}px` }"
+        >
+          <img
+            :src="post2Img"
+            alt=""
+            class="object-contain object-left"
+            :style="{
+              width: `${POST2_BANNER.widthPercent}%`,
+              maxHeight: `${POST2_BANNER.maxHeightPercent}%`,
+              transform: `translateX(${POST2_BANNER.offsetXPx}px) scale(${POST2_BANNER.scale})`,
+              transformOrigin: 'left center',
+            }"
+          />
+          <div
+            class="pointer-events-none absolute right-10 top-[65%] -translate-y-1/2 space-y-2 select-none text-right"
+            style="color: #000;"
+          >
+            <div class="text-4xl font-extrabold tracking-wide leading-tight">
+              <span class="text-[#9FE870]">指尖</span>完成一切
+            </div>
+            <div class="text-4xl font-extrabold tracking-wide leading-tight">
+              <span class="text-[#9FE870]">轻松</span>就完事了
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -104,7 +160,7 @@ const nextPage = () => {
                 v-for="(cat, idx) in ['全部商品', '椅子', '桌子', '沙发', '脚凳', '办公']" 
                 :key="cat" 
                 :class="['px-6 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-colors',
-                  idx === 0 ? 'bg-black text-white' : 'bg-white text-gray-500 border border-gray-100 hover:border-gray-300'
+                  idx === 0 ? 'bg-[#B0D4C5] text-white' : 'bg-white text-gray-500 border border-gray-100 hover:border-gray-300'
                 ]"
              >
                {{ cat }}
@@ -132,7 +188,7 @@ const nextPage = () => {
              <div class="absolute top-3 right-3 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
                 <button 
                     @click.stop="$emit('toggleWishlist', product)"
-                    :class="['p-2 rounded-full shadow-md hover:text-white transition-colors', isInWishlist(product) ? 'bg-[#A1D573] text-white' : 'bg-white text-gray-900 hover:bg-black']"
+                    :class="['p-2 rounded-full shadow-md transition-colors', isInWishlist(product) ? 'bg-[#B2C4D7] text-white' : 'bg-white text-gray-900 hover:bg-[#B0D4C5] hover:text-white']"
                 >
                    <Heart :size="16" :fill="isInWishlist(product) ? 'currentColor' : 'none'" />
                 </button>
@@ -149,7 +205,7 @@ const nextPage = () => {
              <span class="text-lg font-bold text-gray-900">¥{{ product.price.toFixed(2) }}</span>
              <button 
                 @click.stop="$emit('addToCart', product)"
-                class="w-8 h-8 rounded-full bg-black text-white flex items-center justify-center hover:bg-[#A1D573] hover:text-black hover:scale-110 transition-all shadow-md shadow-black/20"
+                class="w-8 h-8 rounded-full bg-[#B0D4C5] text-white flex items-center justify-center hover:bg-[#B2C4D7] hover:text-white hover:scale-110 transition-all shadow-md shadow-gray-400/25"
              >
                <ShoppingBag :size="14" />
              </button>
@@ -173,7 +229,7 @@ const nextPage = () => {
             @click="setCurrentPage(page)"
             :class="['w-10 h-10 rounded-full text-sm font-bold transition-all',
               currentPage === page 
-                ? 'bg-black text-white shadow-md' 
+                ? 'bg-[#B0D4C5] text-white shadow-md' 
                 : 'bg-white text-gray-600 border border-gray-200 hover:border-gray-400'
             ]"
           >

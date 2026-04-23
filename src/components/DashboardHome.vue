@@ -215,7 +215,7 @@ const distributionOption = computed(() => ({
 
       <!-- Stats Cards -->
       <div class="lg:col-span-4 h-[340px] flex flex-col gap-6">
-          <div class="flex-1 bg-[#A1D573] rounded-3xl px-6 py-5 relative overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex items-center justify-between">
+          <div class="flex-1 bg-[#9FE870] rounded-3xl px-6 py-5 relative overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex items-center justify-between">
               <div class="relative z-10 flex flex-col justify-center h-full">
                    <div class="flex items-center space-x-3 mb-2"><div class="p-2 bg-white/30 rounded-lg backdrop-blur-sm"><TrendingUp :size="18" class="text-gray-800" /></div><span class="bg-white/30 px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-sm text-gray-900">+12.5%</span></div>
                    <p class="text-gray-800 font-medium text-sm opacity-80 mb-1">总收入</p>
@@ -278,8 +278,8 @@ const distributionOption = computed(() => ({
       <div class="lg:col-span-7 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow h-[280px] flex flex-col justify-center">
           <h3 class="font-bold text-xl text-gray-800 mb-6">结算状态</h3>
           <div class="space-y-8 pr-4">
-            <div><div class="flex justify-between text-sm mb-2"><span class="text-gray-500">未结算 (34单)</span><span class="font-bold text-[#A1D573] text-base">70%</span></div><div class="w-full bg-gray-100 rounded-full h-3"><div class="bg-[#A1D573] h-3 rounded-full" style="width: 70%;"></div></div></div>
-            <div><div class="flex justify-between text-sm mb-2"><span class="text-gray-500">已结算 (10单)</span><span class="font-bold text-[#FFEB69] text-base">30%</span></div><div class="w-full bg-gray-100 rounded-full h-3"><div class="bg-[#FFEB69] h-3 rounded-full" style="width: 30%;"></div></div></div>
+            <div><div class="flex justify-between text-sm mb-2"><span class="text-gray-500">未结算 (34单)</span><span class="font-bold text-[#B0D4C5] text-base">70%</span></div><div class="w-full bg-gray-100 rounded-full h-3"><div class="bg-[#B0D4C5] h-3 rounded-full" style="width: 70%;"></div></div></div>
+            <div><div class="flex justify-between text-sm mb-2"><span class="text-gray-500">已结算 (10单)</span><span class="font-bold text-[#B2C4D7] text-base">30%</span></div><div class="w-full bg-gray-100 rounded-full h-3"><div class="bg-[#B2C4D7] h-3 rounded-full" style="width: 30%;"></div></div></div>
           </div>
       </div>
       <div class="lg:col-span-5 bg-white rounded-3xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow h-[280px] flex flex-col">

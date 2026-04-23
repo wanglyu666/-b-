@@ -2,6 +2,8 @@ import {
   Product,
   Notification,
   Contract,
+  ContractArchive,
+  ContractSigningRecord,
   Bill,
   Member,
   EngineeringProject,
@@ -53,13 +55,13 @@ export const products: Product[] = Array.from({ length: 32 }, (_, i) => {
 });
 
 export const pieDataStatus = [
-  { name: '完工', value: 70, color: '#f99ffc' },
-  { name: '在施', value: 30, color: '#b19eef' }, 
+  { name: '完工', value: 70, color: '#B0D4C5' },
+  { name: '在施', value: 30, color: '#B2C4D7' },
 ];
 
 export const pieDataWarranty = [
-  { name: '在保', value: 85, color: '#A1D573' },
-  { name: '过保', value: 15, color: '#163300' }, 
+  { name: '在保', value: 85, color: '#9FE870' },
+  { name: '过保', value: 15, color: '#163300' },
 ];
 
 export const distributionData = [
@@ -72,14 +74,115 @@ export const distributionData = [
   { name: '杭州市', value: 100 },
 ];
 
-export const COLORS_DIST = ['#ff9ffc', 'rgba(255, 159, 252, 0.75)', 'rgba(255, 159, 252, 0.5)', 'rgba(255, 159, 252, 0.25)', '#f3f4f6'];
+/** 区域分布半圆图与图例（前四段为 #9FE870 色系；最后一项「其他城市」为灰） */
+export const COLORS_DIST = [
+  '#9FE870',
+  'rgba(159, 232, 112, 0.78)',
+  'rgba(159, 232, 112, 0.55)',
+  'rgba(159, 232, 112, 0.35)',
+  '#f3f4f6',
+];
 
 export const contractData: Contract[] = [
-  { id: 1, no: 'HT-2024001', name: '2024年度中央空调维保合同', location: '海淀区科技园A座', date: '2024-01-15' },
-  { id: 2, no: 'HT-2024002', name: '消防设施改造工程合同', location: '朝阳区望京SOHO', date: '2024-02-10' },
-  { id: 3, no: 'HT-2024003', name: '安防监控系统升级协议', location: '西城区金融中心', date: '2024-03-05' },
-  { id: 4, no: 'HT-2024004', name: '电梯定期巡检服务合同', location: '丰台区总部基地', date: '2024-03-22' },
+  { id: 1, no: 'HT-2024001', contractType: '年框合同', amount: '¥420,000', date: '2024-01-15' },
+  { id: 2, no: 'HT-2024002', contractType: '普通合同', amount: '¥186,000', date: '2024-02-10' },
+  { id: 3, no: 'HT-2024003', contractType: '普通合同', amount: '¥95,500', date: '2024-03-05' },
+  { id: 4, no: 'HT-2024004', contractType: '年框合同', amount: '¥128,000', date: '2024-03-22' },
 ];
+
+/** 合同档案页全量列表（与合同与结算首页预览字段口径一致，列更全） */
+export const contractArchiveList: ContractArchive[] = [
+  { id: 'ca1', no: 'HT20260112144812', contractType: '年框合同', contactName: '冷雪松', phone: '18513204939', contractTitle: '2026年度设施维保年框合同', projectName: '3层装修改造项目', projectAddress: '北京市海淀区中关村大街1号海龙大厦3层', amount: '60000.00', signedDate: '2026-01-12', contractStartDate: '2026-01-01', contractEndDate: '2026-12-31' },
+  { id: 'ca2', no: 'HT20260111103205', contractType: '普通合同', contactName: '演示', phone: '13800138000', contractTitle: '安防系统升级改造合同', projectName: '科技园A座弱电工程', projectAddress: '北京市海淀区中关村软件园二期A座', amount: '10000.00', signedDate: '2026-01-11' },
+  { id: 'ca3', no: 'HT20260110121548', contractType: '普通合同', contactName: '张伟', phone: '13800138001', contractTitle: '中央空调年度保养协议', projectName: '海淀区科技园A座', projectAddress: '北京市海淀区知春路甲48号A座', amount: '0', signedDate: '2026-01-10' },
+  { id: 'ca4', no: 'HT20251222190533', contractType: '年框合同', contactName: '李秀英', phone: '13922345678', contractTitle: '2025—2026 保洁与绿化年框', projectName: '望京SOHO T3', projectAddress: '北京市朝阳区望京街10号望京SOHO T3', amount: '128000.00', signedDate: '2025-12-22', contractStartDate: '2025-12-01', contractEndDate: '2026-11-30' },
+  { id: 'ca5', no: 'HT20251218084201', contractType: '普通合同', contactName: '王强', phone: '13733449900', contractTitle: '消防设施检测合同', projectName: '西城区金融中心', projectAddress: '北京市西城区金融大街35号国际企业大厦', amount: '45000.00', signedDate: '2025-12-18' },
+  { id: 'ca6', no: 'HT20251205140322', contractType: '普通合同', contactName: '刘洋', phone: '13655667788', contractTitle: '电梯维保单次服务', projectName: '丰台区总部基地', projectAddress: '北京市丰台区南四环西路188号总部基地17区', amount: '8200.00', signedDate: '2025-12-05' },
+  { id: 'ca7', no: 'HT20251130110009', contractType: '年框合同', contactName: '陈明', phone: '13566778899', contractTitle: '安全巡检年框合同', projectName: '全区域机动', projectAddress: '北京市（按工单派单，无固定单点地址）', amount: '96000.00', signedDate: '2025-11-30', contractStartDate: '2025-12-01', contractEndDate: '2026-11-30' },
+  { id: 'ca8', no: 'HT20251115165544', contractType: '普通合同', contactName: '赵敏', phone: '13377889900', contractTitle: '竣工资料编制服务', projectName: '总部档案数字化', projectAddress: '北京市朝阳区住邦2000商务中心4号楼5层', amount: '12000.00', signedDate: '2025-11-15' },
+  { id: 'ca9', no: 'HT20251102120807', contractType: '普通合同', contactName: '冷雪松', phone: '18513204939', contractTitle: '门禁系统扩容合同', projectName: 'B1 地下车库', projectAddress: '北京市海淀区中关村大街1号地下一层车库管理室', amount: '33500.50', signedDate: '2025-11-02' },
+  { id: 'ca10', no: 'HT20251018143021', contractType: '年框合同', contactName: '演示', phone: '13800138000', contractTitle: '能耗监测年框服务', projectName: '产业园一期', projectAddress: '深圳市南山区科技园南区深南大道9988号一期园区', amount: '200000.00', signedDate: '2025-10-18', contractStartDate: '2025-11-01', contractEndDate: '2026-10-31' },
+];
+
+const SIGNING_TYPE_POOL = [
+  '产品采购合同',
+  '工程施工合同',
+  '设备维保合同',
+  '保洁服务合同',
+  '安防工程合同',
+  '弱电集成合同',
+  '绿化养护合同',
+  '消防维保合同',
+] as const;
+
+const CONTACT_POOL = [
+  '陈治安',
+  '冷雪松',
+  '李秀英',
+  '王强',
+  '刘洋',
+  '赵敏',
+  '陈明',
+  '张伟',
+  '演示',
+] as const;
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+function buildContractSigningList(): ContractSigningRecord[] {
+  const pending: ContractSigningRecord[] = Array.from({ length: 12 }, (_, i) => {
+    if (i === 0) {
+      return {
+        id: 'csp-1',
+        no: '202604171540437',
+        signingType: '产品采购合同',
+        contactName: '陈治安',
+        phone: '17600777711',
+        amount: '69827.50',
+        submittedAt: '2026-04-17 15:40:43',
+        projectAddress: '北京市北京市朝阳区望京街10号SOHO T1',
+        status: 'pending' as const,
+      };
+    }
+    const n = i + 1;
+    return {
+      id: `csp-${n}`,
+      no: `2026041715404${String(30 + n).slice(-2)}`,
+      signingType: SIGNING_TYPE_POOL[i % SIGNING_TYPE_POOL.length],
+      contactName: CONTACT_POOL[i % CONTACT_POOL.length],
+      phone: `176${String(10000000 + n * 1234567).slice(-8)}`,
+      amount: `${(45000 + n * 2100 + (n % 7) * 137).toFixed(2)}`,
+      submittedAt: `2026-04-${pad2(18 - (i % 5))} ${pad2(9 + (i % 8))}:${pad2(30 + (i % 29))}:${pad2(10 + (i % 49))}`,
+      projectAddress: `北京市北京市朝阳区望京街${10 + (i % 20)}号${i % 2 === 0 ? 'SOHO' : '商务中心'}T${1 + (i % 3)}`,
+      status: 'pending',
+    };
+  });
+
+  /** 已签约：12 条 = 每页 6 条 × 2 页（演示用，不做满量分页） */
+  const signed: ContractSigningRecord[] = Array.from({ length: 12 }, (_, i) => {
+    const n = i + 1;
+    const month = 1 + (i % 12);
+    const day = Math.max(1, 28 - (i % 27));
+    return {
+      id: `css-${n}`,
+      no: `2025${pad2(month)}${String(20100000 + n * 173).slice(0, 8)}`,
+      signingType: SIGNING_TYPE_POOL[(i + 3) % SIGNING_TYPE_POOL.length],
+      contactName: CONTACT_POOL[(i + 2) % CONTACT_POOL.length],
+      phone: `138${String(10000000 + n * 701031).slice(-8)}`,
+      amount: `${(12000 + (n % 50) * 1800 + (n % 3) * 99.5).toFixed(2)}`,
+      submittedAt: `2025-${pad2(month)}-${pad2(day)} ${pad2(10 + (i % 10))}:${pad2(15 + (i % 44))}:00`,
+      projectAddress: `北京市海淀区中关村大街${(n % 200) + 1}号院${(n % 5) + 1}号楼`,
+      status: 'signed',
+    };
+  });
+
+  return [...pending, ...signed];
+}
+
+/** 合同签约管理（首页统计与签约管理页表格同源） */
+export const contractSigningList: ContractSigningRecord[] = buildContractSigningList();
 
 export const billData: Bill[] = [
   { id: 1, status: 'confirm', no: 'ORD-2024001', prjNo: 'PRJ-001', name: '电梯系统升级', amount: '¥120,000' },

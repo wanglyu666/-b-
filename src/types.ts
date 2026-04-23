@@ -36,9 +36,29 @@ export interface Notification {
 export interface Contract {
   id: number;
   no: string;
-  name: string;
-  location: string;
+  /** 普通合同 | 年框合同 */
+  contractType: '普通合同' | '年框合同';
+  amount: string;
   date: string;
+}
+
+/** 合同档案列表（合同档案页表格，字段参考业务台账） */
+export interface ContractArchive {
+  id: string;
+  no: string;
+  contractType: '普通合同' | '年框合同';
+  contactName: string;
+  phone: string;
+  contractTitle: string;
+  projectName: string;
+  /** 工程地址（普通合同详情弹窗展示） */
+  projectAddress: string;
+  amount: string;
+  signedDate: string;
+  /** 年框合同：合同开始日期 YYYY-MM-DD */
+  contractStartDate?: string;
+  /** 年框合同：合同结束日期 YYYY-MM-DD */
+  contractEndDate?: string;
 }
 
 export interface Bill {
@@ -48,6 +68,25 @@ export interface Bill {
   prjNo: string;
   name: string;
   amount: string;
+}
+
+/** 合同签约管理：待签约 / 已签约台账 */
+export type ContractSigningStatus = 'pending' | 'signed';
+
+export interface ContractSigningRecord {
+  id: string;
+  /** 订单编号 */
+  no: string;
+  /** 签约类型（原订单类型口径） */
+  signingType: string;
+  contactName: string;
+  phone: string;
+  /** 金额数字字符串，如 69827.50 */
+  amount: string;
+  /** 下单时间 YYYY-MM-DD HH:mm:ss */
+  submittedAt: string;
+  projectAddress: string;
+  status: ContractSigningStatus;
 }
 
 /** 组织与架构 · 团队卡片（列表与首页预览共用） */
