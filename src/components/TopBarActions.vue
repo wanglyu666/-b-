@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { useRouter } from 'vue-router';
 import { Search, ShoppingBag, Heart, Bell } from 'lucide-vue-next';
+
+const router = useRouter();
 
 const props = withDefaults(defineProps<{
   isShop?: boolean;
@@ -16,6 +19,10 @@ const props = withDefaults(defineProps<{
 });
 
 defineEmits(['cartClick', 'wishlistClick', 'messageClick', 'bellClick']);
+
+function goPersonalCenter() {
+  router.push({ name: 'personal-center' });
+}
 </script>
 
 <template>
@@ -48,11 +55,14 @@ defineEmits(['cartClick', 'wishlistClick', 'messageClick', 'bellClick']);
       </div>
 
     </div>
-    <div class="flex items-center space-x-3 bg-white pl-2 pr-4 py-1.5 rounded-full shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors h-12">
-      <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Cooper" alt="User" class="w-9 h-9 rounded-full bg-gray-100" />
-      <div class="flex items-center space-x-2">
-        <span class="text-sm font-bold text-gray-700">管理员</span>
-      </div>
-    </div>
+    <button
+      type="button"
+      class="flex h-12 items-center space-x-3 rounded-full border border-gray-100 bg-white py-1.5 pl-2 pr-4 shadow-sm transition-colors hover:bg-gray-50"
+      aria-label="个人中心"
+      @click="goPersonalCenter"
+    >
+      <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Cooper" alt="" class="h-9 w-9 rounded-full bg-gray-100" />
+      <span class="text-sm font-bold text-gray-700">管理员</span>
+    </button>
   </div>
 </template>

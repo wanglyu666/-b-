@@ -64,10 +64,43 @@ export interface ContractArchive {
 export interface Bill {
   id: number;
   status: 'confirm' | 'pay' | 'paid';
+  /** 订单编号 */
   no: string;
+  /** 旧字段：项目编号（首页卡片已不展示，但保留数据源） */
   prjNo: string;
+  /** 项目名称 */
   name: string;
+  /** 首页卡片展示用金额（当前口径为“账单金额/合同金额”） */
   amount: string;
+  /** 合同编号 */
+  contractNo: string;
+  /** 合同金额（如 ¥120,000） */
+  contractAmount: string;
+  /** 已付金额（如 ¥45,000） */
+  paidAmount: string;
+  /** 付款比例（如 35%） */
+  payRatio: string;
+  /** 付致金额（按需求文案字段） */
+  payToAmount: string;
+  /** 申请时间 YYYY-MM-DD（弹窗展示） */
+  appliedAt: string;
+  /** 付款批次（弹窗展示） */
+  paymentBatch: string;
+  /** 本次支付批次（弹窗展示） */
+  currentPaymentBatch: string;
+  /** 本次比例（弹窗展示） */
+  currentRatio: string;
+  /** 本次支付说明（弹窗展示） */
+  currentPayNote: string;
+
+  /** 发票信息（待支付弹窗展示） */
+  invoiceType?: string;
+  invoiceNo?: string;
+  invoiceDate?: string;
+  amountExTax?: string;
+  amountIncTax?: string;
+  paymentDate?: string;
+  invoiceRemark?: string;
 }
 
 /** 合同签约管理：待签约 / 已签约台账 */
@@ -87,6 +120,62 @@ export interface ContractSigningRecord {
   submittedAt: string;
   projectAddress: string;
   status: ContractSigningStatus;
+}
+
+/** 结算管理：待申请 / 结算审核中 / 待上传结算单 / 已结算 */
+export type SettlementStatus =
+  | 'pending_apply'
+  | 'under_review'
+  | 'pending_upload'
+  | 'settled';
+
+export interface SettlementRecord {
+  id: number;
+  status: SettlementStatus;
+  /** 订单编号 */
+  no: string;
+  /** 项目编号 */
+  projectNo: string;
+  /** 项目名称 */
+  name: string;
+  /** 合同金额 */
+  contractAmount: string;
+  /** 结算金额 */
+  settlementAmount: string;
+  /** 已支付金额 */
+  paidAmount: string;
+  /** 项目地址 */
+  projectAddress: string;
+  /** 开工日期 YYYY-MM-DD */
+  startDate: string;
+  /** 竣工日期 YYYY-MM-DD */
+  completionDate: string;
+  /** 结算明细 · 合同价款 / 变更费用 / 减项费用 */
+  settlementItems: {
+    category: string;
+    amount: string;
+    remark?: string;
+  }[];
+  /** 结算总价 */
+  totalSettlementPrice: string;
+  /** 已支付进度款 */
+  paidProgressAmount: string;
+  /** 质保金 */
+  retentionMoney: string;
+  /** 变更明细 */
+  changeItems: {
+    orderNo: string;
+    amount: string;
+    remark?: string;
+  }[];
+  /** 减项明细 */
+  deductionItems: {
+    content: string;
+    amount: string;
+    remark?: string;
+  }[];
+  /** 结算日期 YYYY-MM-DD（待上传结算单等） */
+  settlementDate?: string;
 }
 
 /** 组织与架构 · 团队卡片（列表与首页预览共用） */

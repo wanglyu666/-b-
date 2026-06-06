@@ -2,6 +2,8 @@ import { createRouter, createWebHistory } from 'vue-router';
 import ContractAndSettlementView from '../components/ContractAndSettlementView.vue';
 import ContractArchivesPage from '../pages/ContractArchivesPage.vue';
 import ContractSigningManagementPage from '../pages/ContractSigningManagementPage.vue';
+import BillManagementPage from '../pages/BillManagementPage.vue';
+import SettlementManagementPage from '../pages/SettlementManagementPage.vue';
 import HomePage from '../pages/HomePage.vue';
 import ShopPage from '../pages/ShopPage.vue';
 import ProductDetailPage from '../pages/ProductDetailPage.vue';
@@ -21,10 +23,12 @@ import ApprovalConfigurationPage from '../pages/ApprovalConfigurationPage.vue';
 import ConsultationFeedbackPage from '../pages/ConsultationFeedbackPage.vue';
 import AllConsultationsPage from '../pages/AllConsultationsPage.vue';
 import FeedbackRecordsPage from '../pages/FeedbackRecordsPage.vue';
+import PersonalCenterPage from '../pages/PersonalCenterPage.vue';
 
 const routes = [
   { path: '/', redirect: '/home' },
   { path: '/home', name: 'home', component: HomePage, meta: { activeTab: 'home' } },
+  { path: '/profile', name: 'personal-center', component: PersonalCenterPage, meta: { activeTab: 'personal-center' } },
   { path: '/messages', name: 'messages', component: MessagePage, meta: { activeTab: 'home' } },
   { path: '/shop', name: 'shop', component: ShopPage, meta: { activeTab: 'shop' } },
   { path: '/shop/product', name: 'product-detail', component: ProductDetailPage, meta: { activeTab: 'shop' } },
@@ -46,6 +50,8 @@ const routes = [
   { path: '/contracts', name: 'contracts', component: ContractAndSettlementView, meta: { activeTab: 'contracts' } },
   { path: '/contracts/archives', name: 'contract-archives', component: ContractArchivesPage, meta: { activeTab: 'contracts' } },
   { path: '/contracts/signing', name: 'contract-signing', component: ContractSigningManagementPage, meta: { activeTab: 'contracts' } },
+  { path: '/contracts/bills', name: 'bill-management', component: BillManagementPage, meta: { activeTab: 'contracts' } },
+  { path: '/contracts/settlement', name: 'settlement-management', component: SettlementManagementPage, meta: { activeTab: 'contracts' } },
   { path: '/consultation-feedback', name: 'consultation-feedback', component: ConsultationFeedbackPage, meta: { activeTab: 'consultation-feedback' } },
   { path: '/consultation-feedback/all', name: 'all-consultations', component: AllConsultationsPage, meta: { activeTab: 'consultation-feedback' } },
   { path: '/consultation-feedback/records', name: 'feedback-records', component: FeedbackRecordsPage, meta: { activeTab: 'consultation-feedback' } },

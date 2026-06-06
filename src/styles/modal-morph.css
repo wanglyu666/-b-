@@ -47,6 +47,8 @@
   transition:
     width var(--jp-modal-morph-duration, 0.8s) var(--jp-modal-morph-ease, cubic-bezier(0.16, 1, 0.3, 1)),
     height var(--jp-modal-morph-duration, 0.8s) var(--jp-modal-morph-ease, cubic-bezier(0.16, 1, 0.3, 1)),
+    max-width var(--jp-modal-morph-duration, 0.8s) var(--jp-modal-morph-ease, cubic-bezier(0.16, 1, 0.3, 1)),
+    max-height var(--jp-modal-morph-duration, 0.8s) var(--jp-modal-morph-ease, cubic-bezier(0.16, 1, 0.3, 1)),
     transform var(--jp-modal-morph-duration, 0.8s) var(--jp-modal-morph-ease, cubic-bezier(0.16, 1, 0.3, 1)),
     border-radius var(--jp-modal-morph-duration, 0.8s) var(--jp-modal-morph-ease, cubic-bezier(0.16, 1, 0.3, 1)),
     background-color var(--jp-modal-morph-duration, 0.8s) ease;

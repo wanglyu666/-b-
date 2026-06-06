@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { ChevronLeft, MoreHorizontal, Search } from 'lucide-vue-next';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { ChevronLeft, MoreHorizontal, Search, X } from 'lucide-vue-next';
+import penImg from '../../image asset/pen.png';
+import checkMarkImg from '../../image asset/check mark.png';
 import { contractSigningList } from '../data';
-import type { ContractSigningStatus } from '../types';
+import type { ContractSigningRecord, ContractSigningStatus } from '../types';
 
 const emit = defineEmits<{
   back: [];
 }>();
+
+const route = useRoute();
+const router = useRouter();
 
 const signingTab = ref<ContractSigningStatus>('pending');
 const searchQuery = ref('');
@@ -46,6 +52,35 @@ watch([signingTab, searchQuery], () => {
   currentPage.value = 1;
 });
 
+function parseSigningStatusFromQuery(): ContractSigningStatus | null {
+  const raw = route.query.status;
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  if (value === 'pending' || value === 'signed') return value;
+  return null;
+}
+
+function applySigningStatusFromRoute() {
+  const status = parseSigningStatusFromQuery();
+  if (status) signingTab.value = status;
+}
+
+function setSigningTab(status: ContractSigningStatus) {
+  signingTab.value = status;
+  router.replace({ name: 'contract-signing', query: { status } });
+}
+
+onMounted(() => {
+  applySigningStatusFromRoute();
+  window.addEventListener('keydown', onSigningDetailKeydown);
+});
+
+watch(
+  () => route.query.status,
+  () => {
+    applySigningStatusFromRoute();
+  },
+);
+
 function formatAmount(amount: string): string {
   const n = Number(String(amount).replace(/,/g, ''));
   if (!Number.isFinite(n)) return amount;
@@ -54,6 +89,55 @@ function formatAmount(amount: string): string {
     maximumFractionDigits: 2,
   });
 }
+
+/** 与合同档案「合同详情」弹窗同一套：jp-modal-morph + 半透明壳 + backdrop-blur（图二毛玻璃） */
+const SIGNING_DETAIL_MODAL_CSS_VARS: Record<string, string> = {
+  '--jp-modal-w': '448px',
+  '--jp-modal-w-max': '448px',
+  '--jp-modal-h': 'min(480px, 86vh)',
+  '--jp-modal-max-h': 'min(90vh, 520px)',
+  '--jp-modal-radius': '32px',
+  '--jp-modal-scale': '1',
+  '--jp-modal-bg': 'rgba(255, 255, 255, 0.1)',
+};
+
+/** 三个点：合同详情弹窗 */
+const signingDetailRow = ref<ContractSigningRecord | null>(null);
+
+function openSigningDetail(row: ContractSigningRecord) {
+  signingDetailRow.value = row;
+}
+
+function closeSigningDetail() {
+  signingDetailRow.value = null;
+}
+
+function handleGoSign() {
+  closeSigningDetail();
+}
+
+const isSignedDetail = computed(
+  () => signingDetailRow.value?.status === 'signed',
+);
+
+const signingDetailHeroImg = computed(() =>
+  isSignedDetail.value ? checkMarkImg : penImg,
+);
+
+const signingDetailActionLabel = computed(() =>
+  isSignedDetail.value ? '查看已签约文件' : '点击前往签署',
+);
+
+function onSigningDetailKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && signingDetailRow.value) {
+    e.preventDefault();
+    closeSigningDetail();
+  }
+}
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', onSigningDetailKeydown);
+});
 </script>
 
 <template>
@@ -106,7 +190,7 @@ function formatAmount(amount: string): string {
             ? 'bg-[#FFE600] text-[#260A2F]'
             : 'border border-gray-100 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-800',
         ]"
-        @click="signingTab = 'pending'"
+        @click="setSigningTab('pending')"
       >
         待签约
       </button>
@@ -118,7 +202,7 @@ function formatAmount(amount: string): string {
             ? 'bg-[#FFE600] text-[#260A2F]'
             : 'border border-gray-100 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-800',
         ]"
-        @click="signingTab = 'signed'"
+        @click="setSigningTab('signed')"
       >
         已签约
       </button>
@@ -188,6 +272,7 @@ function formatAmount(amount: string): string {
                   type="button"
                   class="rounded-lg p-2 text-gray-400 transition-all hover:bg-white/50 hover:text-[#E2943A]"
                   aria-label="更多操作"
+                  @click.stop="openSigningDetail(row)"
                 >
                   <MoreHorizontal :size="20" />
                 </button>
@@ -240,4 +325,72 @@ function formatAmount(amount: string): string {
       </div>
     </div>
   </div>
+
+  <Teleport to="body">
+    <div
+      v-if="signingDetailRow"
+      class="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-md animate-in fade-in duration-300 sm:p-6"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="signing-detail-title"
+      @click.self="closeSigningDetail"
+    >
+      <div
+        class="jp-modal-morph flex w-full flex-col overflow-hidden border border-white/20 shadow-2xl backdrop-blur-2xl"
+        :style="SIGNING_DETAIL_MODAL_CSS_VARS"
+        @click.stop
+      >
+        <div
+          class="flex shrink-0 items-center justify-between border-b border-white/10 px-6 py-5 sm:px-8 sm:py-6"
+        >
+          <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+            <div
+              class="h-6 w-1.5 shrink-0 rounded-full bg-[#FFE600] shadow-[0_0_15px_rgba(255,230,0,0.45)]"
+            />
+            <h2
+              id="signing-detail-title"
+              class="truncate text-xl font-bold tracking-tight text-white sm:text-2xl"
+            >
+              合同详情
+            </h2>
+          </div>
+          <button
+            type="button"
+            class="rounded-full p-2 text-white/70 transition-all hover:bg-white/10 hover:text-white"
+            aria-label="关闭"
+            @click="closeSigningDetail"
+          >
+            <X :size="24" />
+          </button>
+        </div>
+
+        <div
+          class="custom-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden px-6 py-6 sm:px-8 sm:py-8"
+        >
+          <p class="sr-only">订单 {{ signingDetailRow.no }}</p>
+          <div
+            class="flex min-h-[220px] flex-1 items-center justify-center overflow-hidden rounded-[28px] border border-white/10 bg-white/5 p-4 shadow-inner backdrop-blur-xl"
+          >
+            <img
+              :src="signingDetailHeroImg"
+              alt=""
+              :class="[
+                'object-contain',
+                isSignedDetail
+                  ? 'h-36 w-56 max-w-full'
+                  : 'max-h-full max-w-full h-auto w-auto',
+              ]"
+            />
+          </div>
+          <button
+            type="button"
+            class="mt-6 w-full rounded-lg border border-white/20 bg-white/10 py-3.5 text-center text-base font-bold text-white shadow-inner backdrop-blur-sm transition-colors hover:bg-white/15"
+            @click="handleGoSign"
+          >
+            {{ signingDetailActionLabel }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
