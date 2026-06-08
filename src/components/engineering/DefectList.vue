@@ -1,21 +1,17 @@
 <template>
-  <div class="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full relative">
-    <!-- Top Header with Add Button -->
-    <div class="flex justify-between items-center mb-6 px-2">
-      <div class="flex items-center gap-2">
-        <div class="w-1 h-4 bg-orange-400 rounded-full"></div>
-        <span class="text-white/40 text-xs font-bold uppercase tracking-widest">{{ title }}</span>
-      </div>
-      <button 
+  <div class="relative flex h-full animate-in slide-in-from-right-4 duration-500 flex-col">
+    <div class="mb-6 flex justify-end px-2">
+      <button
+        type="button"
+        class="flex items-center gap-2 rounded-full bg-[#FFE600] px-6 py-2 text-sm font-bold text-[#260A2F] transition-all hover:bg-[#e6cf00] active:scale-95"
         @click="$emit('add')"
-        class="px-4 py-2 rounded-xl bg-[#FFE600] text-[#260A2F] text-xs font-bold flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-orange-500/10"
       >
         <Plus :size="16" />
         新增缺陷
       </button>
     </div>
 
-    <div class="flex-1 overflow-y-auto custom-scrollbar pr-2">
+    <div class="custom-scrollbar flex-1 overflow-y-auto pr-2">
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-12">
         <div 
           v-for="(defect, index) in defects" 

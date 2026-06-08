@@ -5,22 +5,26 @@
       <div class="space-y-3">
         <p class="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold text-center">缺陷照片</p>
         <div class="h-[240px] rounded-3xl overflow-hidden border border-white/10 bg-white/5 relative group cursor-pointer" @click="$emit('zoomImage', defect.image)">
-          <img :src="defect.image" class="w-full h-full object-cover" referrerPolicy="no-referrer" />
-          <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <Search :size="24" class="text-white" />
+          <img :src="defect.image" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" referrerPolicy="no-referrer" />
+          <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 group-hover:bg-black/10 transition-all flex items-center justify-center">
+            <div class="rounded-full border border-white/30 bg-white/20 p-5 shadow-lg backdrop-blur-md">
+              <Search :size="32" class="text-white" />
+            </div>
           </div>
         </div>
       </div>
       <div class="space-y-3">
         <p class="text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold text-center">整改完成照片</p>
         <div class="h-[240px] rounded-3xl overflow-hidden border border-white/10 bg-white/5 relative group flex items-center justify-center" :class="{'cursor-pointer': defect.rectifiedImage}" @click="defect.rectifiedImage && $emit('zoomImage', defect.rectifiedImage)">
-          <img v-if="defect.rectifiedImage" :src="defect.rectifiedImage" class="w-full h-full object-cover" referrerPolicy="no-referrer" />
+          <img v-if="defect.rectifiedImage" :src="defect.rectifiedImage" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" referrerPolicy="no-referrer" />
           <div v-else class="flex flex-col items-center gap-2 text-white/20">
             <ImageIcon :size="48" />
             <span class="text-[10px] font-bold uppercase tracking-widest">暂无整改照片</span>
           </div>
-          <div v-if="defect.rectifiedImage" class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-            <Search :size="24" class="text-white" />
+          <div v-if="defect.rectifiedImage" class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 group-hover:bg-black/10 transition-all flex items-center justify-center">
+            <div class="rounded-full border border-white/30 bg-white/20 p-5 shadow-lg backdrop-blur-md">
+              <Search :size="32" class="text-white" />
+            </div>
           </div>
         </div>
       </div>

@@ -70,10 +70,19 @@ const handleAppointmentAction = (item: typeof appointmentData.value[0]) => {
     viewMode.value = 'order_suspended';
   } else if (item.status === '预约异常') {
     viewMode.value = 'order_abnormal';
-  } else if (item.status === '待客户验收') {
+  } else if (item.status === '待客户验收' || item.status === '已完工') {
     viewMode.value = 'pending_acceptance';
-  } else if (item.status === '已完工') {
-    viewMode.value = 'completed';
+  }
+};
+
+const isAcceptanceConfirmed = computed(
+  () => selectedAppointment.value?.status === '已完工',
+);
+
+const confirmAcceptance = () => {
+  if (selectedAppointment.value && !isAcceptanceConfirmed.value) {
+    selectedAppointment.value.status = '已完工';
+    viewMode.value = 'appointment_success';
   }
 };
 
@@ -87,13 +96,6 @@ const confirmAppointmentTime = () => {
 const confirmChangeTime = () => {
   if (selectedAppointment.value) {
     selectedAppointment.value.status = '待上门';
-    viewMode.value = 'appointment_success';
-  }
-};
-
-const confirmAcceptance = () => {
-  if (selectedAppointment.value) {
-    selectedAppointment.value.status = '已完工';
     viewMode.value = 'appointment_success';
   }
 };
@@ -181,8 +183,7 @@ const headerTitle = computed(() => {
   if (viewMode.value === 'appointment_success') return '预约管理';
   if (viewMode.value === 'order_suspended') return '订单挂起';
   if (viewMode.value === 'order_abnormal') return '预约异常';
-  if (viewMode.value === 'pending_acceptance') return '待客户验收';
-  if (viewMode.value === 'completed') return '验收完成';
+  if (viewMode.value === 'pending_acceptance' || viewMode.value === 'completed') return '验收图片';
   return '项目详情';
 });
 
@@ -242,12 +243,19 @@ const handleEvaluation = () => {
 };
 
 const goBack = () => {
-  if (viewMode.value === 'confirm_time' || viewMode.value === 'confirm_change' || viewMode.value === 'order_suspended' || viewMode.value === 'order_abnormal' || viewMode.value === 'pending_acceptance' || viewMode.value === 'completed') {
+  if (viewMode.value === 'confirm_time' || viewMode.value === 'confirm_change' || viewMode.value === 'order_suspended' || viewMode.value === 'order_abnormal' || viewMode.value === 'pending_acceptance') {
     selectedAppointment.value = null;
     viewMode.value = 'appointment';
   } else if (viewMode.value === 'appointment_success') {
-    selectedAppointment.value = null;
-    viewMode.value = 'appointment';
+    if (
+      selectedAppointment.value?.status === '已完工' &&
+      (selectedAppointment.value.images?.length ?? 0) > 0
+    ) {
+      viewMode.value = 'pending_acceptance';
+    } else {
+      selectedAppointment.value = null;
+      viewMode.value = 'appointment';
+    }
   } else if (viewMode.value === 'evaluation' || viewMode.value === 'evaluation_success' || viewMode.value === 'appointment') {
     appointmentMenuOpen.value = null;
     viewMode.value = 'details';
@@ -461,28 +469,42 @@ const goBack = () => {
                 <!-- 预约管理页面 -->
                 <div v-else-if="viewMode === 'appointment'" :key="'appointment'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
                   <div class="bg-white/5 backdrop-blur-xl rounded-[32px] border border-white/10 overflow-hidden shadow-inner">
+                    <div class="flex items-center justify-between border-b border-white/10 bg-white/5 px-8 py-4">
+                      <h3 class="flex items-center gap-2 font-bold text-white">
+                        <div class="h-4 w-1 rounded-full bg-[#FFE600] shadow-[0_0_8px_rgba(255,230,0,0.4)]" />
+                        预约列表
+                      </h3>
+                    </div>
                     <div class="overflow-x-auto">
-                      <table class="w-full text-left border-collapse">
+                      <table class="w-full border-collapse text-left">
                         <thead>
-                          <tr class="bg-white/5 text-white/40 text-[10px] uppercase tracking-widest font-bold">
+                          <tr class="bg-white/5 text-[10px] font-bold uppercase tracking-widest text-white/40">
                             <th class="px-6 py-3">序号</th>
                             <th class="px-6 py-3">项目名称</th>
                             <th class="px-6 py-3">倒计时</th>
                             <th class="px-6 py-3">预约时间</th>
                             <th class="px-6 py-3">状态</th>
-                            <th class="px-6 py-3 w-12"></th>
+                            <th class="px-6 py-3" />
                           </tr>
                         </thead>
-                        <tbody class="text-white/80 text-xs">
-                          <tr v-for="item in appointmentData" :key="item.id" class="border-b border-white/5 hover:bg-white/5 transition-colors">
+                        <tbody class="text-xs text-white/80">
+                          <tr
+                            v-for="item in appointmentData"
+                            :key="item.id"
+                            class="border-b border-white/5 transition-colors hover:bg-white/5"
+                          >
                             <td class="px-6 py-4 font-mono">{{ item.id }}</td>
                             <td class="px-6 py-4">{{ item.name }}</td>
                             <td class="px-6 py-4 font-mono">{{ item.countdown }}</td>
                             <td class="px-6 py-4 font-mono">{{ item.appointmentTime }}</td>
                             <td class="px-6 py-4">{{ item.status }}</td>
                             <td class="px-6 py-4">
-                              <button @click.stop="handleAppointmentAction(item)" class="p-1.5 hover:bg-white/10 rounded-full transition-colors">
-                                <MoreHorizontal :size="16" class="text-white/60" />
+                              <button
+                                type="button"
+                                class="rounded-full p-1 transition-colors hover:bg-white/10"
+                                @click.stop="handleAppointmentAction(item)"
+                              >
+                                <MoreHorizontal :size="16" />
                               </button>
                             </td>
                           </tr>
@@ -571,10 +593,9 @@ const goBack = () => {
                   </div>
                 </div>
 
-                <!-- 待客户验收页面 -->
+                <!-- 验收图片页面 -->
                 <div v-else-if="viewMode === 'pending_acceptance'" :key="'pending_acceptance'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
                   <div class="flex-1 overflow-y-auto custom-scrollbar">
-                    <h3 class="text-white/40 text-xs uppercase tracking-widest font-bold mb-4">验收图片</h3>
                     <div class="grid grid-cols-3 gap-4">
                       <div v-for="(img, i) in selectedAppointment?.images" :key="i" class="aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 bg-white/5">
                         <img :src="img" :alt="'验收图片 ' + (i + 1)" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
@@ -583,23 +604,18 @@ const goBack = () => {
                   </div>
                   <div class="pt-4 flex justify-end flex-shrink-0">
                     <button
+                      type="button"
+                      :disabled="isAcceptanceConfirmed"
+                      :class="[
+                        'rounded-xl px-8 py-2.5 text-sm font-bold transition-colors',
+                        isAcceptanceConfirmed
+                          ? 'cursor-not-allowed bg-[#FFE600]/25 text-[#260A2F]/45 shadow-none'
+                          : 'bg-[#FFE600] text-[#260A2F] shadow-[0_0_15px_rgba(255,230,0,0.32)] hover:bg-[#e6cf00]',
+                      ]"
                       @click="confirmAcceptance"
-                      class="px-8 py-2.5 bg-[#FFE600] text-[#260A2F] text-sm font-bold rounded-xl hover:bg-[#e6cf00] transition-colors shadow-[0_0_15px_rgba(255,230,0,0.3)]"
                     >
-                      确认
+                      {{ isAcceptanceConfirmed ? '已验收' : '确认验收' }}
                     </button>
-                  </div>
-                </div>
-
-                <!-- 已完工页面 -->
-                <div v-else-if="viewMode === 'completed'" :key="'completed'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
-                  <div class="flex-1 overflow-y-auto custom-scrollbar">
-                    <h3 class="text-white/40 text-xs uppercase tracking-widest font-bold mb-4">验收图片</h3>
-                    <div class="grid grid-cols-3 gap-4">
-                      <div v-for="(img, i) in selectedAppointment?.images" :key="i" class="aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 bg-white/5">
-                        <img :src="img" :alt="'验收图片 ' + (i + 1)" class="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
-                      </div>
-                    </div>
                   </div>
                 </div>
               </Transition>

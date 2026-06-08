@@ -1,20 +1,31 @@
 <template>
   <div class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
     <!-- Sub Tabs -->
-    <div v-if="!isSubmittedSuccess" class="flex gap-3">
-      <button 
-        @click="setTab('acceptance_check')"
-        :class="['px-6 py-2 rounded-full text-sm font-bold transition-all', 
-          progressDetailTab === 'acceptance_check' ? 'bg-[#FFE600] text-[#260A2F]' : 'bg-white/5 text-white/60 hover:bg-white/10']"
+    <div v-if="!isSubmittedSuccess" class="mb-6 flex items-center justify-between gap-4">
+      <div class="flex gap-3">
+        <button 
+          @click="setTab('acceptance_check')"
+          :class="['px-6 py-2 rounded-full text-sm font-bold transition-all', 
+            progressDetailTab === 'acceptance_check' ? 'bg-[#FFE600] text-[#260A2F]' : 'bg-white/5 text-white/60 hover:bg-white/10']"
+        >
+          验收
+        </button>
+        <button 
+          @click="setTab('defect_rectification')"
+          :class="['px-6 py-2 rounded-full text-sm font-bold transition-all', 
+            progressDetailTab === 'defect_rectification' ? 'bg-[#FFE600] text-[#260A2F]' : 'bg-white/5 text-white/60 hover:bg-white/10']"
+        >
+          缺陷整改
+        </button>
+      </div>
+      <button
+        v-if="progressDetailTab === 'defect_rectification'"
+        type="button"
+        class="flex shrink-0 items-center gap-2 rounded-full bg-[#FFE600] px-6 py-2 text-sm font-bold text-[#260A2F] transition-all hover:bg-[#e6cf00] active:scale-95"
+        @click="$emit('addDefect')"
       >
-        验收
-      </button>
-      <button 
-        @click="setTab('defect_rectification')"
-        :class="['px-6 py-2 rounded-full text-sm font-bold transition-all', 
-          progressDetailTab === 'defect_rectification' ? 'bg-[#FFE600] text-[#260A2F]' : 'bg-white/5 text-white/60 hover:bg-white/10']"
-      >
-        缺陷整改
+        <Plus :size="16" />
+        新增缺陷
       </button>
     </div>
 
@@ -131,23 +142,8 @@
       </div>
 
       <!-- Defect Rectification Content -->
-      <div v-else-if="progressDetailTab === 'defect_rectification'" :key="'defect'" class="flex-1 flex flex-col h-full relative min-h-[400px]">
-        <!-- Top Header with Add Button -->
-        <div class="flex justify-between items-center mb-6 px-2">
-          <div class="flex items-center gap-2">
-            <div class="w-1 h-4 bg-orange-400 rounded-full"></div>
-            <span class="text-white/40 text-xs font-bold uppercase tracking-widest">缺陷记录列表</span>
-          </div>
-          <button 
-            @click="$emit('addDefect')"
-            class="px-4 py-2 rounded-xl bg-[#FFE600] text-[#260A2F] text-xs font-bold flex items-center gap-2 hover:scale-105 active:scale-95 transition-all shadow-lg shadow-orange-500/10"
-          >
-            <Plus :size="16" />
-            新增缺陷
-          </button>
-        </div>
-
-        <div class="flex-1 overflow-y-auto custom-scrollbar pr-2">
+      <div v-else-if="progressDetailTab === 'defect_rectification'" :key="'defect'" class="relative flex h-full min-h-[400px] flex-1 flex-col">
+        <div class="custom-scrollbar flex-1 overflow-y-auto pr-2">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-12">
             <div 
               v-for="(defect, index) in defects" 

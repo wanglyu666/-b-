@@ -94,13 +94,24 @@ const modalDimensions = computed(() => {
   }
   if (viewMode.value === 'defect_report' || viewMode.value === 'defect_detail' || viewMode.value === 'defect_add') {
     if (lastViewMode.value === 'progress_detail' || lastViewMode.value === 'acceptance' || lastViewMode.value === 'material_detail') {
-      const w = Math.round(windowSize.value.width * 0.95);
-      const h = Math.round(windowSize.value.height * 0.9);
-      return { width: `${w}px`, height: `${h}px`, radius: '24px', scale: 1.02 };
+      return {
+        width: '920px',
+        height: viewMode.value === 'defect_detail' ? '700px' : '660px',
+        radius: '32px',
+        scale: 1,
+      };
     }
     return { width: '1000px', height: '800px', radius: '32px', scale: 1 };
   }
-  /** 过程验收：材料管控表格多、占宽；进度管控内容紧凑，缩小弹窗（尺寸变化由 .modal-morph 过渡） */
+  /** 过程验收 · 材料/进度详情：固定适中尺寸，避免 95vw 铺满屏 */
+  if (viewMode.value === 'material_detail' || viewMode.value === 'progress_detail') {
+    return {
+      width: '920px',
+      height: '660px',
+      radius: '32px',
+      scale: 1,
+    };
+  }
   if (viewMode.value === 'acceptance') {
     if (acceptanceTab.value === 'progress') {
       return {
@@ -524,9 +535,9 @@ onMounted(async () => {
           'modal-morph shadow-2xl bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[40px] overflow-hidden flex flex-col',
         ]"
       >
-        <div class="w-full flex flex-col">
+        <div class="flex h-full min-h-0 w-full flex-1 flex-col">
           <!-- Header -->
-          <div class="px-8 py-6 border-b border-white/10 flex justify-between items-center flex-shrink-0">
+          <div class="flex shrink-0 items-center justify-between border-b border-white/10 px-8 py-6">
             <div class="flex items-center gap-3">
               <div class="w-1.5 h-6 bg-[#FFE600] rounded-full shadow-[0_0_15px_rgba(255,230,0,0.5)]"></div>
               <h2 class="text-2xl font-bold text-white tracking-tight">
@@ -542,8 +553,15 @@ onMounted(async () => {
           </div>
           
           <!-- Content -->
-          <div class="p-8 overflow-y-auto max-h-[80vh] custom-scrollbar relative transition-all duration-700 ease-in-out">
-            <Transition name="fade-slide" mode="out-in">
+          <div
+            :class="[
+              'custom-scrollbar relative flex-1 min-h-0 p-8 transition-all duration-700 ease-in-out',
+              viewMode === 'material_detail' || viewMode === 'defect_detail'
+                ? 'flex flex-col overflow-hidden'
+                : 'max-h-[80vh] overflow-y-auto',
+            ]"
+          >
+            <Transition name="fade-slide" mode="out-in" class="flex min-h-0 flex-1 flex-col">
               <!-- Details Mode -->
               <ProjectOverview 
                 v-if="viewMode === 'details'" 
@@ -569,15 +587,19 @@ onMounted(async () => {
               />
 
               <!-- Defect Detail Mode -->
-            <!-- Defect Detail Mode -->
-            <DefectDetail 
+            <div
               v-else-if="viewMode === 'defect_detail' && selectedDefect"
               :key="'defect_detail'"
-              :defect="selectedDefect"
-              @zoomImage="zoomImage"
-              @delete="deleteDefect"
-              @submitReview="handleDefectReview"
-            />
+              class="flex min-h-0 flex-1 flex-col animate-in zoom-in-95 duration-500"
+            >
+              <DefectDetail
+                class="min-h-0 flex-1"
+                :defect="selectedDefect"
+                @zoomImage="zoomImage"
+                @delete="deleteDefect"
+                @submitReview="handleDefectReview"
+              />
+            </div>
 
             <!-- Defect Add Mode -->
             <DefectForm 
@@ -600,8 +622,9 @@ onMounted(async () => {
                 </div>
 
                 <!-- Material Detail Mode -->
-                <div v-else-if="viewMode === 'material_detail'" :key="'material_detail'" class="animate-in zoom-in-95 duration-500 flex flex-col gap-16">
+                <div v-else-if="viewMode === 'material_detail'" :key="'material_detail'" class="flex min-h-0 flex-1 flex-col animate-in zoom-in-95 duration-500">
                   <MaterialDetail
+                    class="min-h-0 flex-1"
                     :material="selectedMaterialItem"
                     :isSubmitted="submittedMaterials.includes(selectedMaterialItem?.code)"
                     @goBack="goBack"

@@ -1,17 +1,26 @@
 <template>
   <div class="h-full flex flex-col text-white">
     <!-- Capsule Navigation -->
-    <div class="px-6 pt-2 pb-10 flex gap-3">
-      <button 
-        v-for="tab in tabs" 
-        :key="tab.id"
-        @click="activeTab = tab.id"
-        class="px-8 py-2 rounded-full text-sm font-bold transition-all duration-300 border"
-        :class="activeTab === tab.id 
-          ? 'bg-[#FFE600] border-[#FFE600] text-[#260A2F] shadow-[0_0_15px_rgba(255,230,0,0.3)]' 
-          : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10 hover:border-white/20'"
+    <div class="flex items-center justify-between gap-4 px-6 pb-10 pt-2">
+      <div class="flex flex-wrap gap-3">
+        <button 
+          v-for="tab in tabs" 
+          :key="tab.id"
+          @click="activeTab = tab.id"
+          class="rounded-full border px-8 py-2 text-sm font-bold transition-all duration-300"
+          :class="activeTab === tab.id 
+            ? 'border-[#FFE600] bg-[#FFE600] text-[#260A2F] shadow-[0_0_15px_rgba(255,230,0,0.3)]' 
+            : 'border-white/10 bg-white/5 text-gray-400 hover:border-white/20 hover:bg-white/10'"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
+      <button
+        type="button"
+        class="shrink-0 rounded-full border border-white/10 bg-white/5 px-8 py-2 text-sm font-bold text-white transition-all duration-300 hover:border-white/20 hover:bg-white/10"
+        @click="downloadAllReports"
       >
-        {{ tab.label }}
+        全部下载
       </button>
     </div>
 
@@ -22,18 +31,18 @@
           v-for="(report, index) in activeReports" 
           :key="index"
           @click="$emit('enterDetail', report)"
-          class="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col gap-4 hover:bg-white/10 transition-all group cursor-pointer"
+          class="group relative cursor-pointer rounded-2xl border border-white/10 bg-white/5 p-6 transition-all hover:bg-white/10"
         >
           <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-blue-400/10 flex items-center justify-center flex-shrink-0">
+            <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-blue-400/10">
               <FileText :size="20" class="text-blue-400" />
             </div>
-            <h4 class="text-white font-bold text-lg leading-tight line-clamp-1">
+            <h4 class="line-clamp-1 text-lg font-bold leading-tight text-white">
               {{ report.name }}
             </h4>
           </div>
           
-          <div class="space-y-2">
+          <div class="mt-4 space-y-2 pr-12">
             <div class="flex items-center gap-2 text-gray-400">
               <Calendar :size="14" />
               <span class="text-xs">{{ report.date }}</span>
@@ -43,6 +52,15 @@
               <span class="text-xs">负责人：{{ report.manager }}</span>
             </div>
           </div>
+
+          <button
+            type="button"
+            class="absolute bottom-4 right-4 flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-white/10 text-white/70 transition-all hover:bg-white/15 hover:text-white active:scale-95"
+            aria-label="下载报告"
+            @click.stop="downloadReport(report)"
+          >
+            <Download :size="16" />
+          </button>
         </div>
 
         <!-- Empty State -->
@@ -59,7 +77,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { FileText, Calendar, User } from 'lucide-vue-next';
+import { FileText, Calendar, User, Download } from 'lucide-vue-next';
 
 const props = defineProps<{
   projectId: string;
@@ -101,6 +119,16 @@ const mockReports = {
 const activeReports = computed(() => {
   return mockReports[activeTab.value as keyof typeof mockReports] || [];
 });
+
+function downloadReport(report: (typeof mockReports.daily)[0]) {
+  void report;
+  // 演示：实际对接下载接口
+}
+
+function downloadAllReports() {
+  // 演示：下载当前 Tab 下全部报告
+  void activeReports.value;
+}
 </script>
 
 <style scoped>
