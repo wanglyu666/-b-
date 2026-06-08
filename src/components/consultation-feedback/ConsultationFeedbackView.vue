@@ -26,6 +26,8 @@ import imgFeedbackNewOpinion from '../../../image asset/feedback_2.png';
 import checkMarkImg from '../../../image asset/check mark.png';
 
 const REQUIREMENT_MAX_LEN = 50;
+const DURATION_DAYS_MIN = 0;
+const DURATION_DAYS_MAX = 999;
 
 /** 下方两处插图尺寸（像素），按需改数字即可 */
 const imgNewConsultationSizePx = 260;
@@ -309,9 +311,41 @@ function closeConsultationModal() {
   resetConsultationForm();
 }
 
+function clampDurationDays(value: number) {
+  return Math.min(DURATION_DAYS_MAX, Math.max(DURATION_DAYS_MIN, value));
+}
+
 function adjustDurationDays(delta: number) {
-  const next = consultationForm.value.durationDays + delta;
-  consultationForm.value.durationDays = Math.max(0, next);
+  consultationForm.value.durationDays = clampDurationDays(
+    consultationForm.value.durationDays + delta,
+  );
+}
+
+function onDurationDaysKeydown(event: KeyboardEvent) {
+  const allowed = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'];
+  if (allowed.includes(event.key) || event.ctrlKey || event.metaKey) return;
+  if (!/^\d$/.test(event.key)) event.preventDefault();
+}
+
+function onDurationDaysInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+  let digits = input.value.replace(/\D/g, '');
+  if (digits.length > 3) digits = digits.slice(0, 3);
+  if (digits === '') {
+    input.value = '';
+    return;
+  }
+  const num = clampDurationDays(parseInt(digits, 10));
+  consultationForm.value.durationDays = num;
+  input.value = String(num);
+}
+
+function onDurationDaysBlur(event: Event) {
+  const input = event.target as HTMLInputElement;
+  if (!input.value.replace(/\D/g, '')) {
+    consultationForm.value.durationDays = DURATION_DAYS_MIN;
+  }
+  input.value = String(consultationForm.value.durationDays);
 }
 
 /** YYYY-MM-DD → yyyy/mm/dd（与维保报修「上门时间」展示一致） */
@@ -911,9 +945,17 @@ function submitConsultationForm() {
                 >
                   −
                 </button>
-                <span class="min-w-[2rem] text-center text-sm font-semibold tabular-nums text-gray-800">
-                  {{ consultationForm.durationDays }}
-                </span>
+                <input
+                  type="text"
+                  inputmode="numeric"
+                  maxlength="3"
+                  :value="String(consultationForm.durationDays)"
+                  aria-label="期望工期天数"
+                  class="h-9 w-16 rounded-lg border border-gray-200 bg-white text-center text-sm font-semibold tabular-nums text-gray-800 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#FFEB69] transition-all"
+                  @keydown="onDurationDaysKeydown"
+                  @input="onDurationDaysInput"
+                  @blur="onDurationDaysBlur"
+                />
                 <button
                   type="button"
                   class="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-gray-50 text-lg text-gray-600 transition hover:bg-gray-100"

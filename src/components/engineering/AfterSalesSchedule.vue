@@ -16,7 +16,7 @@
         </div>
 
         <div class="flex items-center gap-4">
-          <div class="w-24 text-right text-sm text-white/60"><span class="mr-1 text-red-400">*</span>预约验收时间</div>
+          <div class="w-24 text-right text-sm text-white/60"><span class="mr-1 text-red-400">*</span>{{ plan?.nodeName ? '预约验收时间' : '预约巡检时间' }}</div>
           <div class="relative w-48">
             <input
               ref="datePickerRef"

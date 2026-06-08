@@ -91,6 +91,11 @@ const orderSummary = computed(() => {
 const formatCost = (val: number) => {
   return val.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 };
+
+const exportOrderDetail = () => {
+  if (!selectedOrder.value) return;
+  // 预留导出逻辑
+};
 </script>
 
 <template>
@@ -193,18 +198,18 @@ const formatCost = (val: number) => {
         class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-md animate-in fade-in duration-300"
         @click.self="closeOrderDetail"
       >
-        <div class="w-full max-w-[1200px] max-h-[90vh] shadow-2xl bg-white/10 backdrop-blur-2xl border border-white/20 rounded-[40px] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
-          <div class="px-8 py-6 border-b border-white/10 flex items-center justify-between">
+        <div class="flex w-full max-w-[1200px] min-h-[780px] flex-col overflow-hidden rounded-[40px] border border-white/20 bg-white/10 shadow-2xl backdrop-blur-2xl animate-in zoom-in-95 duration-300">
+          <div class="flex shrink-0 items-center justify-between border-b border-white/10 px-8 py-6">
             <div class="flex items-center gap-3">
-              <div class="w-1.5 h-6 bg-[#FFEB69] rounded-full"></div>
+              <div class="h-6 w-1.5 rounded-full bg-[#FFEB69]"></div>
               <h3 class="text-2xl font-bold text-white">查看订单详情</h3>
             </div>
-            <button @click="closeOrderDetail" class="p-2 hover:bg-white/10 rounded-full text-white/70 hover:text-white transition-colors">
+            <button @click="closeOrderDetail" class="rounded-full p-2 text-white/70 transition-colors hover:bg-white/10 hover:text-white">
               <X :size="22" />
             </button>
           </div>
 
-          <div class="p-6 overflow-y-auto space-y-4">
+          <div class="flex-1 space-y-4 p-6">
             <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <p class="text-xs text-white/40 uppercase tracking-wider mb-1">订单编号</p>
@@ -280,6 +285,16 @@ const formatCost = (val: number) => {
                 </table>
               </div>
             </div>
+          </div>
+
+          <div class="flex shrink-0 justify-end px-8 pb-8 pt-4">
+            <button
+              type="button"
+              class="rounded-full border border-[#FFE600]/30 bg-[#FFE600] px-10 py-2.5 text-sm font-bold text-[#260A2F] shadow-[0_8px_24px_rgba(255,230,0,0.25)] transition hover:bg-[#FFEB69] active:scale-[0.98]"
+              @click="exportOrderDetail"
+            >
+              导出
+            </button>
           </div>
         </div>
       </div>

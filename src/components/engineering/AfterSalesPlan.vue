@@ -26,8 +26,8 @@
               <td class="px-6 py-4 font-mono">{{ item.endDate }}</td>
               <td class="px-6 py-4 text-right">
                 <!-- 
-                  预约验收时间按钮显示逻辑：
-                  未来与后端对接后，当后端返回该计划可以进行验收时（例如 item.canAccept === true），
+                  预约巡检时间按钮显示逻辑：
+                  未来与后端对接后，当后端返回该计划可以进行巡检时（例如 item.canAccept === true），
                   才显示此按钮。
                 -->
                 <button 
@@ -35,7 +35,7 @@
                   @click="$emit('scheduleAcceptance', item)" 
                   class="px-4 py-1.5 bg-[#FFE600] text-[#260A2F] text-xs font-bold rounded-full hover:bg-[#e6cf00] transition-colors shadow-[0_0_10px_rgba(255,230,0,0.3)] active:scale-95"
                 >
-                  预约验收时间
+                  预约巡检时间
                 </button>
                 <button 
                   v-else-if="item.canAccept && item.isConfirmed"
