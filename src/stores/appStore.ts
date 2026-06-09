@@ -65,7 +65,7 @@ export const useAppStore = defineStore('app', () => {
       todoNotifications.value = notificationList;
       maintenanceRepairData.value = repairList;
       orderData.value = orders;
-      engineeringProjects.value = engineeringList;
+      engineeringProjects.value = engineeringList.list;
       maintenanceProjects.value = maintenanceList;
       globalModulesLoaded.value = true;
     } catch (e) {

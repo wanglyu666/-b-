@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { debounce } from '../utils/debounce';
 import { 
   ArrowLeft, 
   X, 
@@ -10,6 +11,7 @@ import {
 import type { EngineeringProject } from '../types';
 import { engineeringProjects as engineeringProjectsFallback } from '../data';
 import { useProjectData } from '../composables/useProjectData';
+import { fetchEngineeringProjects } from '../api/projectApi';
 
 import ProjectCard from './engineering/ProjectCard.vue';
 import ImagePreviewModal from './engineering/ImagePreviewModal.vue';
@@ -46,6 +48,53 @@ const activeStatus = ref(props.initialStatus || '施工中');
 const selectedProject = ref<EngineeringProject | null>(null);
 const selectedProjectId = computed(() => selectedProject.value?.id);
 
+// 项目列表数据（支持 API 动态加载）
+const projectList = ref<EngineeringProject[]>(props.projects ?? []);
+const totalProjects = ref(0);
+const isLoadingProjects = ref(false);
+const searchQuery = ref('');
+const currentPage = ref(1);
+const itemsPerPage = 9;
+
+// 当 tab 切换时，重新请求对应状态的数据
+watch(activeStatus, async (newStatus) => {
+  currentPage.value = 1;
+  await loadProjectsByStatus(newStatus);
+}, { immediate: false });
+
+// 加载指定状态的项目列表
+async function loadProjectsByStatus(status: string, search?: string) {
+  isLoadingProjects.value = true;
+  try {
+    const result = await fetchEngineeringProjects(status, currentPage.value, itemsPerPage, search);
+    projectList.value = result.list;
+    totalProjects.value = result.total;
+  } catch (error) {
+    console.error(`加载 ${status} 项目失败:`, error);
+    projectList.value = engineeringProjectsFallback.filter(p => p.status === status);
+    totalProjects.value = projectList.value.length;
+  } finally {
+    isLoadingProjects.value = false;
+  }
+}
+
+// 防抖搜索
+const debouncedSearch = debounce((query: string) => {
+  currentPage.value = 1;
+  loadProjectsByStatus(activeStatus.value, query);
+}, 300);
+
+// 监听搜索输入变化
+watch(searchQuery, (newQuery) => {
+  debouncedSearch(newQuery);
+});
+
+// 切换分页
+function handlePageChange(page: number) {
+  currentPage.value = page;
+  loadProjectsByStatus(activeStatus.value, searchQuery.value);
+}
+
 const viewMode = ref<'details' | 'acceptance' | 'material_detail' | 'progress_detail' | 'progress_schedule' | 'progress_schedule_success' | 'defect_report' | 'defect_detail' | 'defect_add' | 'after_sales' | 'after_sales_schedule' | 'after_sales_success' | 'evaluation' | 'evaluation_success' | 'completion' | 'standards' | 'reports' | 'report_detail'>('details');
 const lastViewMode = ref<string>('');
 const defectReportOrigin = ref<string>('');
@@ -68,15 +117,15 @@ const selectedMaterialItem = ref<any>(null);
 const selectedProgressItem = ref<any>(null);
 const isImageZoomed = ref(false);
 const zoomedImageUrl = ref('');
-const searchQuery = ref('');
-const projectList = computed(() => props.projects ?? engineeringProjectsFallback);
-
-const currentPage = ref(1);
-const itemsPerPage = 9;
 
 const windowSize = ref({ width: window.innerWidth, height: window.innerHeight });
-window.addEventListener('resize', () => {
+const handleResize = () => {
   windowSize.value = { width: window.innerWidth, height: window.innerHeight };
+};
+window.addEventListener('resize', handleResize);
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
 });
 
 const modalDimensions = computed(() => {
@@ -157,34 +206,15 @@ const headerTitle = computed(() => {
   return '详细信息';
 });
 
+// 搜索已由 API 端处理（projectName），此处直接返回数据
 const filteredProjects = computed(() => {
-  let projects = projectList.value;
-  
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    projects = projects.filter(p => 
-      p.name.toLowerCase().includes(query) || 
-      p.no.toLowerCase().includes(query) ||
-      p.manager.toLowerCase().includes(query) ||
-      p.address.toLowerCase().includes(query)
-    );
-  } else {
-    projects = projects.filter(p => p.status === activeStatus.value);
-  }
-  
-  return projects;
+  return projectList.value;
 });
 
-const totalPages = computed(() => Math.ceil(filteredProjects.value.length / itemsPerPage));
+const totalPages = computed(() => Math.ceil(totalProjects.value / itemsPerPage));
 
 const paginatedProjects = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
-  return filteredProjects.value.slice(start, end);
-});
-
-watch([activeStatus, searchQuery], () => {
-  currentPage.value = 1;
+  return filteredProjects.value;
 });
 
 const openModal = (project: EngineeringProject) => {
@@ -408,6 +438,9 @@ const zoomImage = (url: string) => {
 };
 
 onMounted(async () => {
+  // 初始加载当前 tab 的数据
+  await loadProjectsByStatus(activeStatus.value);
+  
   if (props.autoOpenProjectId) {
     await nextTick();
     const target = projectList.value.find(p => p.id === props.autoOpenProjectId);
@@ -482,22 +515,30 @@ onMounted(async () => {
 
     <!-- 项目卡片网格 -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <ProjectCard
-        v-for="project in paginatedProjects" 
-        :key="project.id"
-        :project="project"
-        @click="openModal(project)"
-      />
-      
-      <div v-if="paginatedProjects.length === 0" class="col-span-full py-20 flex flex-col items-center justify-center text-gray-500 bg-white/30 backdrop-blur-md rounded-3xl border border-dashed border-white/40">
-        <p class="text-lg font-medium text-gray-600">{{ searchQuery ? '没有找到匹配的项目' : '暂无该状态的项目' }}</p>
+      <!-- 加载中状态 -->
+      <div v-if="isLoadingProjects" class="col-span-full py-20 flex flex-col items-center justify-center text-gray-500">
+        <div class="w-8 h-8 border-4 border-gray-200 border-t-[#FFE600] rounded-full animate-spin mb-4"></div>
+        <p class="text-lg font-medium text-gray-600">加载中...</p>
       </div>
+
+      <template v-else>
+        <ProjectCard
+          v-for="project in paginatedProjects" 
+          :key="project.id"
+          :project="project"
+          @click="openModal(project)"
+        />
+        
+        <div v-if="paginatedProjects.length === 0" class="col-span-full py-20 flex flex-col items-center justify-center text-gray-500 bg-white/30 backdrop-blur-md rounded-3xl border border-dashed border-white/40">
+          <p class="text-lg font-medium text-gray-600">{{ searchQuery ? '没有找到匹配的项目' : '暂无该状态的项目' }}</p>
+        </div>
+      </template>
     </div>
 
     <!-- Pagination -->
     <div v-if="totalPages > 1" class="flex justify-center items-center space-x-4 mt-12 pb-8">
       <button 
-        @click="currentPage > 1 && currentPage--" 
+        @click="handlePageChange(currentPage - 1)" 
         :disabled="currentPage === 1"
         class="p-2 rounded-full bg-white border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
       >
@@ -508,7 +549,7 @@ onMounted(async () => {
         <button 
           v-for="page in totalPages" 
           :key="page"
-          @click="currentPage = page"
+          @click="handlePageChange(page)"
           :class="['w-10 h-10 rounded-full text-sm font-bold transition-all',
             currentPage === page 
               ? 'bg-[#FFE600] text-[#260A2F] shadow-sm' 
@@ -520,13 +561,16 @@ onMounted(async () => {
       </div>
 
       <button 
-        @click="currentPage < totalPages && currentPage++" 
+        @click="handlePageChange(currentPage + 1)" 
         :disabled="currentPage === totalPages"
         class="p-2 rounded-full bg-white border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
       >
         <ChevronRight :size="20" />
       </button>
     </div>
+
+    <!-- 暂无数据时隐藏分页 -->
+    <div v-else-if="!isLoadingProjects && projectList.length === 0 && totalProjects === 0" class="hidden"></div>
 
     <!-- 详情弹窗 -->
     <div v-if="selectedProject" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-md animate-in fade-in duration-300" @click.self="closeModal">

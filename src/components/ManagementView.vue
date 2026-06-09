@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { HardHat, Clock, Wrench, CheckCircle, Banknote, Shield, ShieldAlert, AlertCircle, ClipboardList, ShoppingCart, X } from 'lucide-vue-next';
 import TopBarActions from './TopBarActions.vue';
 import type { EngineeringProject, MaintenanceProject, Member } from '../types';
+import { fetchProjectCounts, type ProjectCounts } from '../api/projectApi';
 import orderMgmtIllustration from '../../image asset/shopping cart icon.png';
 import checkMarkImg from '../../image asset/check mark.png';
 import engProjectWrenchImg from '../../image asset/wrench.png';
@@ -31,17 +32,41 @@ const emit = defineEmits(['viewProjects', 'viewMaintenance', 'viewMaintenancePro
 const countByStatus = <T extends { status: string }>(list: readonly T[], status: string) =>
   list.filter((p) => p.status === status).length;
 
-/** 维保项目：各状态数量（与 data 中 maintenanceProjects 一致） */
+/** 维保项目：各状态数量 */
 const maintenancePendingCount = computed(() => countByStatus(props.maintenanceProjects, '待开工'));
 const maintenanceInProgressCount = computed(() => countByStatus(props.maintenanceProjects, '施工中'));
 const maintenanceCompletedCount = computed(() => countByStatus(props.maintenanceProjects, '已完工'));
 
-const engPendingCount = computed(() => countByStatus(props.engineeringProjects, '待开工'));
-const engInProgressCount = computed(() => countByStatus(props.engineeringProjects, '施工中'));
-const engCompletedCount = computed(() => countByStatus(props.engineeringProjects, '已完工'));
-const engSettledCount = computed(() => countByStatus(props.engineeringProjects, '已结算'));
-const engWarrantyInCount = computed(() => countByStatus(props.engineeringProjects, '保修中'));
-const engWarrantyOutCount = computed(() => countByStatus(props.engineeringProjects, '保修外'));
+/** 工程项目：各状态数量（从 API 获取 total） */
+const engPendingCount = ref(0);
+const engInProgressCount = ref(0);
+const engCompletedCount = ref(0);
+const engSettledCount = ref(0);
+const engWarrantyInCount = ref(0);
+const engWarrantyOutCount = ref(0);
+
+const engCountsLoading = ref(false);
+
+async function loadProjectCounts() {
+  engCountsLoading.value = true;
+  try {
+    const counts: ProjectCounts = await fetchProjectCounts();
+    engPendingCount.value = counts['待开工'];
+    engInProgressCount.value = counts['施工中'];
+    engCompletedCount.value = counts['已完工'];
+    engSettledCount.value = counts['已结算'];
+    engWarrantyInCount.value = counts['保修中'];
+    engWarrantyOutCount.value = counts['保修外'];
+  } catch (error) {
+    console.error('获取工程项目统计失败:', error);
+  } finally {
+    engCountsLoading.value = false;
+  }
+}
+
+onMounted(() => {
+  loadProjectCounts();
+});
 
 const showAddModal = ref(false);
 const modalStep = ref<'form' | 'success'>('form');
