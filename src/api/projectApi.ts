@@ -190,7 +190,7 @@ export async function fetchDailyReports(
 /**
  * 通用：从 URL 下载文件并保存到本地
  */
-async function downloadFileFromUrl(fileUrl: string, fileName: string): Promise<void> {
+export async function downloadFileFromUrl(fileUrl: string, fileName: string): Promise<void> {
   const response = await fetch(fileUrl);
   if (!response.ok) {
     throw new Error(`下载文件失败: ${response.status}`);
@@ -279,5 +279,82 @@ export async function fetchDailyReportDetail(id: number): Promise<DailyReportRaw
   return {
     dailyJson: data.dailyJson ? JSON.parse(data.dailyJson) : {},
     dayLaborList: data.dayLabor ? JSON.parse(data.dayLabor) : [],
+  };
+}
+
+// ========== 周报相关 ==========
+
+/** 周报列表项 */
+export interface WeeklyReportItem {
+  id: number;
+  type: string;   // 周报名称
+  date: string;   // 日期
+  name: string;   // 负责人
+}
+
+/** 周报列表响应 */
+export interface WeeklyReportListResponse {
+  list: WeeklyReportItem[];
+  total: number;
+  pageNum: number;
+  pageSize: number;
+}
+
+/**
+ * 获取周报列表（分页）
+ * @param spotOrderId 项目ID
+ * @param pageNum 页码，默认 1
+ * @param pageSize 每页条数，默认 9
+ */
+export async function fetchWeeklyReports(
+  spotOrderId: string,
+  pageNum: number = 1,
+  pageSize: number = 9
+): Promise<WeeklyReportListResponse> {
+  try {
+    const res = await get('/spot/spotorderweekly/list', {
+      pageNum,
+      pageSize,
+      spotOrderId,
+    });
+
+    const rawList = res.data?.list || res.data?.records || res.rows || [];
+    const total = res.data?.total || res.total || rawList.length;
+
+    const list: WeeklyReportItem[] = rawList.map((item: any) => ({
+      id: Number(item.id),
+      type: item.type || '',
+      date: item.date || '',
+      name: item.name || '',
+    }));
+
+    return {
+      list,
+      total: Number(total),
+      pageNum,
+      pageSize,
+    };
+  } catch (error) {
+    console.error('获取周报列表失败:', error);
+    return { list: [], total: 0, pageNum, pageSize };
+  }
+}
+
+/**
+ * 周报详情原始数据
+ */
+export interface WeeklyReportRaw {
+  weeklyJson: Record<string, any>;
+}
+
+/**
+ * 获取单条周报详情
+ * @param id 周报ID
+ */
+export async function fetchWeeklyReportDetail(id: number): Promise<WeeklyReportRaw> {
+  const res = await get(`/spot/spotorderweekly/${id}`);
+  const data = res?.data || res;
+  return {
+    weeklyJson: data.weeklyJson ? JSON.parse(data.weeklyJson) : {},
   };
 }
