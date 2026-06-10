@@ -128,8 +128,156 @@ export async function fetchProjectCounts(): Promise<ProjectCounts> {
 }
 
 /**
+ * 日报列表项
+ */
+export interface DailyReportItem {
+  id: number;
+  type: string;   // 日报名称
+  date: string;   // 日期
+  name: string;   // 负责人
+}
+
+/**
+ * 日报列表响应
+ */
+export interface DailyReportListResponse {
+  list: DailyReportItem[];
+  total: number;
+  pageNum: number;
+  pageSize: number;
+}
+
+/**
+ * 获取日报列表（分页）
+ * @param spotOrderId 项目ID
+ * @param pageNum 页码，默认 1
+ * @param pageSize 每页条数，默认 9
+ */
+export async function fetchDailyReports(
+  spotOrderId: string,
+  pageNum: number = 1,
+  pageSize: number = 9
+): Promise<DailyReportListResponse> {
+  try {
+    const res = await get('/spot/spotorderdaily/list', {
+      pageNum,
+      pageSize,
+      spotOrderId,
+    });
+
+    const rawList = res.data?.list || res.data?.records || res.rows || [];
+    const total = res.data?.total || res.total || rawList.length;
+
+    const list: DailyReportItem[] = rawList.map((item: any) => ({
+      id: Number(item.id),
+      type: item.type || '',
+      date: item.date || '',
+      name: item.name || '',
+    }));
+
+    return {
+      list,
+      total: Number(total),
+      pageNum,
+      pageSize,
+    };
+  } catch (error) {
+    console.error('获取日报列表失败:', error);
+    return { list: [], total: 0, pageNum, pageSize };
+  }
+}
+
+/**
+ * 通用：从 URL 下载文件并保存到本地
+ */
+async function downloadFileFromUrl(fileUrl: string, fileName: string): Promise<void> {
+  const response = await fetch(fileUrl);
+  if (!response.ok) {
+    throw new Error(`下载文件失败: ${response.status}`);
+  }
+  const blob = await response.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(blobUrl);
+}
+
+/**
+ * 下载单条日报 PDF
+ * 接口返回 JSON: { code: 200, data: "https://....pdf" }
+ * @param id 日报ID
+ */
+export async function downloadReportPdf(id: number): Promise<void> {
+  const res = await get('/spot/spotorderdaily/getpdf', { id });
+  const fileUrl = res?.data;
+  if (!fileUrl || typeof fileUrl !== 'string') {
+    throw new Error('未获取到文件下载地址');
+  }
+  await downloadFileFromUrl(fileUrl, `日报_${id}.pdf`);
+}
+
+/**
+ * 下载全部日报 ZIP
+ * 接口返回 JSON: { code: 200, data: "https://....zip" }
+ * @param spotOrderId 项目ID
+ */
+export async function downloadReportZip(spotOrderId: string): Promise<void> {
+  const res = await get('/spot/spotorderdaily/getzip', { type: 1, spotOrderId });
+  const fileUrl = res?.data;
+  if (!fileUrl || typeof fileUrl !== 'string') {
+    throw new Error('未获取到文件下载地址');
+  }
+  await downloadFileFromUrl(fileUrl, `日报合集_${spotOrderId}.zip`);
+}
+
+/**
  * 获取维保项目列表（使用 mock 数据，如需真接口请自行添加）
  */
 export async function fetchMaintenanceProjects(): Promise<any[]> {
   return [];
+}
+
+// ========== 日报详情相关 ==========
+
+/** 工种字典缓存（id → name） */
+let workTypeCache: Map<number, string> | null = null;
+
+/**
+ * 获取工种字典（id → name 映射），有缓存
+ */
+export async function fetchWorkTypeMap(): Promise<Map<number, string>> {
+  if (workTypeCache) return workTypeCache;
+
+  const res = await get('/business/busworkmanage/listAll');
+  const rows = res?.data?.rows || res?.rows || [];
+  workTypeCache = new Map();
+  rows.forEach((item: any) => {
+    workTypeCache!.set(Number(item.id), item.name || '');
+  });
+  return workTypeCache;
+}
+
+/**
+ * 日报详情原始数据
+ */
+export interface DailyReportRaw {
+  dailyJson: Record<string, any>;
+  dayLaborList: any[];
+}
+
+/**
+ * 获取单条日报详情
+ * @param id 日报ID
+ */
+export async function fetchDailyReportDetail(id: number): Promise<DailyReportRaw> {
+  const res = await get(`/spot/spotorderdaily/${id}`);
+  const data = res?.data || res;
+  return {
+    dailyJson: data.dailyJson ? JSON.parse(data.dailyJson) : {},
+    dayLaborList: data.dayLabor ? JSON.parse(data.dayLabor) : [],
+  };
 }

@@ -101,7 +101,7 @@ onMounted(() => {
   ['mousemove', 'scroll', 'touchmove'].forEach((ev) =>
     window.addEventListener(ev, schedulePause, { passive: true })
   );
-  schedulePause();
+  // schedulePause();
 });
 
 onUnmounted(() => {
