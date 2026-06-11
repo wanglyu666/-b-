@@ -358,3 +358,23 @@ export async function fetchWeeklyReportDetail(id: number): Promise<WeeklyReportR
     weeklyJson: data.weeklyJson ? JSON.parse(data.weeklyJson) : {},
   };
 }
+
+// ========== EHS 周报相关 ==========
+
+/** EHS 周报详情原始数据 */
+export interface EHSReportRaw {
+  secureWeekly: Record<string, any>;
+}
+
+/**
+ * 获取单条 EHS 周报详情
+ * 与周报详情同一个接口，但解析 data.secureWeekly 字段
+ * @param id EHS 周报ID
+ */
+export async function fetchEHSReportDetail(id: number): Promise<EHSReportRaw> {
+  const res = await get(`/spot/spotorderweekly/${id}`);
+  const data = res?.data || res;
+  return {
+    secureWeekly: data.secureWeekly ? JSON.parse(data.secureWeekly) : {},
+  };
+}

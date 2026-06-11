@@ -403,29 +403,23 @@ async function loadDetail() {
     // === 进度与内容 ===
     rawCurrentProgress.value = parsePercent(wj.bzsgjdhz?.text1);
     rawPlannedProgress.value = parsePercent(wj.bzsgjdhz?.text2);
-    mainContent.value = [safeStr(wj.bzsgnrgs?.text1), safeStr(wj.bzsgnrgs?.text2)]
-      .filter(Boolean).join('\n');
-    deviationAnalysis.value = [safeStr(wj.bzsgjdhz?.text3), safeStr(wj.bzsgjdhz?.text4)]
-      .filter(Boolean).join('\n');
+    // mainContent.value = [safeStr(wj.bzsgnrgs?.text1), safeStr(wj.bzsgnrgs?.text2)]
+    //   .filter(Boolean).join('\n');
+    mainContent.value = safeStr(wj.bzsgnrgs?.text1)
+    deviationAnalysis.value = safeStr(wj.bzsgjdhz?.text3)
 
     // === 质量检查 ===
     qualityCheck.value = safeStr(wj.bzzljc?.text1);
     qualityRectification.value = safeStr(wj.bzzljc?.text2);
 
     // === 问题与解决 ===
-    siteIssues.value = [safeStr(wj.wtyjj?.text1), safeStr(wj.wtyjj?.text2), safeStr(wj.wtyjj?.text3)]
-      .filter(Boolean).join('\n');
-    solutions.value = [safeStr(wj.wtyjj?.text4), safeStr(wj.wtyjj?.text5)]
-      .filter(Boolean).join('\n');
+    siteIssues.value = safeStr(wj.wtyjj?.text1)
+    solutions.value = safeStr(wj.wtyjj?.text4)
 
     // === 下周计划 ===
     nextWeekPlanItems.value = wj.jhsgnr || [];
 
-    resourceNeeds.value = [
-      safeStr(wj.xzsgjhywcsx?.text1),
-      safeStr(wj.xzsgjhywcsx?.text2),
-      safeStr(wj.xzsgjhywcsx?.text3),
-    ].filter(Boolean).join('\n');
+    resourceNeeds.value = safeStr(wj.xzsgjhywcsx?.text1)
 
     // === 其他事项 ===
     clientConfirmation.value = safeStr(wj.qtsx?.text1);
