@@ -11,10 +11,27 @@ const props = defineProps<{
 defineEmits(['updateQuantity', 'removeItem', 'back']);
 
 const cartConsultModalOpen = ref(false);
+const productMode = ref<'normal' | 'annual'>('normal');
+const showCartContent = ref(true);
 
 const total = computed(() => {
   return props.cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
 });
+
+function runCartContentTransition(update: () => void) {
+  showCartContent.value = false;
+  window.setTimeout(() => {
+    update();
+    showCartContent.value = true;
+  }, 280);
+}
+
+function handleProductModeSwitch(mode: 'normal' | 'annual') {
+  if (productMode.value === mode) return;
+  runCartContentTransition(() => {
+    productMode.value = mode;
+  });
+}
 </script>
 
 <template>
@@ -41,6 +58,33 @@ const total = computed(() => {
            </button>
      </header>
 
+     <div v-if="cartItems.length > 0" class="mt-6 flex gap-3">
+       <button
+         type="button"
+         class="rounded-xl px-6 py-2 text-sm font-medium transition-colors"
+         :class="
+           productMode === 'normal'
+             ? 'bg-[#B0D4C5] text-white'
+             : 'border border-gray-100 bg-white text-gray-500 hover:border-gray-300'
+         "
+         @click="handleProductModeSwitch('normal')"
+       >
+         普通产品
+       </button>
+       <button
+         type="button"
+         class="rounded-xl px-6 py-2 text-sm font-medium transition-colors"
+         :class="
+           productMode === 'annual'
+             ? 'bg-[#B0D4C5] text-white'
+             : 'border border-gray-100 bg-white text-gray-500 hover:border-gray-300'
+         "
+         @click="handleProductModeSwitch('annual')"
+       >
+         年框产品
+       </button>
+     </div>
+
      <CartConsultationModal v-model="cartConsultModalOpen" :cart-items="cartItems" />
 
      <div v-if="cartItems.length === 0" class="mt-8 md:mt-10 flex-1 flex flex-col items-center justify-center w-full min-h-[calc(100vh-10rem)] text-gray-400 bg-white rounded-3xl border border-dashed border-gray-200 p-12">
@@ -51,7 +95,12 @@ const total = computed(() => {
         </button>
      </div>
      <template v-else>
-       <div class="mt-10 md:mt-12 flex-1 space-y-4 overflow-y-auto pb-32 min-h-0">
+       <Transition name="cart-content" mode="out-in">
+         <div
+           v-if="showCartContent"
+           :key="productMode"
+           class="mt-6 md:mt-8 flex-1 space-y-4 overflow-y-auto pb-32 min-h-0"
+         >
           <div v-for="item in cartItems" :key="item.id" class="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 flex items-center group transition-all hover:shadow-md">
              <div class="w-24 h-24 bg-gray-50 rounded-2xl flex-shrink-0 overflow-hidden flex items-center justify-center">
                 <img :src="item.image" :alt="item.name" class="w-full h-full object-cover mix-blend-multiply opacity-90" referrerpolicy="no-referrer" />
@@ -94,13 +143,24 @@ const total = computed(() => {
              </div>
           </div>
        </div>
+       </Transition>
 
        <div class="fixed bottom-6 left-0 right-0 z-10 px-4 md:left-64 md:px-8 pointer-events-none">
           <div class="max-w-[1600px] mx-auto pointer-events-auto">
           <div class="bg-[#A1D573] text-[#163300] p-4 pl-8 pr-4 rounded-full shadow-2xl flex items-center justify-between border border-[#A1D573]">
              <div class="flex flex-col">
                 <span class="text-[#163300]/70 text-xs font-medium uppercase tracking-wider">总计 (Total)</span>
-                <span class="text-2xl font-bold">¥{{ total.toFixed(2) }}</span>
+                <span class="block min-h-8">
+                  <Transition name="cart-content" mode="out-in">
+                    <span
+                      v-if="showCartContent"
+                      :key="productMode"
+                      class="inline-block text-2xl font-bold"
+                    >
+                      ¥{{ total.toFixed(2) }}
+                    </span>
+                  </Transition>
+                </span>
              </div>
              <button class="bg-[#163300] text-white px-8 py-3 rounded-full font-bold text-sm hover:bg-[#163300]/90 transition-colors shadow-lg shadow-[#163300]/20 flex items-center gap-2">
                 去结算 <ArrowRight :size="16" />
@@ -112,3 +172,24 @@ const total = computed(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.cart-content-enter-active,
+.cart-content-leave-active {
+  transition:
+    opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.28s cubic-bezier(0.33, 1, 0.32, 1);
+}
+
+.cart-content-enter-from,
+.cart-content-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.cart-content-enter-to,
+.cart-content-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+</style>
