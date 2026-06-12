@@ -11,7 +11,7 @@ import {
 import type { EngineeringProject } from '../types';
 import { engineeringProjects as engineeringProjectsFallback } from '../data';
 import { useProjectData } from '../composables/useProjectData';
-import { fetchEngineeringProjects, updateSpotordernodecontrol, updateAftersalesplan, fetchAfterSalesPlans, type AfterSalesPlanItem } from '../api/projectApi';
+import { fetchEngineeringProjects, updateSpotordernodecontrol, updateAftersalesplan, fetchAfterSalesPlans, fetchCompletedPhotos, fetchCompletedData, type AfterSalesPlanItem, type CompletedPhotoItem, type CompletedData } from '../api/projectApi';
 
 import ProjectCard from './engineering/ProjectCard.vue';
 import ImagePreviewModal from './engineering/ImagePreviewModal.vue';
@@ -316,8 +316,20 @@ const enterEvaluation = () => {
   viewMode.value = 'evaluation';
 };
 
-const enterCompletion = () => {
+const completedPhotos = ref<CompletedPhotoItem[]>([]);
+const completedData = ref<CompletedData>({ acceptance: [], documents: [], materials: [], handover: [] });
+
+const enterCompletion = async () => {
   viewMode.value = 'completion';
+  if (selectedProject.value?.id) {
+    const id = selectedProject.value.id;
+    const [photos, data] = await Promise.all([
+      fetchCompletedPhotos(id),
+      fetchCompletedData(id),
+    ]);
+    completedPhotos.value = photos;
+    completedData.value = data;
+  }
 };
 
 const enterStandards = () => {
@@ -797,6 +809,8 @@ onMounted(async () => {
                 <div v-else-if="viewMode === 'completion'" :key="'completion'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
                   <CompletionMaterials
                     :projectId="selectedProject?.id || ''"
+                    :completedPhotos="completedPhotos"
+                    :completedData="completedData"
                     @zoomImage="zoomImage"
                   />
                 </div>

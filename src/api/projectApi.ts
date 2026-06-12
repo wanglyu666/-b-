@@ -624,6 +624,86 @@ export async function fetchDefectList(
   }
 }
 
+/** 完工照片项 */
+export interface CompletedPhotoItem {
+  imgUrl: string;
+  text: string;
+}
+
+/** 完工资料文件项 */
+export interface CompletedFileItem {
+  name: string;
+  attachment: string;
+}
+
+/** 完工资料数据（四个标签页） */
+export interface CompletedData {
+  acceptance: CompletedFileItem[];   // 验收记录 → data1.dataSelectList
+  documents: CompletedFileItem[];    // 资料文件 → data11.dataSelectList
+  materials: CompletedFileItem[];    // 材料设备 → data44.dataSelectList
+  handover: CompletedFileItem[];     // 交接记录 → data47.dataSelectList
+}
+
+/**
+ * 获取完工照片
+ * GET /spot/spotorder/{spotOrderId}
+ */
+export async function fetchCompletedPhotos(spotOrderId: string): Promise<CompletedPhotoItem[]> {
+  try {
+    const res = await get(`/spot/spotorder/${spotOrderId}`);
+    const raw = res?.data?.completedPhotos;
+    if (!raw) return [];
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((item: any) => ({
+      imgUrl: item.imgUrl || '',
+      text: item.text || '',
+    }));
+  } catch (error) {
+    console.error('获取完工照片失败:', error);
+    return [];
+  }
+}
+
+/**
+ * 获取完工资料（验收记录/资料文件/材料设备/交接记录）
+ * GET /spot/spotordercompleteddata/list
+ */
+export async function fetchCompletedData(spotOrderId: string): Promise<CompletedData> {
+  const empty: CompletedData = { acceptance: [], documents: [], materials: [], handover: [] };
+  try {
+    const res = await get('/spot/spotordercompleteddata/list', {
+      pageNum: 1,
+      pageSize: 10,
+      spotOrderId,
+    });
+    const rows = res?.rows || [];
+    if (!rows.length) return empty;
+
+    const raw = rows[0]?.completedData;
+    if (!raw) return empty;
+    const obj = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+    const mapList = (list: any[] | undefined): CompletedFileItem[] => {
+      if (!Array.isArray(list)) return [];
+      return list.map((item: any) => ({
+        name: item.name || '',
+        attachment: item.attachment || '',
+      }));
+    };
+
+    return {
+      acceptance: mapList(obj?.data1?.dataSelectList),
+      documents: mapList(obj?.data11?.dataSelectList),
+      materials: mapList(obj?.data44?.dataSelectList),
+      handover: mapList(obj?.data47?.dataSelectList),
+    };
+  } catch (error) {
+    console.error('获取完工资料失败:', error);
+    return empty;
+  }
+}
+
 /**
  * 上传文件（图片）
  * @param file 文件对象
