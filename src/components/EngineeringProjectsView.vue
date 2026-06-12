@@ -11,7 +11,7 @@ import {
 import type { EngineeringProject } from '../types';
 import { engineeringProjects as engineeringProjectsFallback } from '../data';
 import { useProjectData } from '../composables/useProjectData';
-import { fetchEngineeringProjects } from '../api/projectApi';
+import { fetchEngineeringProjects, updateSpotordernodecontrol, updateAftersalesplan, fetchAfterSalesPlans, type AfterSalesPlanItem } from '../api/projectApi';
 
 import ProjectCard from './engineering/ProjectCard.vue';
 import ImagePreviewModal from './engineering/ImagePreviewModal.vue';
@@ -115,6 +115,10 @@ const {
 const selectedDefect = ref<any>(null);
 const selectedMaterialItem = ref<any>(null);
 const selectedProgressItem = ref<any>(null);
+const selectedNodeId = ref<number>(0);
+const selectedNodeName = ref('');
+const selectedNodeStatus = ref('');
+const selectedYsStatus = ref('');
 const isImageZoomed = ref(false);
 const zoomedImageUrl = ref('');
 
@@ -232,9 +236,13 @@ const enterAcceptance = () => {
 };
 
 const selectedAfterSalesPlan = ref<any>(null);
+const afterSalesPlans = ref<AfterSalesPlanItem[]>([]);
 
-const enterAfterSales = () => {
+const enterAfterSales = async () => {
   viewMode.value = 'after_sales';
+  if (selectedProject.value?.id) {
+    afterSalesPlans.value = await fetchAfterSalesPlans(selectedProject.value.id);
+  }
 };
 
 const handleScheduleAcceptance = (plan: any) => {
@@ -242,31 +250,64 @@ const handleScheduleAcceptance = (plan: any) => {
   viewMode.value = 'after_sales_schedule';
 };
 
-const handleScheduleSubmit = (formData: any) => {
-  console.log('Submitting schedule:', formData);
-  // Here you would typically make an API call to save the schedule
-  // For now, we'll just simulate success and update the local state
-  
-  if (selectedAfterSalesPlan.value) {
-    selectedAfterSalesPlan.value.isConfirmed = true;
-    selectedAfterSalesPlan.value.scheduledTime = formData.scheduledDate;
+/**
+ * 售后计划 - 预约验收提交
+ */
+const handleScheduleSubmit = async (formData: any) => {
+  const plan = selectedAfterSalesPlan.value;
+  if (!plan) return;
+
+  try {
+    const payload: Record<string, any> = {
+      id: plan.id,
+      spotOrderId: selectedProject.value?.id,
+      kfYuyueTime: formData.scheduledDate,
+      controlUser: JSON.stringify((formData.contacts || []).map((c: any) => ({
+        name: c.name,
+        position: c.position,
+        mobile: c.phone,
+        email: '',
+      }))),
+    };
+
+    await updateAftersalesplan(payload);
+    successSource.value = 'after_sales_schedule';
+    viewMode.value = 'after_sales_success';
+  } catch (error) {
+    console.error('预约验收提交失败:', error);
+    alert('提交失败，请稍后重试');
   }
-  
-  viewMode.value = 'after_sales_success';
 };
 
-const handleProgressScheduleSubmit = (formData: any) => {
-  if (selectedProgressItem.value) {
-    const index = progressData.value.findIndex(item => item.node === selectedProgressItem.value.node);
-    if (index !== -1) {
-      progressData.value[index] = {
-        ...progressData.value[index],
-        appointmentDate: formData.scheduledDate
-      };
-    }
+/**
+ * 进度管控 - 预约验收提交
+ */
+const handleProgressScheduleSubmit = async (formData: any) => {
+  const item = selectedProgressItem.value;
+  if (!item) return;
+
+  try {
+    const payload: Record<string, any> = {
+      id: item.id,
+      spotOrderId: selectedProject.value?.id,
+      kfYuyueTime: formData.scheduledDate,
+      kfType: formData.xmzType,
+      meetingNo: formData.xmzType === '2' ? '' : (formData.meetingNo || ''),
+      spotOrderNodecontrolUserList: (formData.contacts || []).map((c: any) => ({
+        name: c.name,
+        position: c.position,
+        mobile: c.phone,
+        email: '',
+      })),
+    };
+
+    await updateSpotordernodecontrol(payload);
+    successSource.value = 'progress_schedule';
+    viewMode.value = 'progress_schedule_success';
+  } catch (error) {
+    console.error('预约验收提交失败:', error);
+    alert('提交失败，请稍后重试');
   }
-  successSource.value = 'progress_schedule';
-  viewMode.value = 'progress_schedule_success';
 };
 
 const projectEvaluations = ref<Record<string, { rating: number; feedback: string }>>({});
@@ -343,24 +384,7 @@ const addDefect = () => {
   viewMode.value = 'defect_add';
 };
 
-const confirmAddDefect = (payload: { image: string, description: string }) => {
-  const newDefect = {
-    id: Date.now(),
-    image: payload.image,
-    rectifiedImage: '',
-    description: payload.description,
-    date: new Date().toISOString().split('T')[0],
-    planDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    finishDate: '',
-    status: lastViewMode.value === 'defect_report' ? '待处理' : '待整改'
-  };
-  
-  if (lastViewMode.value === 'defect_report') {
-    reportDefects.value.unshift(newDefect);
-  } else {
-    defects.value.unshift(newDefect);
-  }
-  
+const handleDefectAddSuccess = () => {
   successSource.value = 'defect_add';
   viewMode.value = 'progress_schedule_success';
 };
@@ -372,12 +396,19 @@ const viewMaterialDetail = (item: any) => {
 
 const viewProgressDetail = (item: any) => {
   selectedProgressItem.value = item;
-  progressDetailTab.value = 'acceptance_check';
+  selectedNodeId.value = item.id;
+  selectedNodeName.value = item.nodeName;
+  selectedNodeStatus.value = String(item.status ?? '');
+  selectedYsStatus.value = String(item.ysStatus ?? '');
+  // status==1 只显示缺陷整改, status==3 显示验收标签页
+  progressDetailTab.value = item.status === '1' ? 'defect_rectification' : 'acceptance_check';
   viewMode.value = 'progress_detail';
 };
 
 const scheduleProgressAcceptance = (item: any) => {
   selectedProgressItem.value = item;
+  selectedNodeId.value = item.id;
+  selectedNodeName.value = item.nodeName;
   viewMode.value = 'progress_schedule';
 };
 
@@ -429,6 +460,12 @@ const goBack = () => {
     viewMode.value = 'details';
   } else if (viewMode.value === 'after_sales_schedule' || viewMode.value === 'after_sales_success') {
     viewMode.value = 'after_sales';
+    // 返回时重新拉取售后计划列表，确保数据最新
+    if (selectedProject.value?.id) {
+      fetchAfterSalesPlans(selectedProject.value.id).then(data => {
+        afterSalesPlans.value = data;
+      });
+    }
   }
 };
 
@@ -649,17 +686,18 @@ onMounted(async () => {
             <DefectForm 
               v-else-if="viewMode === 'defect_add'"
               :key="'defect_add'"
-              @submit="confirmAddDefect"
+              :spotOrderId="selectedProject?.id || ''"
+              :projectId="selectedProject?.projectId || ''"
+              :nodeName="selectedNodeName"
+              @success="handleDefectAddSuccess"
             />
 
                 <!-- Acceptance Mode -->
                 <div v-else-if="viewMode === 'acceptance'" :key="'acceptance'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
                   <ProcessAcceptance
-                    :materialData="materialData"
-                    :progressData="progressData"
+                    :spotOrderId="selectedProject?.id || ''"
                     :initialTab="acceptanceTab"
                     @update:tab="acceptanceTab = $event"
-                    @viewMaterialDetail="viewMaterialDetail"
                     @viewProgressDetail="viewProgressDetail"
                     @scheduleAcceptance="scheduleProgressAcceptance"
                   />
@@ -680,9 +718,12 @@ onMounted(async () => {
                 <!-- Progress Detail Mode -->
                 <div v-else-if="viewMode === 'progress_detail'" :key="'progress_detail'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
                   <ProgressDetail
-                    :progressItem="selectedProgressItem"
-                    :defects="defects"
-                    :isSubmitted="submittedProgressItems.includes(selectedProgressItem?.node)"
+                    :nodeId="selectedNodeId"
+                    :nodeName="selectedNodeName"
+                    :spotOrderId="selectedProject?.id || ''"
+                    :isSubmitted="submittedProgressItems.includes(selectedNodeName)"
+                    :nodeStatus="selectedNodeStatus"
+                    :ysStatus="selectedYsStatus"
                     :initialTab="progressDetailTab"
                     @update:tab="progressDetailTab = $event"
                     @goBack="goBack"
@@ -696,7 +737,8 @@ onMounted(async () => {
                 <!-- Progress Schedule Mode -->
                 <div v-else-if="viewMode === 'progress_schedule'" :key="'progress_schedule'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
                   <AfterSalesSchedule
-                    :plan="{ nodeName: selectedProgressItem?.node, plannedTime: selectedProgressItem?.planDate }"
+                    mode="progress"
+                    :plan="{ id: selectedProgressItem?.id, nodeName: selectedProgressItem?.nodeName || selectedProgressItem?.node, plannedTime: selectedProgressItem?.planTime || selectedProgressItem?.planDate, xmzYuyueTime: selectedProgressItem?.xmzYuyueTime }"
                     @submit="handleProgressScheduleSubmit"
                     @cancel="goBack"
                   />
@@ -714,7 +756,7 @@ onMounted(async () => {
                 <!-- After Sales Plan Mode -->
                 <div v-else-if="viewMode === 'after_sales'" :key="'after_sales'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
                   <AfterSalesPlan
-                    :afterSalesData="afterSalesData"
+                    :afterSalesData="afterSalesPlans"
                     @scheduleAcceptance="handleScheduleAcceptance"
                   />
                 </div>
@@ -722,6 +764,7 @@ onMounted(async () => {
                 <!-- After Sales Schedule Mode -->
                 <div v-else-if="viewMode === 'after_sales_schedule'" :key="'after_sales_schedule'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
                   <AfterSalesSchedule
+                    mode="after_sales"
                     :plan="selectedAfterSalesPlan"
                     @submit="handleScheduleSubmit"
                     @cancel="goBack"

@@ -1,4 +1,4 @@
-import { get } from '../utils/request';
+import { get, post, put } from '../utils/request';
 import type { EngineeringProject } from '../types';
 
 /** 工程项目状态与接口参数映射 */
@@ -70,6 +70,7 @@ export async function fetchEngineeringProjects(
       startDate: item.constructionBeginTime || item.startDate || item.planStartDate || '',  // 开工日期
       endDate: item.endDate || item.planEndDate || '',
       status: status || '施工中',
+      projectId: String(item.projectId || ''),
     }));
 
     return {
@@ -377,4 +378,301 @@ export async function fetchEHSReportDetail(id: number): Promise<EHSReportRaw> {
   return {
     secureWeekly: data.secureWeekly ? JSON.parse(data.secureWeekly) : {},
   };
+}
+
+// ========== 过程验收相关 ==========
+
+/**
+ * 获取招标订单详情（材料管控数据源）
+ * @param spotOrderId 项目ID
+ */
+export async function fetchBidOrderDetail(spotOrderId: string): Promise<{
+  draftData: Record<string, any>;
+}> {
+  try {
+    const res = await get(`/bid/bidorder/getDetailBySpotOrderId/${spotOrderId}`);
+    const data = res?.data || res;
+    const draftData = data.zbData ? JSON.parse(data.zbData) : {};
+    return { draftData };
+  } catch (error) {
+    console.error('获取材料管控数据失败:', error);
+    return { draftData: {} };
+  }
+}
+
+/** 字典项 */
+export interface DictItem {
+  dictValue: string;
+  dictLabel: string;
+}
+
+/** 字典缓存 */
+const dictCache: Map<string, DictItem[]> = new Map();
+
+/**
+ * 获取字典数据（带缓存）
+ * @param dictType 字典类型，如 xyw_material_profession_type
+ */
+export async function fetchDictData(dictType: string): Promise<DictItem[]> {
+  if (dictCache.has(dictType)) return dictCache.get(dictType)!;
+  try {
+    const res = await get(`/system/dict/data/type/${dictType}`);
+    const data = res?.data || [];
+    const list: DictItem[] = Array.isArray(data) ? data.map((item: any) => ({
+      dictValue: String(item.dictValue ?? ''),
+      dictLabel: String(item.dictLabel ?? ''),
+    })) : [];
+    dictCache.set(dictType, list);
+    return list;
+  } catch (error) {
+    console.error(`获取字典 ${dictType} 失败:`, error);
+    return [];
+  }
+}
+
+/**
+ * 根据字典 value 获取 label
+ */
+export function getDictLabel(dictItems: DictItem[], value: string): string {
+  const found = dictItems.find(d => d.dictValue === value);
+  return found?.dictLabel || value || '-';
+}
+
+/** 进度验收节点列表项 */
+export interface ProgressNodeItem {
+  id: number;
+  nodeName: string;
+  planTime: string;
+  xmzYuyueTime: string;
+  kfYuyueTime: string;
+  status: string;
+  xmzType: string;
+  kfType: string;
+  ysStatus: string;
+}
+
+/** 进度验收节点列表响应 */
+export interface ProgressNodeListResponse {
+  list: ProgressNodeItem[];
+  total: number;
+  pageNum: number;
+  pageSize: number;
+}
+
+/**
+ * 获取进度验收节点列表（分页）
+ */
+export async function fetchProgressNodes(
+  spotOrderId: string,
+  pageNum: number = 1,
+  pageSize: number = 10
+): Promise<ProgressNodeListResponse> {
+  try {
+    const res = await get('/spot/spotordernodecontrol/list', {
+      pageNum,
+      pageSize,
+      spotOrderId,
+      type: 1,
+    });
+
+    const rawList = res.data?.list || res.data?.records || res.rows || [];
+    const total = res.data?.total || res.total || rawList.length;
+
+    const list: ProgressNodeItem[] = rawList.map((item: any) => ({
+      id: Number(item.id),
+      nodeName: item.nodeName || '',
+      planTime: item.planTime || '',
+      xmzYuyueTime: item.xmzYuyueTime || '',
+      kfYuyueTime: item.kfYuyueTime || '',
+      status: String(item.status ?? ''),
+      xmzType: String(item.xmzType ?? ''),
+      kfType: String(item.kfType ?? ''),
+      ysStatus: String(item.ysStatus ?? ''),
+    }));
+
+    return { list, total: Number(total), pageNum, pageSize };
+  } catch (error) {
+    console.error('获取进度验收节点列表失败:', error);
+    return { list: [], total: 0, pageNum, pageSize };
+  }
+}
+
+/** 进度节点详情 */
+export interface ProgressNodeDetail {
+  form: Record<string, any>;
+  controlDataList: { fileUrl: string }[];
+}
+
+/**
+ * 获取进度节点详情
+ */
+export async function fetchProgressNodeDetail(id: number): Promise<ProgressNodeDetail> {
+  const res = await get(`/spot/spotordernodecontrol/${id}`);
+  const data = res?.data || res;
+  const controlDataList = data.controlData ? JSON.parse(data.controlData) : [];
+  return {
+    form: { ...data },
+    controlDataList: Array.isArray(controlDataList) ? controlDataList : [],
+  };
+}
+
+/**
+ * 客户预约验收 - 修改节点管控
+ * POST /spot/spotordernodecontrol
+ */
+export async function updateSpotordernodecontrol(data: Record<string, any>): Promise<any> {
+  return await put('/spot/spotordernodecontrol', data);
+}
+
+/**
+ * 客户提交验收评价 - ysStatus: 2通过 3拒绝
+ * PUT /spot/spotordernodecontrol/ysStatus
+ */
+export async function updateYsStatus(data: Record<string, any>): Promise<any> {
+  return await put('/spot/spotordernodecontrol/ysStatus', data);
+}
+
+/**
+ * 修改售后计划（客户预约巡检/验收）
+ * PUT /spot/aftersalesplan
+ */
+export async function updateAftersalesplan(data: Record<string, any>): Promise<any> {
+  return await put('/spot/aftersalesplan', data);
+}
+
+/** 售后计划列表项 */
+export interface AfterSalesPlanItem {
+  id: number;
+  plan: string;
+  planTime: string;
+  startTime: string;
+  endTime: string;
+  status: string;
+}
+
+/**
+ * 获取售后计划列表
+ * GET /spot/aftersalesplan/spotorder/{spotOrderId}
+ */
+export async function fetchAfterSalesPlans(spotOrderId: string): Promise<AfterSalesPlanItem[]> {
+  try {
+    const res = await get(`/spot/aftersalesplan/spotorder/${spotOrderId}`);
+    const rawList = res?.data?.spotOrderAfterSalesPlans || [];
+    return rawList.map((item: any) => ({
+      id: Number(item.id),
+      plan: item.plan || '',
+      planTime: item.planTime || '',
+      startTime: item.startTime || '',
+      endTime: item.endTime || '',
+      status: String(item.status ?? ''),
+    }));
+  } catch (error) {
+    console.error('获取售后计划列表失败:', error);
+    return [];
+  }
+}
+
+/** 缺陷整改列表项 */
+export interface DefectItem {
+  id: number;
+  defectFile: string;
+  createTime: string;
+  defectDescribe: string;
+}
+
+/** 缺陷整改列表响应 */
+export interface DefectListResponse {
+  list: DefectItem[];
+  total: number;
+  pageNum: number;
+  pageSize: number;
+}
+
+/**
+ * 获取缺陷整改列表
+ */
+export async function fetchDefectList(
+  spotOrderId: string,
+  nodeName: string,
+  pageNum: number = 1,
+  pageSize: number = 10
+): Promise<DefectListResponse> {
+  try {
+    const res = await get('/spot/spotordernodecontroldefect/list', {
+      pageNum,
+      pageSize,
+      spotOrderId,
+      nodeName,
+      source: 1,
+      defectType: 1,
+    });
+
+    const rawList = res.data?.list || res.data?.records || res.rows || [];
+    const total = res.data?.total || res.total || rawList.length;
+
+    const list: DefectItem[] = rawList.map((item: any) => ({
+      id: Number(item.id),
+      defectFile: item.defectFile || '',
+      createTime: item.createTime || '',
+      defectDescribe: item.defectDescribe || '',
+    }));
+
+    return { list, total: Number(total), pageNum, pageSize };
+  } catch (error) {
+    console.error('获取缺陷整改列表失败:', error);
+    return { list: [], total: 0, pageNum, pageSize };
+  }
+}
+
+/**
+ * 上传文件（图片）
+ * @param file 文件对象
+ * @returns 上传后的 url
+ */
+export async function uploadFile(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const BASE_URL = 'http://customer.justpai.com/prod-api';
+  const { getToken } = await import('../utils/auth');
+  const token = getToken();
+
+  const response = await fetch(`${BASE_URL}/business/resources/upload`, {
+    method: 'POST',
+    headers: {
+      'Authorization': token ? `Bearer ${token}` : '',
+    },
+    body: formData,
+  });
+
+  const result = await response.json();
+  if (result.code === 200 && result.msg) {
+    return result.msg;
+  }
+  throw new Error(result.msg || '上传失败');
+}
+
+/** 创建缺陷接口参数 */
+export interface CreateDefectParams {
+  spotOrderId: string;
+  projectId: string;
+  nodeName: string;
+  defectFile: string;
+  defectDescribe: string;
+}
+
+/**
+ * 新增缺陷整改记录
+ */
+export async function createDefect(params: CreateDefectParams): Promise<void> {
+  const payload = [{
+    id: null,
+    spotOrderId: Number(params.spotOrderId),
+    projectId: Number(params.projectId),
+    nodeName: params.nodeName,
+    source: '1',
+    defectFile: params.defectFile,
+    defectDescribe: params.defectDescribe,
+  }];
+  await post('/spot/spotordernodecontroldefect', payload);
 }

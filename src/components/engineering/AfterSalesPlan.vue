@@ -20,29 +20,17 @@
           </thead>
           <tbody class="text-white/80 text-xs">
             <tr v-for="(item, i) in afterSalesData" :key="i" class="border-b border-white/5 hover:bg-white/5 transition-colors">
-              <td class="px-6 py-4">{{ item.planName }}</td>
-              <td class="px-6 py-4 font-mono">{{ item.planDate }}</td>
-              <td class="px-6 py-4 font-mono">{{ item.scheduledTime || item.startDate }}</td>
-              <td class="px-6 py-4 font-mono">{{ item.endDate }}</td>
+              <td class="px-6 py-4">{{ item.plan }}</td>
+              <td class="px-6 py-4 font-mono">{{ item.planTime }}</td>
+              <td class="px-6 py-4 font-mono">{{ item.startTime }}</td>
+              <td class="px-6 py-4 font-mono">{{ item.endTime }}</td>
               <td class="px-6 py-4 text-right">
-                <!-- 
-                  预约巡检时间按钮显示逻辑：
-                  未来与后端对接后，当后端返回该计划可以进行巡检时（例如 item.canAccept === true），
-                  才显示此按钮。
-                -->
                 <button 
-                  v-if="item.canAccept && !item.isConfirmed"
+                  v-if="item.status === '1'"
                   @click="$emit('scheduleAcceptance', item)" 
                   class="px-4 py-1.5 bg-[#FFE600] text-[#260A2F] text-xs font-bold rounded-full hover:bg-[#e6cf00] transition-colors shadow-[0_0_10px_rgba(255,230,0,0.3)] active:scale-95"
                 >
                   预约巡检时间
-                </button>
-                <button 
-                  v-else-if="item.canAccept && item.isConfirmed"
-                  disabled
-                  class="px-4 py-1.5 bg-white/10 text-white/40 text-xs font-bold rounded-full cursor-not-allowed"
-                >
-                  已确认时间
                 </button>
               </td>
             </tr>

@@ -23,6 +23,7 @@ export interface EngineeringProject {
   status: '待开工' | '施工中' | '已完工' | '已结算' | '保修中' | '保修外';
   startDate?: string;
   endDate?: string;
+  projectId?: string;
 }
 
 export interface Notification {
