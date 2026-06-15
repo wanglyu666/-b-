@@ -83,6 +83,8 @@ const props = defineProps<{
   spotOrderId: string;
   projectId: string;
   nodeName: string;
+  /** defectType: 1=缺陷整改 2=缺陷汇报 */
+  defectType?: '1' | '2';
 }>();
 
 const emit = defineEmits(['submit', 'success']);
@@ -135,6 +137,7 @@ const confirmAddDefect = async () => {
       nodeName: props.nodeName,
       defectFile: uploadedUrl.value,
       defectDescribe: newDefectDescription.value,
+      defectType: props.defectType || '1',
     });
     emit('success');
   } catch (e) {

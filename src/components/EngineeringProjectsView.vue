@@ -11,7 +11,7 @@ import {
 import type { EngineeringProject } from '../types';
 import { engineeringProjects as engineeringProjectsFallback } from '../data';
 import { useProjectData } from '../composables/useProjectData';
-import { fetchEngineeringProjects, updateSpotordernodecontrol, updateAftersalesplan, fetchAfterSalesPlans, fetchCompletedPhotos, fetchCompletedData, type AfterSalesPlanItem, type CompletedPhotoItem, type CompletedData } from '../api/projectApi';
+import { fetchEngineeringProjects, updateSpotordernodecontrol, updateAftersalesplan, fetchAfterSalesPlans, fetchCompletedPhotos, fetchCompletedData, fetchDefectReportList, deleteDefectRecord, reviewDefect, fetchEvaluation, submitEvaluation as submitEvaluationApi, type AfterSalesPlanItem, type CompletedPhotoItem, type CompletedData, type DefectItem, type EvaluationData } from '../api/projectApi';
 
 import ProjectCard from './engineering/ProjectCard.vue';
 import ImagePreviewModal from './engineering/ImagePreviewModal.vue';
@@ -99,6 +99,12 @@ const viewMode = ref<'details' | 'acceptance' | 'material_detail' | 'progress_de
 const lastViewMode = ref<string>('');
 const defectReportOrigin = ref<string>('');
 const successSource = ref<'progress_schedule' | 'defect_add' | ''>('');
+const defectReportList = ref<any[]>([]);
+
+/** 缺陷表单类型：从缺陷汇报进入则为 '2'，否则 '1'（缺陷整改） */
+const currentDefectType = computed<'1' | '2'>(() => {
+  return lastViewMode.value === 'defect_report' ? '2' : '1';
+});
 const acceptanceTab = ref<'material' | 'progress'>('material');
 const progressDetailTab = ref<'acceptance_check' | 'defect_rectification'>('acceptance_check');
 
@@ -310,10 +316,34 @@ const handleProgressScheduleSubmit = async (formData: any) => {
   }
 };
 
-const projectEvaluations = ref<Record<string, { rating: number; feedback: string }>>({});
+/** 评价相关状态 */
+const isEvaluationEditable = ref(false);
+const existingEvalRating = ref(0);
+const existingEvalFeedback = ref('');
 
-const enterEvaluation = () => {
+const enterEvaluation = async () => {
   viewMode.value = 'evaluation';
+  const project = selectedProject.value;
+  if (!project?.id) return;
+
+  // 判断 isEvaluate 是否为 1 → 可编辑
+  isEvaluationEditable.value = project.isEvaluate === '1';
+
+  // 拉取已有评价数据（用于回显）
+  try {
+    const evalData = await fetchEvaluation(project.id);
+    if (evalData) {
+      existingEvalRating.value = Number(evalData.syntheticScore) || 0;
+      existingEvalFeedback.value = evalData.content || '';
+    } else {
+      existingEvalRating.value = 0;
+      existingEvalFeedback.value = '';
+    }
+  } catch (e) {
+    console.error('获取评价数据失败:', e);
+    existingEvalRating.value = 0;
+    existingEvalFeedback.value = '';
+  }
 };
 
 const completedPhotos = ref<CompletedPhotoItem[]>([]);
@@ -346,47 +376,100 @@ const enterReportDetail = (report: any) => {
   viewMode.value = 'report_detail';
 };
 
-const handleEvaluationSubmit = (data: { rating: number; feedback: string }) => {
-  if (selectedProjectId.value) {
-    projectEvaluations.value[selectedProjectId.value] = data;
+const handleEvaluationSubmit = async (data: { rating: number; feedback: string }) => {
+  const project = selectedProject.value;
+  if (!project?.id || !project?.projectId) return;
+  try {
+    await submitEvaluationApi({
+      spotOrderId: project.id,
+      projectId: project.projectId,
+      syntheticScore: data.rating,
+      content: data.feedback,
+    });
+  } catch (e) {
+    console.error('提交评价失败:', e);
   }
   viewMode.value = 'evaluation_success';
 };
 
-const enterDefects = () => {
+const enterDefects = async () => {
   defectReportOrigin.value = viewMode.value;
   lastViewMode.value = viewMode.value;
   viewMode.value = 'defect_report';
+  // 拉取缺陷汇报真实数据
+  if (selectedProject.value?.projectId) {
+    const res = await fetchDefectReportList(selectedProject.value.projectId);
+    defectReportList.value = (res.list || []).map(mapDefectItem);
+  }
+};
+
+/** 将 API 返回的 DefectItem 转为组件期望格式 */
+const mapDefectItem = (item: DefectItem) => {
+  const statusMap: Record<string, string> = {
+    '0': '待整改',
+    '5': '待验收',
+    '6': '已通过',
+    '7': '不通过',
+  };
+  return {
+    id: item.id,
+    image: (item.defectFile || '').split(',')[0] || '',
+    rectifiedImage: (item.completeFile || '').split(',')[0] || '',
+    description: item.defectDescribe || '',
+    date: item.createTime || '',
+    planDate: item.planTime || '',
+    finishDate: item.completeTime || '',
+    status: statusMap[String(item.status)] || '待整改',
+  };
 };
 
 const viewDefectDetail = (defect: any) => {
-  selectedDefect.value = defect;
+  // 如果传进来的是 API 原始数据（有 defectFile 没有 image），先做映射转换
+  // 从 defect_report 进来的已经映射过了，不需要重复映射
+  selectedDefect.value = defect.image !== undefined ? defect : mapDefectItem(defect);
   lastViewMode.value = viewMode.value;
   viewMode.value = 'defect_detail';
 };
 
-const deleteDefect = (id: number) => {
-  if (lastViewMode.value === 'defect_report') {
-    reportDefects.value = reportDefects.value.filter(d => d.id !== id);
-  } else {
-    defects.value = defects.value.filter(d => d.id !== id);
+const deleteDefect = async (id: number) => {
+  try {
+    await deleteDefectRecord(id);
+    if (lastViewMode.value === 'defect_report') {
+      defectReportList.value = defectReportList.value.filter(d => d.id !== id);
+    } else {
+      defects.value = defects.value.filter(d => d.id !== id);
+    }
+  } catch (e) {
+    console.error('删除缺陷失败:', e);
   }
   goBack();
 };
 
-const handleDefectReview = (payload: { id: number, status: 'pass' | 'fail', description: string }) => {
-  const targetArray = lastViewMode.value === 'defect_report' ? reportDefects.value : defects.value;
-  const index = targetArray.findIndex(d => d.id === payload.id);
-  
-  if (index !== -1) {
-    if (payload.status === 'pass') {
-      targetArray[index].status = '已通过';
-    } else {
-      targetArray[index].status = lastViewMode.value === 'defect_report' ? '待处理' : '待整改';
-      targetArray[index].description = payload.description;
-      targetArray[index].finishDate = '';
-      targetArray[index].rectifiedImage = '';
+const handleDefectReview = async (payload: { id: number, status: 'pass' | 'fail', description: string }) => {
+  try {
+    // 调用后端验收接口
+    // 通过 → status=6，不通过 → status=7，khReason=原因
+    await reviewDefect({
+      id: payload.id,
+      status: payload.status === 'pass' ? '6' : '7',
+      khReason: payload.status === 'fail' ? payload.description : '',
+    });
+
+    // 本地更新状态
+    const targetArray = lastViewMode.value === 'defect_report' ? defectReportList.value : defects.value;
+    const index = targetArray.findIndex(d => d.id === payload.id);
+    if (index !== -1) {
+      if (payload.status === 'pass') {
+        targetArray[index].status = '已通过';
+      } else {
+        targetArray[index].status = lastViewMode.value === 'defect_report' ? '待处理' : '待整改';
+        targetArray[index].description = payload.description;
+        targetArray[index].finishDate = '';
+        targetArray[index].rectifiedImage = '';
+      }
     }
+  } catch (e) {
+    console.error('验收提交失败:', e);
   }
   goBack();
 };
@@ -396,7 +479,12 @@ const addDefect = () => {
   viewMode.value = 'defect_add';
 };
 
-const handleDefectAddSuccess = () => {
+const handleDefectAddSuccess = async () => {
+  // 刷新缺陷列表
+  if (lastViewMode.value === 'defect_report' && selectedProject.value?.projectId) {
+    const res = await fetchDefectReportList(selectedProject.value.projectId);
+    defectReportList.value = (res.list || []).map(mapDefectItem);
+  }
   successSource.value = 'defect_add';
   viewMode.value = 'progress_schedule_success';
 };
@@ -674,7 +762,7 @@ onMounted(async () => {
                 v-else-if="viewMode === 'defect_report'" 
                 :key="'defect_report'" 
                 title="缺陷记录列表" 
-                :defects="reportDefects" 
+                :defects="defectReportList" 
                 @add="addDefect" 
                 @viewDetail="viewDefectDetail" 
               />
@@ -701,6 +789,7 @@ onMounted(async () => {
               :spotOrderId="selectedProject?.id || ''"
               :projectId="selectedProject?.projectId || ''"
               :nodeName="selectedNodeName"
+              :defectType="currentDefectType"
               @success="handleDefectAddSuccess"
             />
 
@@ -793,7 +882,9 @@ onMounted(async () => {
                 <!-- Evaluation Mode -->
                 <div v-else-if="viewMode === 'evaluation'" :key="'evaluation'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
                   <ProjectEvaluation
-                    :existingEvaluation="selectedProjectId ? projectEvaluations[selectedProjectId] : null"
+                    :editable="isEvaluationEditable"
+                    :existingRating="existingEvalRating"
+                    :existingFeedback="existingEvalFeedback"
                     @submit="handleEvaluationSubmit"
                   />
                 </div>

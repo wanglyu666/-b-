@@ -1,4 +1,21 @@
-import { get, post, put } from '../utils/request';
+import { get, post, put, del } from '../utils/request';
+
+// ==================== 用户信息 ====================
+
+/**
+ * 获取当前登录用户信息
+ * GET /getInfo
+ * @returns customerName 用户昵称
+ */
+export async function fetchUserInfo(): Promise<string> {
+  try {
+    const res = await get('/getInfo');
+    return res?.customer?.customerName || '管理员';
+  } catch (error) {
+    console.error('获取用户信息失败:', error);
+    return '管理员';
+  }
+}
 import type { EngineeringProject } from '../types';
 
 /** 工程项目状态与接口参数映射 */
@@ -71,6 +88,7 @@ export async function fetchEngineeringProjects(
       endDate: item.endDate || item.planEndDate || '',
       status: status || '施工中',
       projectId: String(item.projectId || ''),
+      isEvaluate: String(item.isEvaluate ?? '0'),
     }));
 
     return {
@@ -578,6 +596,10 @@ export interface DefectItem {
   defectFile: string;
   createTime: string;
   defectDescribe: string;
+  planTime?: string;
+  completeFile?: string;
+  completeTime?: string;
+  status?: string;
 }
 
 /** 缺陷整改列表响应 */
@@ -590,6 +612,7 @@ export interface DefectListResponse {
 
 /**
  * 获取缺陷整改列表
+ * 过程验收-进度管控-缺陷整改（defectType=1, 需要 nodeName/spotOrderId）
  */
 export async function fetchDefectList(
   spotOrderId: string,
@@ -615,6 +638,10 @@ export async function fetchDefectList(
       defectFile: item.defectFile || '',
       createTime: item.createTime || '',
       defectDescribe: item.defectDescribe || '',
+      planTime: item.planTime || '',
+      completeFile: item.completeFile || '',
+      completeTime: item.completeTime || '',
+      status: String(item.status ?? ''),
     }));
 
     return { list, total: Number(total), pageNum, pageSize };
@@ -622,6 +649,75 @@ export async function fetchDefectList(
     console.error('获取缺陷整改列表失败:', error);
     return { list: [], total: 0, pageNum, pageSize };
   }
+}
+
+/**
+ * 获取缺陷汇报列表（项目操作指令→缺陷汇报）
+ * defectType=2, source=1, 使用 projectId 查询
+ */
+export async function fetchDefectReportList(
+  projectId: string,
+  pageNum: number = 1,
+  pageSize: number = 10
+): Promise<DefectListResponse> {
+  try {
+    const res = await get('/spot/spotordernodecontroldefect/list', {
+      pageNum,
+      pageSize,
+      projectId,
+      source: 1,
+      defectType: 2,
+    });
+
+    const rawList = res.data?.list || res.data?.records || res.rows || [];
+    const total = res.data?.total || res.total || rawList.length;
+
+    const list: DefectItem[] = rawList.map((item: any) => ({
+      id: Number(item.id),
+      defectFile: item.defectFile || '',
+      createTime: item.createTime || '',
+      defectDescribe: item.defectDescribe || '',
+      planTime: item.planTime || '',
+      completeFile: item.completeFile || '',
+      completeTime: item.completeTime || '',
+      status: String(item.status ?? ''),
+    }));
+
+    return { list, total: Number(total), pageNum, pageSize };
+  } catch (error) {
+    console.error('获取缺陷汇报列表失败:', error);
+    return { list: [], total: 0, pageNum, pageSize };
+  }
+}
+
+/**
+ * 删除缺陷记录
+ * DELETE /spot/spotordernodecontroldefect/{id}
+ */
+export async function deleteDefectRecord(id: number): Promise<void> {
+  await del(`/spot/spotordernodecontroldefect/${id}`);
+}
+
+/** 验收缺陷参数 */
+export interface ReviewDefectParams {
+  id: number;
+  /** 6=通过 7=不通过 */
+  status: '6' | '7';
+  /** 不通过时的原因 */
+  khReason?: string;
+}
+
+/**
+ * 验收缺陷（通过/不通过）
+ * PUT /spot/spotordernodecontroldefect
+ * 参考: submitForm2 → updateSpotordernodecontroldefect(this.form)
+ */
+export async function reviewDefect(params: ReviewDefectParams): Promise<void> {
+  await put('/spot/spotordernodecontroldefect', {
+    id: params.id,
+    status: params.status,
+    khReason: params.khReason || '',
+  });
 }
 
 /** 完工照片项 */
@@ -734,25 +830,139 @@ export async function uploadFile(file: File): Promise<string> {
 
 /** 创建缺陷接口参数 */
 export interface CreateDefectParams {
-  spotOrderId: string;
+  spotOrderId?: string;
   projectId: string;
-  nodeName: string;
+  nodeName?: string;
   defectFile: string;
   defectDescribe: string;
+  /** defectType: 1=缺陷整改 2=缺陷汇报 */
+  defectType?: '1' | '2';
 }
 
 /**
- * 新增缺陷整改记录
+ * 新增缺陷记录（缺陷整改 / 缺陷汇报）
+ * defectType=1: 需要 spotOrderId + nodeName（过程验收-缺陷整改）
+ * defectType=2: 只需要 projectId（项目操作指令-缺陷汇报）
  */
 export async function createDefect(params: CreateDefectParams): Promise<void> {
-  const payload = [{
+  const type = params.defectType || '1';
+  const payload: Record<string, any> = {
     id: null,
-    spotOrderId: Number(params.spotOrderId),
     projectId: Number(params.projectId),
-    nodeName: params.nodeName,
     source: '1',
+    defectType: type,
     defectFile: params.defectFile,
     defectDescribe: params.defectDescribe,
-  }];
-  await post('/spot/spotordernodecontroldefect', payload);
+  };
+  if (type === '1') {
+    payload.spotOrderId = Number(params.spotOrderId);
+    payload.nodeName = params.nodeName || '';
+  }
+  await post('/spot/spotordernodecontroldefect', [payload]);
+}
+
+// ==================== 项目评价 ====================
+
+/** 评价数据（从接口返回） */
+export interface EvaluationData {
+  spotOrderId: string;
+  projectId: string;
+  bzhsgScore: string;
+  xcwmsgScore: string;
+  qualityScore: string;
+  sgjdScore: string;
+  fwbzhScore: string;
+  attitudeScore: string;
+  effectScore: string;
+  syntheticScore: string;
+  content: string;
+  img01?: string;
+  img02?: string;
+  img03?: string;
+  img04?: string;
+  img05?: string;
+}
+
+/** 提交评价参数 */
+export interface SubmitEvaluationParams {
+  spotOrderId: string;
+  projectId: string;
+  syntheticScore: number;
+  content: string;
+  bzhsgScore?: number;
+  xcwmsgScore?: number;
+  qualityScore?: number;
+  sgjdScore?: number;
+  fwbzhScore?: number;
+  attitudeScore?: number;
+  effectScore?: number;
+  img01?: string;
+  img02?: string;
+  img03?: string;
+  img04?: string;
+  img05?: string;
+}
+
+/**
+ * 获取项目评价（取第1条）
+ * GET /spot/spotorderevaluate/list
+ */
+export async function fetchEvaluation(spotOrderId: string): Promise<EvaluationData | null> {
+  try {
+    const res = await get('/spot/spotorderevaluate/list', {
+      pageNum: 1,
+      pageSize: 10,
+      spotOrderId,
+    });
+    const rows = res?.rows || [];
+    if (!rows.length) return null;
+    const item = rows[0];
+    return {
+      spotOrderId: String(item.spotOrderId || ''),
+      projectId: String(item.projectId || ''),
+      bzhsgScore: String(item.bzhsgScore ?? ''),
+      xcwmsgScore: String(item.xcwmsgScore ?? ''),
+      qualityScore: String(item.qualityScore ?? ''),
+      sgjdScore: String(item.sgjdScore ?? ''),
+      fwbzhScore: String(item.fwbzhScore ?? ''),
+      attitudeScore: String(item.attitudeScore ?? ''),
+      effectScore: String(item.effectScore ?? ''),
+      syntheticScore: String(item.syntheticScore ?? ''),
+      content: item.content || '',
+      img01: item.img01 || '',
+      img02: item.img02 || '',
+      img03: item.img03 || '',
+      img04: item.img04 || '',
+      img05: item.img05 || '',
+    };
+  } catch (error) {
+    console.error('获取评价数据失败:', error);
+    return null;
+  }
+}
+
+/**
+ * 提交项目评价
+ * POST /spot/spotorderevaluate
+ */
+export async function submitEvaluation(params: SubmitEvaluationParams): Promise<void> {
+  const defaultScore = params.syntheticScore;
+  await post('/spot/spotorderevaluate', {
+    spotOrderId: Number(params.spotOrderId),
+    projectId: Number(params.projectId),
+    bzhsgScore: params.bzhsgScore ?? defaultScore,
+    xcwmsgScore: params.xcwmsgScore ?? defaultScore,
+    qualityScore: params.qualityScore ?? defaultScore,
+    sgjdScore: params.sgjdScore ?? defaultScore,
+    fwbzhScore: params.fwbzhScore ?? defaultScore,
+    attitudeScore: params.attitudeScore ?? defaultScore,
+    effectScore: params.effectScore ?? defaultScore,
+    syntheticScore: params.syntheticScore,
+    content: params.content,
+    img01: params.img01 || '',
+    img02: params.img02 || '',
+    img03: params.img03 || '',
+    img04: params.img04 || '',
+    img05: params.img05 || '',
+  });
 }

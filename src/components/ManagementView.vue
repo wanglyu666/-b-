@@ -2,6 +2,7 @@
 import { ref, computed, watch, nextTick, onMounted } from 'vue';
 import { HardHat, Clock, Wrench, CheckCircle, Banknote, Shield, ShieldAlert, AlertCircle, ClipboardList, ShoppingCart, X } from 'lucide-vue-next';
 import TopBarActions from './TopBarActions.vue';
+import { useAppStore } from '../stores/appStore';
 import type { EngineeringProject, MaintenanceProject, Member } from '../types';
 import { fetchProjectCounts, type ProjectCounts } from '../api/projectApi';
 import orderMgmtIllustration from '../../image asset/shopping cart icon.png';
@@ -29,6 +30,7 @@ const props = withDefaults(
 
 const emit = defineEmits(['viewProjects', 'viewMaintenance', 'viewMaintenanceProjects', 'addRepair', 'viewOrders']);
 
+const appStore = useAppStore();
 const countByStatus = <T extends { status: string }>(list: readonly T[], status: string) =>
   list.filter((p) => p.status === status).length;
 
@@ -246,7 +248,7 @@ const closeAddModal = () => {
         <h1 class="text-3xl font-bold text-gray-800">管理中心</h1>
         <p class="text-gray-500 mt-1">全局项目与人员管控</p>
       </div>
-      <TopBarActions :isShop="false" />
+      <TopBarActions :isShop="false" :userName="appStore.customerName" />
     </header>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

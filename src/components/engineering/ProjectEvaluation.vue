@@ -12,8 +12,9 @@
             @click="setRating(star)"
             @mouseenter="hoverRating = star"
             @mouseleave="hoverRating = 0"
-            :disabled="isEvaluated"
-            class="transition-transform hover:scale-110 focus:outline-none disabled:cursor-not-allowed disabled:hover:scale-100"
+            :disabled="!editable"
+            class="transition-transform focus:outline-none"
+            :class="editable ? 'hover:scale-110' : 'cursor-not-allowed'"
           >
             <Star 
               :size="48" 
@@ -36,7 +37,7 @@
         <label class="text-white/80 text-sm font-medium pl-2">文字评价</label>
         <textarea 
           v-model="feedback"
-          :disabled="isEvaluated"
+          :disabled="!editable"
           placeholder="请输入您对本项目的评价内容..."
           class="w-full h-40 bg-white/5 border border-white/10 rounded-2xl p-4 text-white placeholder:text-white/20 focus:outline-none focus:border-yellow-400/50 transition-colors resize-none custom-scrollbar disabled:opacity-70 disabled:cursor-not-allowed"
         ></textarea>
@@ -47,7 +48,7 @@
     <!-- Footer -->
     <div class="px-8 py-4 flex justify-end flex-shrink-0">
       <button 
-        v-if="!isEvaluated"
+        v-if="editable"
         @click="submit"
         :disabled="!isValid"
         class="px-8 py-2.5 bg-[#FFE600] text-[#260A2F] text-sm font-bold rounded-xl hover:bg-[#e6cf00] transition-colors shadow-[0_0_15px_rgba(255,230,0,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
@@ -70,26 +71,27 @@ import { ref, computed, watch } from 'vue';
 import { Star } from 'lucide-vue-next';
 
 const props = defineProps<{
-  existingEvaluation?: { rating: number; feedback: string } | null;
+  /** 是否可编辑（isEvaluate === '1' 时为 true） */
+  editable?: boolean;
+  /** 已有的评价数据（查看回显用） */
+  existingRating?: number;
+  existingFeedback?: string;
 }>();
 
-const emit = defineEmits(['submit']);
+const emit = defineEmits<{
+  submit: [data: { rating: number; feedback: string }];
+}>();
 
-const rating = ref(0);
+const rating = ref(props.existingRating || 0);
 const hoverRating = ref(0);
-const feedback = ref('');
+const feedback = ref(props.existingFeedback || '');
 
-const isEvaluated = computed(() => !!props.existingEvaluation);
-
-watch(() => props.existingEvaluation, (newVal) => {
-  if (newVal) {
-    rating.value = newVal.rating;
-    feedback.value = newVal.feedback;
-  } else {
-    rating.value = 0;
-    feedback.value = '';
-  }
-}, { immediate: true });
+watch(() => props.existingRating, (val) => {
+  rating.value = val || 0;
+});
+watch(() => props.existingFeedback, (val) => {
+  feedback.value = val || '';
+});
 
 const ratingText = computed(() => {
   const current = hoverRating.value || rating.value;
@@ -104,7 +106,7 @@ const ratingText = computed(() => {
 });
 
 const setRating = (val: number) => {
-  if (!isEvaluated.value) {
+  if (props.editable) {
     rating.value = val;
   }
 };
@@ -114,7 +116,7 @@ const isValid = computed(() => {
 });
 
 const submit = () => {
-  if (isValid.value && !isEvaluated.value) {
+  if (isValid.value && props.editable) {
     emit('submit', {
       rating: rating.value,
       feedback: feedback.value

@@ -2,6 +2,7 @@
 import { TrendingUp, Package, MoreHorizontal, ChevronLeft, ChevronRight, FileText, FolderCheck, ClipboardCheck, Star, CalendarClock, ChevronRight as ChevronRightSmall } from 'lucide-vue-next';
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import TopBarActions from './TopBarActions.vue';
+import { useAppStore } from '../stores/appStore';
 import { 
   pieDataStatus, 
   pieDataWarranty, 
@@ -43,6 +44,8 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(['cartClick', 'wishlistClick', 'messageClick', 'openProjectView']);
+
+const appStore = useAppStore();
 
 const iconMap = {
   report: { icon: FileText, color: 'text-blue-400', bg: 'bg-blue-400/10' },
@@ -180,6 +183,7 @@ const distributionOption = computed(() => ({
         :wishlistCount="wishlistCount" 
         @bellClick="$emit('messageClick')" 
         :messageCount="messageCount" 
+        :userName="appStore.customerName"
       />
     </header>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">

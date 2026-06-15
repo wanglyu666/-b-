@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { Search, TrendingUp, Star, ShoppingBag, Heart, ChevronLeft, ChevronRight } from 'lucide-vue-next';
 import TopBarActions from './TopBarActions.vue';
+import { useAppStore } from '../stores/appStore';
 import type { Product } from '../types';
 import post1Img from '../../image asset/post1.png';
 import post2Img from '../../image asset/post2.png';
@@ -40,6 +41,7 @@ const emit = defineEmits([
   'messageClick'
 ]);
 
+const appStore = useAppStore();
 const itemsPerPage = 16;
 const totalPages = computed(() => Math.ceil(props.products.length / itemsPerPage));
 
@@ -96,6 +98,7 @@ const nextPage = () => {
           :wishlistCount="wishlistCount" 
           @messageClick="$emit('messageClick')" 
           :messageCount="messageCount" 
+          :userName="appStore.customerName"
         />
       </div>
     </header>

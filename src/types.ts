@@ -24,6 +24,7 @@ export interface EngineeringProject {
   startDate?: string;
   endDate?: string;
   projectId?: string;
+  isEvaluate?: string;
 }
 
 export interface Notification {
