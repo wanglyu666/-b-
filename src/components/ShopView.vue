@@ -56,6 +56,26 @@ const itemsPerPage = 16;
 const isAnnualMode = ref(false);
 const activeCategory = ref<(typeof categories)[number]>('全部商品');
 const showProductGrid = ref(true);
+const productGridRef = ref<HTMLElement | null>(null);
+const gridShellMinHeight = ref<number | null>(null);
+const searchQuery = ref('');
+const isSearchFocused = ref(false);
+
+const searchResults = computed(() => {
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return [];
+
+  return props.products
+    .filter(
+      (product) =>
+        product.name.toLowerCase().includes(q) || product.category.toLowerCase().includes(q),
+    )
+    .slice(0, 8);
+});
+
+const showSearchDropdown = computed(
+  () => isSearchFocused.value && searchQuery.value.trim().length > 0,
+);
 
 const filteredProducts = computed(() =>
   props.products.filter(categoryFilters[activeCategory.value]),
@@ -70,7 +90,9 @@ const currentProducts = computed(() => {
   );
 });
 
-const productGridKey = computed(() => `${activeCategory.value}-${isAnnualMode.value}`);
+const productGridKey = computed(
+  () => `${activeCategory.value}-${isAnnualMode.value}-${props.currentPage}`,
+);
 
 onMounted(() => {
   const mainEl = document.getElementById('main-content');
@@ -83,27 +105,49 @@ const isInWishlist = (product: Product) => {
   return props.wishlistItems.some(item => item.id === product.id);
 };
 
-const setCurrentPage = (page: number) => {
-  emit('update:currentPage', page);
-};
+function setCurrentPage(page: number) {
+  if (props.currentPage === page) return;
+
+  runProductGridTransition(() => {
+    emit('update:currentPage', page);
+  });
+}
 
 const prevPage = () => {
-  if (props.currentPage > 1) {
+  if (props.currentPage <= 1) return;
+
+  runProductGridTransition(() => {
     emit('update:currentPage', props.currentPage - 1);
-  }
+  });
 };
 
 const nextPage = () => {
-  if (props.currentPage < totalPages.value) {
+  if (props.currentPage >= totalPages.value) return;
+
+  runProductGridTransition(() => {
     emit('update:currentPage', props.currentPage + 1);
-  }
+  });
 };
 
+function scrollMainToTop() {
+  const mainEl = document.getElementById('main-content');
+  if (mainEl) {
+    mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
 function runProductGridTransition(update: () => void) {
+  if (productGridRef.value) {
+    gridShellMinHeight.value = productGridRef.value.offsetHeight;
+  }
+  scrollMainToTop();
   showProductGrid.value = false;
   window.setTimeout(() => {
     update();
     showProductGrid.value = true;
+    window.setTimeout(() => {
+      gridShellMinHeight.value = null;
+    }, 320);
   }, 280);
 }
 
@@ -121,15 +165,67 @@ function handleToggleProductType() {
     isAnnualMode.value = !isAnnualMode.value;
   });
 }
+
+function handleSearchBlur() {
+  window.setTimeout(() => {
+    isSearchFocused.value = false;
+  }, 150);
+}
+
+function handleSearchSelect(product: Product) {
+  searchQuery.value = '';
+  isSearchFocused.value = false;
+  emit('productClick', product);
+}
 </script>
 
 <template>
   <div class="w-full overflow-x-hidden p-8 space-y-8">
     <header class="flex justify-between items-center">
-      <div class="flex-1 max-w-lg">
+      <div class="relative flex-1 max-w-lg">
          <div class="relative">
-           <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" :size="18" />
-           <input type="text" placeholder="搜索商品..." class="pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-full text-sm focus:outline-none focus:border-gray-400 w-full shadow-sm" />
+           <Search class="absolute left-3 top-1/2 z-10 -translate-y-1/2 text-gray-400" :size="18" />
+           <input
+             v-model="searchQuery"
+             type="text"
+             placeholder="搜索商品..."
+             class="w-full rounded-full border border-gray-200 bg-white py-2.5 pl-10 pr-4 text-sm shadow-sm focus:border-gray-400 focus:outline-none"
+             @focus="isSearchFocused = true"
+             @blur="handleSearchBlur"
+           />
+
+           <div
+             v-if="showSearchDropdown"
+             class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg"
+           >
+             <button
+               v-for="product in searchResults"
+               :key="product.id"
+               type="button"
+               class="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50"
+               @mousedown.prevent
+               @click="handleSearchSelect(product)"
+             >
+               <div class="h-12 w-12 shrink-0 overflow-hidden rounded-lg bg-[#F5F5F7]">
+                 <img
+                   :src="product.image"
+                   :alt="product.name"
+                   class="h-full w-full object-cover mix-blend-multiply opacity-90"
+                   referrerpolicy="no-referrer"
+                 />
+               </div>
+               <div class="min-w-0 flex-1">
+                 <p class="truncate text-sm font-semibold text-gray-900">{{ product.name }}</p>
+                 <p class="mt-0.5 text-sm font-bold text-[#A1D573]">¥{{ product.price.toFixed(2) }}</p>
+               </div>
+             </button>
+             <p
+               v-if="searchResults.length === 0"
+               class="px-4 py-6 text-center text-sm text-gray-400"
+             >
+               没有找到相关商品
+             </p>
+           </div>
          </div>
       </div>
       <div class="pl-4">
@@ -231,9 +327,16 @@ function handleToggleProductType() {
          </button>
       </div>
 
+      <div
+        :style="gridShellMinHeight ? { minHeight: `${gridShellMinHeight}px` } : undefined"
+      >
       <Transition name="shop-products" mode="out-in">
-        <div v-if="showProductGrid" :key="productGridKey">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div
+          v-if="showProductGrid"
+          ref="productGridRef"
+          :key="productGridKey"
+          class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4"
+        >
          <div 
             v-for="product in currentProducts"
             :key="product.id" 
@@ -269,8 +372,10 @@ function handleToggleProductType() {
            </div>
          </div>
       </div>
+      </Transition>
+      </div>
 
-      <div class="flex justify-center items-center mt-12 space-x-4">
+      <div class="mt-12 flex items-center justify-center space-x-4">
         <button 
           @click="prevPage"
           :disabled="currentPage === 1"
@@ -302,8 +407,6 @@ function handleToggleProductType() {
           <ChevronRight :size="20" />
         </button>
       </div>
-        </div>
-      </Transition>
     </section>
   </div>
 </template>
