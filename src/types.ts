@@ -245,4 +245,6 @@ export interface MaintenanceProject {
   manager: string;
   contact: string;
   status: '待开工' | '施工中' | '已完工';
+  projectId?: string;
+  isEvaluate?: string;
 }

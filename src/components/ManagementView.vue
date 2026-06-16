@@ -4,7 +4,9 @@ import { HardHat, Clock, Wrench, CheckCircle, Banknote, Shield, ShieldAlert, Ale
 import TopBarActions from './TopBarActions.vue';
 import { useAppStore } from '../stores/appStore';
 import type { EngineeringProject, MaintenanceProject, Member } from '../types';
-import { fetchProjectCounts, type ProjectCounts } from '../api/projectApi';
+import { fetchProjectCounts, fetchMaintenanceProjectCounts } from '../api/projectApi';
+import { fetchEndProjects, fetchOrders, fetchOrderDetail, addMaintenanceRepair, addMaintenanceRepair2, uploadFile } from '../api/operationApi';
+import type { EndProjectOption, OrderDetail } from '../api/operationApi';
 import orderMgmtIllustration from '../../image asset/shopping cart icon.png';
 import checkMarkImg from '../../image asset/check mark.png';
 import engProjectWrenchImg from '../../image asset/wrench.png';
@@ -28,16 +30,14 @@ const props = withDefaults(
   }
 );
 
-const emit = defineEmits(['viewProjects', 'viewMaintenance', 'viewMaintenanceProjects', 'addRepair', 'viewOrders']);
+const emit = defineEmits(['viewProjects', 'viewMaintenance', 'viewMaintenanceProjects', 'viewOrders']);
 
 const appStore = useAppStore();
-const countByStatus = <T extends { status: string }>(list: readonly T[], status: string) =>
-  list.filter((p) => p.status === status).length;
 
-/** 维保项目：各状态数量 */
-const maintenancePendingCount = computed(() => countByStatus(props.maintenanceProjects, '待开工'));
-const maintenanceInProgressCount = computed(() => countByStatus(props.maintenanceProjects, '施工中'));
-const maintenanceCompletedCount = computed(() => countByStatus(props.maintenanceProjects, '已完工'));
+/** 维保项目：各状态数量（从 API 获取） */
+const maintenancePendingCount = ref(0);
+const maintenanceInProgressCount = ref(0);
+const maintenanceCompletedCount = ref(0);
 
 /** 工程项目：各状态数量（从 API 获取 total） */
 const engPendingCount = ref(0);
@@ -52,15 +52,21 @@ const engCountsLoading = ref(false);
 async function loadProjectCounts() {
   engCountsLoading.value = true;
   try {
-    const counts: ProjectCounts = await fetchProjectCounts();
-    engPendingCount.value = counts['待开工'];
-    engInProgressCount.value = counts['施工中'];
-    engCompletedCount.value = counts['已完工'];
-    engSettledCount.value = counts['已结算'];
-    engWarrantyInCount.value = counts['保修中'];
-    engWarrantyOutCount.value = counts['保修外'];
+    const [engCounts, maintenanceCounts] = await Promise.all([
+      fetchProjectCounts(),
+      fetchMaintenanceProjectCounts(),
+    ]);
+    engPendingCount.value = engCounts['待开工'];
+    engInProgressCount.value = engCounts['施工中'];
+    engCompletedCount.value = engCounts['已完工'];
+    engSettledCount.value = engCounts['已结算'];
+    engWarrantyInCount.value = engCounts['保修中'];
+    engWarrantyOutCount.value = engCounts['保修外'];
+    maintenancePendingCount.value = maintenanceCounts['待开工'] || 0;
+    maintenanceInProgressCount.value = maintenanceCounts['施工中'] || 0;
+    maintenanceCompletedCount.value = maintenanceCounts['已完工'] || 0;
   } catch (error) {
-    console.error('获取工程项目统计失败:', error);
+    console.error('获取项目统计失败:', error);
   } finally {
     engCountsLoading.value = false;
   }
@@ -73,12 +79,22 @@ onMounted(() => {
 const showAddModal = ref(false);
 const modalStep = ref<'form' | 'success'>('form');
 
-// Filter projects for the dropdown
-const availableProjects = computed(() => {
-  return props.engineeringProjects.filter(p =>
-    ['待开工', '施工中', '已完工'].includes(p.status)
-  );
-});
+/** 已完工项目下拉选项（从 API 获取） */
+const endProjectsOptions = ref<EndProjectOption[]>([]);
+/** 下拉加载中 */
+const projectOptionsLoading = ref(false);
+/** 选中的项目详情 */
+const selectedProject = ref<EndProjectOption | null>(null);
+/** 关联订单详情 */
+const orderForm = ref<OrderDetail | null>(null);
+/** showType: '0' 仅项目信息 '1' 含订单子项 */
+const showType = ref('0');
+/** 选中的产品 ID 列表 */
+const orderCheckList = ref<number[]>([]);
+/** 订单详情加载中 */
+const orderDetailLoading = ref(false);
+/** 提交中 */
+const submitLoading = ref(false);
 
 const newReport = ref({
   projectId: '',
@@ -89,51 +105,108 @@ const newReport = ref({
   reportType: 'normal',
   visitTime: '',
   reason: '',
-  files: [] as File[]
+  files: [] as string[]  // 上传后的 URL 列表
 });
 
-// Watch for project selection to auto-fill details
-watch(() => newReport.value.projectId, (newId) => {
-  if (newId) {
-    const project = availableProjects.value.find(p => p.id === newId);
-    if (project) {
-      newReport.value.teamInfo = `${project.manager} (${project.contact})`;
-      newReport.value.startDate = project.startDate || '2023-01-01';
-      newReport.value.completionDate = project.endDate || '2024-01-01';
-      newReport.value.warrantyPeriod = '1年'; // Defaulting to 1 year as it's not in the type
-    }
-  } else {
+// 项目下拉变更 → 获取关联订单详情
+async function onProjectChange(projectId: string) {
+  orderForm.value = null;
+  showType.value = '0';
+  orderCheckList.value = [];
+  if (!projectId) {
+    selectedProject.value = null;
     newReport.value.teamInfo = '';
     newReport.value.startDate = '';
     newReport.value.completionDate = '';
     newReport.value.warrantyPeriod = '';
+    return;
   }
-});
+  const proj = endProjectsOptions.value.find(p => p.projectId === projectId);
+  if (!proj) return;
+  selectedProject.value = proj;
+  newReport.value.teamInfo = `${proj.projectDirectorName} (${proj.projectDirectorPhone})`;
+  newReport.value.startDate = proj.startTime || '';
+  newReport.value.completionDate = proj.endTime || '';
+  newReport.value.warrantyPeriod = proj.warrantyPeriod ? `${proj.warrantyPeriod}个月` : '';
 
-const handleFileChange = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  if (target.files) {
-    const newFiles = Array.from(target.files);
-    const totalFiles = newReport.value.files.length + newFiles.length;
-    
-    if (totalFiles > 5) {
-      alert('最多只能上传5个文件');
-      // Only add up to 5 files
-      const allowedNewFiles = newFiles.slice(0, 5 - newReport.value.files.length);
-      newReport.value.files = [...newReport.value.files, ...allowedNewFiles];
-    } else {
-      newReport.value.files = [...newReport.value.files, ...newFiles];
+  // 如果有订单编号，拉取订单详情
+  if (proj.orderCode) {
+    orderDetailLoading.value = true;
+    try {
+      const orderRes = await fetchOrders(1, 1, proj.orderCode);
+      if (orderRes.list.length > 0) {
+        const detail = await fetchOrderDetail(orderRes.list[0].id);
+        if (detail) {
+          orderForm.value = detail;
+          showType.value = '1';
+          // 默认全选全部产品（使用原始嵌套数据中的 item.id）
+          const allIds: number[] = [];
+          (detail.orderSubList || []).forEach(sub => {
+            (sub.orderSubDetailList || []).forEach((item: any) => {
+              if (item.id) allIds.push(item.id);
+            });
+          });
+          orderCheckList.value = allIds;
+        }
+      }
+    } catch (e) {
+      console.error('获取关联订单失败:', e);
+    } finally {
+      orderDetailLoading.value = false;
     }
   }
-  // Reset input value so the same file can be selected again if needed
-  if (target) {
+}
+
+// Watch for project selection to trigger change handler
+watch(() => newReport.value.projectId, onProjectChange);
+
+/** 文件上传中 */
+const uploadingFiles = ref(false);
+
+const handleFileChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (!target.files || target.files.length === 0) return;
+
+  const selectedFiles = Array.from(target.files);
+  const currentCount = newReport.value.files.length;
+
+  if (currentCount + selectedFiles.length > 5) {
+    alert('最多只能上传5个文件');
     target.value = '';
+    return;
   }
+
+  // 逐个上传文件到服务器
+  uploadingFiles.value = true;
+  const uploadedUrls: string[] = [];
+
+  for (const file of selectedFiles) {
+    const url = await uploadFile(file);
+    if (url) {
+      uploadedUrls.push(url);
+    } else {
+      alert(`文件 "${file.name}" 上传失败`);
+    }
+  }
+
+  newReport.value.files = [...newReport.value.files, ...uploadedUrls];
+  uploadingFiles.value = false;
+  target.value = '';
 };
 
 const removeFile = (index: number) => {
   newReport.value.files.splice(index, 1);
 };
+
+/** 从 URL 中提取文件名 */
+function getFileNameFromUrl(url: string): string {
+  if (!url) return '';
+  const lastSlash = url.lastIndexOf('/');
+  if (lastSlash > -1) {
+    return url.slice(lastSlash + 1);
+  }
+  return url;
+}
 
 /** YYYY-MM-DD → yyyy/mm/dd（用 text 占位，避免原生 date 显示 yyyy/mm/日） */
 function formatDateSlash(isoDate: string): string {
@@ -204,17 +277,87 @@ const morphAddModalStep = async (nextStep: 'form' | 'success') => {
   panel.addEventListener('transitionend', onDone);
 };
 
-const submitReport = () => {
-  if (!isFormValid.value) return;
-  const project = availableProjects.value.find(p => p.id === newReport.value.projectId);
-  emit('addRepair', {
-    project,
-    projectName: project?.name || '',
-    reportType: newReport.value.reportType,
-    visitTime: newReport.value.visitTime,
-    reason: newReport.value.reason,
-  });
-  void morphAddModalStep('success');
+const submitReport = async () => {
+  if (!isFormValid.value || !selectedProject.value || submitLoading.value) return;
+  submitLoading.value = true;
+
+  const proj = selectedProject.value;
+  const reportData: Record<string, any> = {
+    projectId: proj.projectId,
+    bxType: newReport.value.reportType === 'urgent' ? '2' : '1',
+    doorTime: newReport.value.visitTime.replace('T', ' ') + ':00',
+    bxReason: newReport.value.reason,
+    projectName: proj.projectName,
+    projectCode: proj.projectCode,
+    directorId: proj.directorId,
+    directorName: proj.projectDirectorName,
+    projectDirectorName: proj.projectDirectorName,
+    orderAddress: proj.address,
+    orderCode: proj.orderCode,
+  };
+
+  // 有上传文件时，传 files 参数（逗号分隔的 URL 字符串）
+  if (newReport.value.files.length > 0) {
+    reportData.files = newReport.value.files.join(',');
+  }
+
+  try {
+    if (showType.value === '1' && orderForm.value) {
+      // 有订单子项 → 使用 addMaintenanceRepair（标准路径）
+      if (orderCheckList.value.length === 0) {
+        alert('请选择产品信息');
+        submitLoading.value = false;
+        return;
+      }
+      // 从原始嵌套数据中筛选选中的产品
+      const selectedDetailItems: any[] = [];
+      const firstSub = orderForm.value.orderSubList?.[0];
+      if (firstSub?.orderSubDetailList) {
+        for (const item of firstSub.orderSubDetailList) {
+          if (orderCheckList.value.includes(item.id)) {
+            selectedDetailItems.push(item);
+          }
+        }
+      }
+      // 复制 orderForm 并替换子项为选中项
+      const zbData = { ...orderForm.value };
+      if (zbData.orderSubList?.[0]) {
+        zbData.orderSubList[0] = { ...zbData.orderSubList[0], orderSubDetailList: selectedDetailItems };
+      }
+      reportData.zbData2 = JSON.stringify(zbData);
+      reportData.orderId = orderForm.value.id;
+      reportData.orderName = orderForm.value.orderNo;
+      reportData.authUserId = (orderForm.value as any).authUserId || '';
+      reportData.directorName = firstSub?.directorName || '';
+      reportData.directorId = firstSub?.directorId || '';
+      await addMaintenanceRepair(reportData);
+    } else {
+      // 无订单子项 → 使用 addMaintenanceRepair2
+      await addMaintenanceRepair2(reportData);
+    }
+    submitLoading.value = false;
+    void morphAddModalStep('success');
+  } catch (e) {
+    console.error('新增维保报修失败:', e);
+    submitLoading.value = false;
+    alert('提交失败，请稍后重试');
+  }
+};
+
+const openAddModal = async () => {
+  showAddModal.value = true;
+  modalStep.value = 'form';
+  // 加载已完工项目下拉
+  if (endProjectsOptions.value.length === 0) {
+    projectOptionsLoading.value = true;
+    try {
+      endProjectsOptions.value = await fetchEndProjects();
+    } catch (e) {
+      console.error('加载已完工项目失败:', e);
+    } finally {
+      projectOptionsLoading.value = false;
+    }
+  }
 };
 
 const closeAddModal = () => {
@@ -225,6 +368,11 @@ const closeAddModal = () => {
   }
   showAddModal.value = false;
   modalStep.value = 'form';
+  submitLoading.value = false;
+  selectedProject.value = null;
+  orderForm.value = null;
+  showType.value = '0';
+  orderCheckList.value = [];
   newReport.value = {
     projectId: '',
     teamInfo: '',
@@ -234,7 +382,7 @@ const closeAddModal = () => {
     reportType: 'normal',
     visitTime: '',
     reason: '',
-    files: []
+    files: [] as string[]
   };
 };
 </script>
@@ -442,7 +590,7 @@ const closeAddModal = () => {
                   <span class="font-bold text-3xl text-gray-900 tabular-nums">{{ props.repairOrderCount }}</span>
               </div>
               <button 
-                @click.stop="showAddModal = true" 
+                @click.stop="openAddModal" 
                 class="w-full py-2.5 bg-[#9FE870] text-[#163300] font-bold rounded-2xl shadow-sm hover:bg-[#8dd85f] transition-colors"
               >
                  新增
@@ -480,16 +628,17 @@ const closeAddModal = () => {
                   <select
                     v-model="newReport.projectId"
                     class="add-report-project-select w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#FFEB69] focus:border-[#FFEB69] accent-[#FFEB69] transition-all"
+                    :disabled="projectOptionsLoading"
                   >
-                    <option value="" disabled>请选择项目</option>
-                    <option v-for="project in availableProjects" :key="project.id" :value="project.id">
-                      {{ project.name }} ({{ project.status }})
+                    <option value="" disabled>{{ projectOptionsLoading ? '加载中...' : '请选择项目' }}</option>
+                    <option v-for="proj in endProjectsOptions" :key="proj.projectId" :value="proj.projectId">
+                      {{ proj.projectName }}
                     </option>
                   </select>
                 </div>
-                <div class="space-y-2">
+                <div class="space-y-2" v-if="selectedProject">
                   <label class="block text-sm font-medium text-gray-700">项目组信息</label>
-                  <input type="text" v-model="newReport.teamInfo" readonly placeholder="自动获取" class="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed focus:outline-none transition-all" />
+                  <input type="text" v-model="selectedProject.projectDirectorName" readonly placeholder="自动获取" class="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed focus:outline-none transition-all" />
                 </div>
               </div>
 
@@ -519,6 +668,77 @@ const closeAddModal = () => {
                   <input type="text" v-model="newReport.warrantyPeriod" readonly placeholder="自动获取" class="w-full px-4 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-gray-500 cursor-not-allowed focus:outline-none transition-all" />
                 </div>
               </div>
+
+              <!-- 订单信息 / 客户信息 / 项目组信息（选择项目后显示） -->
+              <template v-if="selectedProject">
+                <!-- 订单信息 -->
+                <div class="rounded-xl bg-gray-50 border border-gray-100 p-4">
+                  <h4 class="text-sm font-bold text-gray-800 mb-3">订单信息</h4>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                    <p class="text-gray-600">订单编号：<span class="text-gray-800">{{ selectedProject.orderCode || '-' }}</span></p>
+                    <p class="text-gray-600">项目名称：<span class="text-gray-800">{{ selectedProject.projectName || '-' }}</span></p>
+                    <p class="text-gray-600">项目编号：<span class="text-gray-800">{{ selectedProject.projectCode || '-' }}</span></p>
+                    <p class="text-gray-600">开工日期：<span class="text-gray-800">{{ formatDateSlash(selectedProject.startTime) || '-' }}</span></p>
+                    <p class="text-gray-600">竣工日期：<span class="text-gray-800">{{ formatDateSlash(selectedProject.endTime) || '-' }}</span></p>
+                    <p class="text-gray-600">保修期限：<span class="text-gray-800">{{ selectedProject.warrantyPeriod ? selectedProject.warrantyPeriod + '个月' : '-' }}</span></p>
+                  </div>
+                </div>
+
+                <!-- 客户信息 -->
+                <div class="rounded-xl bg-gray-50 border border-gray-100 p-4">
+                  <h4 class="text-sm font-bold text-gray-800 mb-3">客户信息</h4>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                    <p class="text-gray-600">客户名称：<span class="text-gray-800">{{ selectedProject.contactsName || '-' }}</span></p>
+                    <p class="text-gray-600">联系方式：<span class="text-gray-800">{{ selectedProject.contactsPhone || '-' }}</span></p>
+                    <p class="text-gray-600">公司名称：<span class="text-gray-800">{{ selectedProject.companyName || '-' }}</span></p>
+                    <p class="text-gray-600">公司地址：<span class="text-gray-800">{{ selectedProject.address || '-' }}</span></p>
+                  </div>
+                </div>
+
+                <!-- 项目组信息 -->
+                <div class="rounded-xl bg-gray-50 border border-gray-100 p-4">
+                  <h4 class="text-sm font-bold text-gray-800 mb-3">项目组信息</h4>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                    <p class="text-gray-600">项目主管：<span class="text-gray-800">{{ selectedProject.projectDirectorName || '-' }}</span></p>
+                    <p class="text-gray-600">项目主管电话：<span class="text-gray-800">{{ selectedProject.projectDirectorPhone || '-' }}</span></p>
+                  </div>
+                </div>
+
+                <!-- 地址信息 + 产品选择（showType == '1' 且有订单子项时显示） -->
+                <template v-if="showType === '1'">
+                  <div v-if="orderDetailLoading" class="text-center py-4 text-sm text-gray-400">加载订单详情...</div>
+                  <template v-else-if="orderForm">
+                    <div v-for="(sub, si) in (orderForm.orderSubList || [])" :key="si" class="rounded-xl bg-gray-50 border border-gray-100 p-4">
+                      <h4 class="text-sm font-bold text-gray-800 mb-3">地址信息 {{ (orderForm.orderSubList || []).length > 1 ? si + 1 : '' }}</h4>
+                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                        <p class="text-gray-600">联系人：<span class="text-gray-800">{{ sub.customerContactsName || '-' }}</span></p>
+                        <p class="text-gray-600">联系电话：<span class="text-gray-800">{{ sub.customerContactsPhone || '-' }}</span></p>
+                        <p class="text-gray-600">所在地区：<span class="text-gray-800">{{ [sub.customerProvinceName, sub.customerCityName, sub.customerAreaName].filter(Boolean).join('/') || '-' }}</span></p>
+                        <p class="text-gray-600">详细地址：<span class="text-gray-800">{{ sub.customerAddress || '-' }}</span></p>
+                      </div>
+
+                      <!-- 产品选择（复选框） -->
+                      <template v-if="(sub.orderSubDetailList || []).length > 0">
+                        <h4 class="text-sm font-bold text-gray-800 mt-4 mb-2">产品信息（请勾选需要报修的产品）</h4>
+                        <label
+                          v-for="(item, ii) in sub.orderSubDetailList"
+                          :key="item.id || ii"
+                          class="flex items-start gap-3 p-3 mt-2 rounded-lg border cursor-pointer transition-colors"
+                          :class="orderCheckList.includes(item.id) ? 'border-[#FFEB69] bg-[#FFEB69]/5' : 'border-gray-200 bg-white hover:border-gray-300'"
+                        >
+                          <input type="checkbox" :value="item.id" v-model="orderCheckList" class="mt-0.5 accent-[#FFEB69]" />
+                          <div class="grid grid-cols-2 gap-1 text-xs flex-1">
+                            <span class="text-gray-600">产品名称：<span class="text-gray-800">{{ item.productName || '-' }}</span></span>
+                            <span class="text-gray-600">品牌：<span class="text-gray-800">{{ item.brand || '-' }}</span></span>
+                            <span class="text-gray-600">型号：<span class="text-gray-800">{{ item.model || '-' }}</span></span>
+                            <span class="text-gray-600">数量：<span class="text-gray-800">{{ item.quantity }}</span></span>
+                          </div>
+                        </label>
+                      </template>
+                    </div>
+                  </template>
+                </template>
+              </template>
 
               <div class="border-t border-gray-100 pt-6 space-y-6">
                 <div class="flex items-center gap-4">
@@ -581,15 +801,15 @@ const closeAddModal = () => {
                   <label class="text-sm font-medium text-gray-700 w-24 pt-2">上传图片或视频:</label>
                   <div class="flex-1 flex flex-col gap-3">
                     <div class="flex items-center gap-3">
-                      <label class="px-4 py-2 bg-[#FFEB69] hover:bg-[#f5e05a] text-[#3A341C] text-sm font-medium rounded-lg cursor-pointer transition-colors shadow-sm" :class="{ 'opacity-50 cursor-not-allowed': newReport.files.length >= 5 }">
-                        选取文件
-                        <input type="file" @change="handleFileChange" class="hidden" accept="image/*,video/*" multiple :disabled="newReport.files.length >= 5" />
+                      <label class="px-4 py-2 bg-[#FFEB69] hover:bg-[#f5e05a] text-[#3A341C] text-sm font-medium rounded-lg cursor-pointer transition-colors shadow-sm" :class="{ 'opacity-50 cursor-not-allowed': newReport.files.length >= 5 || uploadingFiles }">
+                        {{ uploadingFiles ? '上传中...' : '选取文件' }}
+                        <input type="file" @change="handleFileChange" class="hidden" accept="image/*,video/*" multiple :disabled="newReport.files.length >= 5 || uploadingFiles" />
                       </label>
                       <span class="text-sm text-gray-500">最多上传5个文件 ({{ newReport.files.length }}/5)</span>
                     </div>
                     <div v-if="newReport.files.length > 0" class="flex flex-wrap gap-2 mt-2">
-                      <div v-for="(file, index) in newReport.files" :key="index" class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 max-w-[200px]">
-                        <span class="text-sm text-gray-600 truncate flex-1" :title="file.name">{{ file.name }}</span>
+                      <div v-for="(url, index) in newReport.files" :key="index" class="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 max-w-[260px]">
+                        <span class="text-sm text-blue-600 truncate flex-1" :title="url">{{ getFileNameFromUrl(url) }}</span>
                         <button @click="removeFile(index)" class="text-gray-400 hover:text-red-500 transition-colors flex-shrink-0">
                           <X :size="14" />
                         </button>
@@ -601,18 +821,22 @@ const closeAddModal = () => {
               </div>
             </div>
             
-            <div class="p-6 border-t border-gray-100 bg-gray-50 flex justify-end">
+            <div class="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+              <button
+                @click="closeAddModal"
+                class="px-6 py-2.5 font-medium rounded-xl border border-gray-200 bg-white text-gray-600 hover:bg-gray-100 transition-colors"
+              >取消</button>
               <button 
                 @click="submitReport"
-                :disabled="!isFormValid"
+                :disabled="!isFormValid || submitLoading"
                 :class="[
                   'px-8 py-2.5 font-bold rounded-xl shadow-sm transition-colors',
-                  isFormValid 
+                  isFormValid && !submitLoading
                     ? 'bg-[#FFEB69] hover:bg-[#f5e05a] text-[#3A341C]' 
                     : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                 ]"
               >
-                确认
+                {{ submitLoading ? '提交中...' : '确认' }}
               </button>
             </div>
           </template>

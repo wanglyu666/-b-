@@ -39,8 +39,8 @@ export const useAppStore = defineStore('app', () => {
   const messageCount = computed(() =>
     todoNotifications.value.filter((item) => item.unread !== false).length,
   );
-  const repairOrderCount = computed(() => maintenanceRepairData.value.length);
-  const orderTotalCount = computed(() => orderData.value.length);
+  const repairOrderCount = ref(0);
+  const orderTotalCount = ref(0);
 
   async function loadGlobalModules(force = false) {
     if (globalModulesLoaded.value && !force) return;
@@ -64,10 +64,12 @@ export const useAppStore = defineStore('app', () => {
       ]);
       products.value = productList;
       todoNotifications.value = notificationList;
-      maintenanceRepairData.value = repairList;
-      orderData.value = orders;
+      maintenanceRepairData.value = repairList.list || repairList;
+      repairOrderCount.value = repairList.total || 0;
+      orderData.value = orders.list || orders;
+      orderTotalCount.value = orders.total || 0;
       engineeringProjects.value = engineeringList.list;
-      maintenanceProjects.value = maintenanceList;
+      maintenanceProjects.value = maintenanceList.list || maintenanceList;
       
       // 拉取用户信息（非关键路径，独立 try）
       try {

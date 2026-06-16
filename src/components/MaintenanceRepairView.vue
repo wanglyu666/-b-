@@ -1,59 +1,88 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import { ChevronLeft, MoreHorizontal, Search, X, Play } from 'lucide-vue-next';
+import { fetchMaintenanceRepairOrders, fetchMaintenanceRepairDetail, type MaintenanceRepairDetail } from '../api/operationApi';
+import type { MaintenanceRepairItem, MediaItem } from '../types/app-domain';
 
-interface MediaItem {
-  type: 'image' | 'video';
-  url: string;
-  thumb?: string;
-}
-
-interface RepairItem {
-  id: number;
-  no: string;
-  projectName: string;
-  address: string;
-  managerName: string;
-  managerPhone: string;
-  status: string;
-  teamInfo: string;
-  startDate: string;
-  completionDate: string;
-  warrantyPeriod: string;
-  reportType: string;
-  visitTime: string;
-  reason: string;
-  images: string[];
-  media?: MediaItem[];
-}
-
-const props = defineProps<{
-  data: RepairItem[];
-}>();
+interface RepairItem extends MaintenanceRepairItem {}
 
 const emit = defineEmits(['back']);
 
 const searchQuery = ref('');
 const currentPage = ref(1);
 const itemsPerPage = 6;
+const totalItems = ref(0);
+const isLoading = ref(false);
+
+const repairData = ref<RepairItem[]>([]);
+
+async function loadRepairs() {
+  isLoading.value = true;
+  try {
+    const result = await fetchMaintenanceRepairOrders(
+      currentPage.value,
+      itemsPerPage,
+      searchQuery.value || undefined
+    );
+    repairData.value = result.list;
+    totalItems.value = result.total;
+  } catch (error) {
+    console.error('加载维保报修列表失败:', error);
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+onMounted(() => {
+  loadRepairs();
+});
+
+watch(currentPage, () => {
+  loadRepairs();
+});
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
+watch(searchQuery, () => {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    currentPage.value = 1;
+    loadRepairs();
+  }, 300);
+});
+
+const paginatedData = computed(() => repairData.value);
+const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / itemsPerPage)));
 
 const selectedItem = ref<RepairItem | null>(null);
+const repairDetail = ref<MaintenanceRepairDetail | null>(null);
+const detailLoading = ref(false);
 const previewMedia = ref<MediaItem | null>(null);
 
 const allMedia = computed<MediaItem[]>(() => {
-  if (!selectedItem.value) return [];
-  if (selectedItem.value.media && selectedItem.value.media.length > 0) {
-    return selectedItem.value.media;
-  }
-  return (selectedItem.value.images || []).map(url => ({ type: 'image' as const, url }));
+  if (!repairDetail.value) return [];
+  const files = repairDetail.value.files;
+  if (!files) return [];
+  return files.split(',').filter(Boolean).map(url => ({
+    type: 'image' as const,
+    url: url.trim(),
+  }));
 });
 
-const openDetail = (item: RepairItem) => {
+const openDetail = async (item: RepairItem) => {
   selectedItem.value = item;
+  detailLoading.value = true;
+  try {
+    repairDetail.value = await fetchMaintenanceRepairDetail(item.id);
+  } catch (error) {
+    console.error('获取报修详情失败:', error);
+  } finally {
+    detailLoading.value = false;
+  }
 };
 
 const closeDetail = () => {
   selectedItem.value = null;
+  repairDetail.value = null;
 };
 
 const openPreview = (media: MediaItem) => {
@@ -64,20 +93,9 @@ const closePreview = () => {
   previewMedia.value = null;
 };
 
-const filteredData = computed(() => {
-  if (!searchQuery.value) return props.data;
-  const q = searchQuery.value.toLowerCase();
-  return props.data.filter(item =>
-    item.no.toLowerCase().includes(q) ||
-    item.projectName.toLowerCase().includes(q)
-  );
-});
-
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredData.value.length / itemsPerPage)));
-
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return filteredData.value.slice(start, start + itemsPerPage);
+const reportTypeLabel = computed(() => {
+  if (!repairDetail.value) return '-';
+  return repairDetail.value.bxType === '1' ? '普通' : repairDetail.value.bxType === '2' ? '紧急' : '-';
 });
 
 </script>
@@ -168,7 +186,7 @@ const paginatedData = computed(() => {
       </div>
 
       <div class="p-6 border-t border-white/10 flex justify-between items-center text-sm text-gray-500">
-        <p>显示 {{ (currentPage - 1) * itemsPerPage + 1 }} 到 {{ Math.min(currentPage * itemsPerPage, filteredData.length) }} 条，共 {{ filteredData.length }} 条记录</p>
+        <p>共 {{ totalItems }} 条，每页 {{ itemsPerPage }} 条</p>
         <div class="flex space-x-2">
           <button @click="currentPage > 1 && currentPage--" :disabled="currentPage <= 1" class="px-3 py-1 bg-white/50 rounded-lg border border-white/20 hover:bg-white/80 disabled:opacity-50 transition-colors">上一页</button>
           <button 
@@ -203,26 +221,27 @@ const paginatedData = computed(() => {
           <div class="px-8 py-5">
             <!-- 合并卡片：项目信息 + 日期 -->
             <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-5 mb-4">
-              <div class="grid grid-cols-2 gap-x-10 gap-y-4">
+              <div v-if="detailLoading" class="text-white/50 text-sm">加载中...</div>
+              <div v-else class="grid grid-cols-2 gap-x-10 gap-y-4">
                 <div>
                   <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">项目</p>
-                  <p class="font-bold text-white text-base">{{ selectedItem.projectName }}</p>
+                  <p class="font-bold text-white text-base">{{ repairDetail?.projectName || selectedItem?.projectName || '-' }}</p>
                 </div>
                 <div>
                   <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">项目组信息</p>
-                  <p class="font-bold text-white/70 text-base">{{ selectedItem.teamInfo || '暂无' }}</p>
+                  <p class="font-bold text-white/70 text-base">{{ repairDetail?.directorName ? `${repairDetail.directorName} (${repairDetail.directorPhone})` : (selectedItem?.teamInfo || '暂无') }}</p>
                 </div>
                 <div>
-                  <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">开工日期</p>
-                  <p class="font-bold text-white text-sm font-mono">{{ selectedItem.startDate || '—' }}</p>
+                  <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">维保编号</p>
+                  <p class="font-bold text-white text-sm font-mono">{{ repairDetail?.code || selectedItem?.no || '—' }}</p>
                 </div>
                 <div>
-                  <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">竣工日期</p>
-                  <p class="font-bold text-white text-sm font-mono">{{ selectedItem.completionDate || '—' }}</p>
+                  <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">项目编号</p>
+                  <p class="font-bold text-white text-sm font-mono">{{ repairDetail?.projectCode || '—' }}</p>
                 </div>
                 <div>
-                  <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">质保期</p>
-                  <p class="font-bold text-white text-sm">{{ selectedItem.warrantyPeriod || '—' }}</p>
+                  <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1">项目地址</p>
+                  <p class="font-bold text-white text-sm">{{ repairDetail?.orderAddress || selectedItem?.address || '—' }}</p>
                 </div>
               </div>
             </div>
@@ -233,30 +252,30 @@ const paginatedData = computed(() => {
                 <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold">报修类型</p>
                 <span
                   class="px-3 py-1 rounded-full text-xs font-bold"
-                  :class="selectedItem.reportType === '紧急' ? 'bg-red-500/20 text-red-400' : 'bg-sky-400/20 text-sky-400'"
-                >{{ selectedItem.reportType || '普通' }}</span>
+                  :class="reportTypeLabel === '紧急' ? 'bg-red-500/20 text-red-400' : 'bg-sky-400/20 text-sky-400'"
+                >{{ reportTypeLabel || '普通' }}</span>
               </div>
               <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 flex flex-col items-center gap-1.5">
                 <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold">上门时间</p>
-                <span class="text-white font-bold text-sm font-mono">{{ selectedItem.visitTime || '待安排' }}</span>
+                <span class="text-white font-bold text-sm font-mono">{{ repairDetail?.doorTime || selectedItem?.visitTime || '待安排' }}</span>
               </div>
               <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 flex flex-col items-center gap-1.5">
                 <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold">工单状态</p>
                 <span
                   class="px-3 py-1 rounded-full text-xs font-bold"
                   :class="{
-                    'bg-orange-500/20 text-orange-400': selectedItem.status === '维保中',
-                    'bg-sky-400/20 text-sky-400': selectedItem.status === '待处理',
-                    'bg-[#A1D573]/20 text-[#A1D573]': selectedItem.status === '已完成'
+                    'bg-orange-500/20 text-orange-400': selectedItem?.status === '维保中',
+                    'bg-sky-400/20 text-sky-400': selectedItem?.status === '待维保',
+                    'bg-[#A1D573]/20 text-[#A1D573]': selectedItem?.status === '已维保' || selectedItem?.status === '已完成'
                   }"
-                >{{ selectedItem.status }}</span>
+                >{{ repairDetail?.status || selectedItem?.status || '-' }}</span>
               </div>
             </div>
 
             <!-- 报修原因 -->
             <div class="bg-white/5 backdrop-blur-xl rounded-2xl border border-white/10 p-4 mb-4">
               <p class="text-[10px] text-white/40 uppercase tracking-widest font-bold mb-1.5">报修原因</p>
-              <p class="text-white/80 text-sm leading-relaxed">{{ selectedItem.reason || '暂无报修原因描述' }}</p>
+              <p class="text-white/80 text-sm leading-relaxed">{{ repairDetail?.bxReason || selectedItem?.reason || '暂无报修原因描述' }}</p>
             </div>
 
             <!-- 图片与视频 -->

@@ -1,86 +1,97 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import { ChevronLeft, MoreHorizontal, Search, X } from 'lucide-vue-next';
-
-interface OrderItem {
-  id: number;
-  orderNo: string;
-  orderAmount: number;
-  orderTime: string;
-  serviceAddress: string;
-  status: string;
-}
+import { fetchOrders, fetchOrderDetail, type OrderDetail } from '../api/operationApi';
+import type { OrderItem } from '../types/app-domain';
 
 interface OrderLineItem {
   productName: string;
   brand: string;
   model: string;
   quantity: number;
-  materialCost: number;
-  installCost: number;
+  salePrice: number;
+  payPrice: number;
 }
-
-const props = defineProps<{
-  data: OrderItem[];
-}>();
 
 const emit = defineEmits(['back']);
 
 const searchQuery = ref('');
 const currentPage = ref(1);
 const itemsPerPage = 6;
+const totalItems = ref(0);
+const isLoading = ref(false);
 
-const filteredData = computed(() => {
-  if (!searchQuery.value) return props.data;
-  const q = searchQuery.value.toLowerCase();
-  return props.data.filter(item =>
-    item.orderNo.toLowerCase().includes(q) ||
-    item.serviceAddress.toLowerCase().includes(q)
-  );
+/** 订单列表数据 */
+const orderData = ref<OrderItem[]>([]);
+
+/** 加载订单列表 */
+async function loadOrders() {
+  isLoading.value = true;
+  try {
+    const result = await fetchOrders(
+      currentPage.value,
+      itemsPerPage,
+      searchQuery.value || undefined
+    );
+    orderData.value = result.list;
+    totalItems.value = result.total;
+  } catch (error) {
+    console.error('加载订单列表失败:', error);
+  } finally {
+    isLoading.value = false;
+  }
+}
+
+onMounted(() => {
+  loadOrders();
 });
 
-const totalPages = computed(() => Math.max(1, Math.ceil(filteredData.value.length / itemsPerPage)));
-
-const paginatedData = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return filteredData.value.slice(start, start + itemsPerPage);
+watch(currentPage, () => {
+  loadOrders();
 });
+
+/** 搜索防抖 */
+let searchTimer: ReturnType<typeof setTimeout> | null = null;
+watch(searchQuery, () => {
+  if (searchTimer) clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => {
+    currentPage.value = 1;
+    loadOrders();
+  }, 300);
+});
+
+const paginatedData = computed(() => orderData.value);
+
+const totalPages = computed(() => Math.max(1, Math.ceil(totalItems.value / itemsPerPage)));
 
 const selectedOrder = ref<OrderItem | null>(null);
+const orderDetail = ref<OrderDetail | null>(null);
+const detailLoading = ref(false);
 
-const openOrderDetail = (order: OrderItem) => {
+const openOrderDetail = async (order: OrderItem) => {
   selectedOrder.value = order;
+  detailLoading.value = true;
+  try {
+    orderDetail.value = await fetchOrderDetail(order.id);
+  } catch (error) {
+    console.error('获取订单详情失败:', error);
+  } finally {
+    detailLoading.value = false;
+  }
 };
 
 const closeOrderDetail = () => {
   selectedOrder.value = null;
+  orderDetail.value = null;
 };
 
 const currentOrderLines = computed<OrderLineItem[]>(() => {
-  if (!selectedOrder.value) return [];
-  const pool: OrderLineItem[][] = [
-    [
-      { productName: '风机盘管', brand: '格力', model: 'FP-51', quantity: 2, materialCost: 980, installCost: 220 },
-      { productName: '温控器', brand: '西门子', model: 'RDF310', quantity: 2, materialCost: 280, installCost: 80 },
-      { productName: '保温棉', brand: '欧文斯科宁', model: '25mm', quantity: 10, materialCost: 35, installCost: 12 },
-    ],
-    [
-      { productName: '铜管', brand: '金龙', model: 'TP2-19', quantity: 18, materialCost: 68, installCost: 15 },
-      { productName: '冷凝水管', brand: '联塑', model: 'PVC-32', quantity: 24, materialCost: 16, installCost: 6 },
-      { productName: '截止阀', brand: '埃美柯', model: 'DN20', quantity: 4, materialCost: 58, installCost: 20 },
-    ],
-    [
-      { productName: '检修口', brand: '龙牌', model: '400x400', quantity: 3, materialCost: 120, installCost: 40 },
-      { productName: '接线端子', brand: '德力西', model: 'UK2.5', quantity: 30, materialCost: 6, installCost: 2 },
-      { productName: '线管', brand: '中财', model: '20mm', quantity: 40, materialCost: 9, installCost: 3 },
-    ],
-  ];
-  return pool[selectedOrder.value.id % pool.length];
+  return orderDetail.value?.opOrderSubDetailList || [];
 });
 
 const orderSummary = computed(() => {
   const lines = currentOrderLines.value;
-  const subtotal = lines.reduce((sum, line) => sum + (line.materialCost + line.installCost) * line.quantity, 0);
+  const subtotal = lines.reduce((sum, line) => sum + line.payPrice, 0);
   const measureFee = Math.round(subtotal * 0.06 * 100) / 100;
   const taxRate = 0.09;
   const taxAmount = Math.round((subtotal + measureFee) * taxRate * 100) / 100;
@@ -159,10 +170,13 @@ const exportOrderDetail = () => {
                 <span
                   class="px-3 py-1 rounded-full text-xs font-bold"
                   :class="{
-                    'bg-[#A1D573]/20 text-[#163300]': item.status === '已完成',
                     'bg-orange-500/20 text-orange-600': item.status === '待确认',
-                    'bg-sky-500/20 text-sky-600': item.status === '已发出',
-                    'bg-purple-500/20 text-purple-600': item.status === '待发货',
+                    'bg-sky-500/20 text-sky-600': item.status === '待支付',
+                    'bg-purple-500/20 text-purple-600': item.status === '待签约',
+                    'bg-blue-500/20 text-blue-600': item.status === '已支付',
+                    'bg-[#A1D573]/20 text-[#163300]': item.status === '已签约',
+                    'bg-emerald-500/20 text-emerald-600': item.status === '服务中',
+                    'bg-teal-500/20 text-teal-600': item.status === '已完工',
                     'bg-red-500/20 text-red-600': item.status === '已取消',
                   }"
                 >{{ item.status }}</span>
@@ -178,7 +192,7 @@ const exportOrderDetail = () => {
       </div>
 
       <div class="p-6 border-t border-white/10 flex justify-between items-center text-sm text-gray-500">
-        <p>共 {{ filteredData.length }} 条，每页 {{ itemsPerPage }} 条</p>
+        <p>共 {{ totalItems }} 条，每页 {{ itemsPerPage }} 条</p>
         <div class="flex space-x-2">
           <button @click="currentPage > 1 && currentPage--" :disabled="currentPage <= 1" class="px-3 py-1 bg-white/50 rounded-lg border border-white/20 hover:bg-white/80 disabled:opacity-50 transition-colors">上一页</button>
           <button
@@ -227,24 +241,28 @@ const exportOrderDetail = () => {
 
             <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5">
               <h4 class="text-white font-bold mb-3">客户信息</h4>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8 text-sm">
-                <p class="text-white/80">企业名称：<span class="text-white">mii</span></p>
-                <p class="text-white/80">联系人：<span class="text-white">冷一一</span></p>
-                <p class="text-white/80">联系电话：<span class="text-white">18513204939</span></p>
-                <p class="text-white/80">公司电话：<span class="text-white">010-65221996</span></p>
-                <p class="text-white/80">公司邮箱：<span class="text-white">cole.zhang@sapcem.group</span></p>
-                <p class="text-white/80">地址：<span class="text-white">北京市朝阳区</span></p>
+              <div v-if="detailLoading" class="text-white/50 text-sm">加载中...</div>
+              <div v-else-if="orderDetail" class="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8 text-sm">
+                <p class="text-white/80">企业名称：<span class="text-white">{{ orderDetail.busCustomer?.companyName || orderDetail.customerName || '-' }}</span></p>
+                <p class="text-white/80">联系人：<span class="text-white">{{ orderDetail.busCustomer?.baileeName || orderDetail.customerContactsName || '-' }}</span></p>
+                <p class="text-white/80">联系电话：<span class="text-white">{{ orderDetail.busCustomer?.baileePhone || orderDetail.customerContactsPhone || '-' }}</span></p>
+                <p class="text-white/80">公司电话：<span class="text-white">{{ orderDetail.busCustomer?.registerPhone || '-' }}</span></p>
+                <p class="text-white/80">公司邮箱：<span class="text-white">{{ orderDetail.busCustomer?.contactsEmail || '-' }}</span></p>
+                <p class="text-white/80">地址：<span class="text-white">{{ orderDetail.busCustomer?.registerAddress || orderDetail.customerAddress || '-' }}</span></p>
               </div>
+              <div v-else class="text-white/50 text-sm">暂无客户信息</div>
             </div>
 
             <div class="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-5">
               <h4 class="text-white font-bold mb-3">地址信息</h4>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8 text-sm mb-4">
-                <p class="text-white/80">联系人：<span class="text-white">贺玲</span></p>
-                <p class="text-white/80">联系电话：<span class="text-white">18513204939</span></p>
-                <p class="text-white/80">所在地区：<span class="text-white">上海市/上海市/静安区</span></p>
-                <p class="text-white/80">详细地址：<span class="text-white">{{ selectedOrder.serviceAddress }}</span></p>
+              <div v-if="detailLoading" class="text-white/50 text-sm">加载中...</div>
+              <div v-else-if="orderDetail" class="grid grid-cols-1 md:grid-cols-2 gap-y-3 gap-x-8 text-sm mb-4">
+                <p class="text-white/80">联系人：<span class="text-white">{{ orderDetail.customerContactsName || '-' }}</span></p>
+                <p class="text-white/80">联系电话：<span class="text-white">{{ orderDetail.customerContactsPhone || '-' }}</span></p>
+                <p class="text-white/80">所在地区：<span class="text-white">-</span></p>
+                <p class="text-white/80">详细地址：<span class="text-white">{{ orderDetail.customerAddress || selectedOrder?.serviceAddress || '-' }}</span></p>
               </div>
+              <div v-else class="text-white/50 text-sm">暂无地址信息</div>
 
               <div class="rounded-xl border border-white/15 overflow-hidden">
                 <table class="w-full text-sm">
@@ -255,9 +273,7 @@ const exportOrderDetail = () => {
                       <th class="px-3 py-2 text-left">品牌</th>
                       <th class="px-3 py-2 text-left">型号</th>
                       <th class="px-3 py-2 text-right">数量</th>
-                      <th class="px-3 py-2 text-right">材料费</th>
-                      <th class="px-3 py-2 text-right">安装费</th>
-                      <th class="px-3 py-2 text-right">综合单价</th>
+                      <th class="px-3 py-2 text-right">单价</th>
                       <th class="px-3 py-2 text-right">总价</th>
                     </tr>
                   </thead>
@@ -268,18 +284,25 @@ const exportOrderDetail = () => {
                       <td class="px-3 py-2">{{ line.brand }}</td>
                       <td class="px-3 py-2">{{ line.model }}</td>
                       <td class="px-3 py-2 text-right">{{ line.quantity }}</td>
-                      <td class="px-3 py-2 text-right">{{ formatCost(line.materialCost) }}</td>
-                      <td class="px-3 py-2 text-right">{{ formatCost(line.installCost) }}</td>
-                      <td class="px-3 py-2 text-right">{{ formatCost(line.materialCost + line.installCost) }}</td>
-                      <td class="px-3 py-2 text-right">{{ formatCost((line.materialCost + line.installCost) * line.quantity) }}</td>
+                      <td class="px-3 py-2 text-right">{{ formatCost(line.salePrice) }}</td>
+                      <td class="px-3 py-2 text-right">{{ formatCost(line.payPrice) }}</td>
                     </tr>
-                    <tr class="bg-white/5 text-white font-medium">
+                    <tr v-if="currentOrderLines.length > 0" class="bg-white/5 text-white font-medium">
                       <td class="px-3 py-2" colspan="2">措施费</td>
                       <td class="px-3 py-2 text-right" colspan="2">{{ formatCost(orderSummary.measureFee) }}</td>
                       <td class="px-3 py-2" colspan="2">税率</td>
-                      <td class="px-3 py-2 text-right" colspan="1">{{ (orderSummary.taxRate * 100).toFixed(0) }}%</td>
-                      <td class="px-3 py-2 text-right" colspan="1">税金 {{ formatCost(orderSummary.taxAmount) }}</td>
-                      <td class="px-3 py-2 text-right">合计 {{ formatCost(orderSummary.grandTotal) }}</td>
+                      <td class="px-3 py-2 text-right">{{ (orderSummary.taxRate * 100).toFixed(0) }}%</td>
+                    </tr>
+                    <tr v-if="currentOrderLines.length > 0" class="bg-white/5 text-white font-medium">
+                      <td class="px-3 py-2" colspan="5">税金</td>
+                      <td class="px-3 py-2 text-right" colspan="2">{{ formatCost(orderSummary.taxAmount) }}</td>
+                    </tr>
+                    <tr v-if="currentOrderLines.length > 0" class="bg-white/10 text-white font-bold">
+                      <td class="px-3 py-2" colspan="5">合计</td>
+                      <td class="px-3 py-2 text-right" colspan="2">{{ formatCost(orderSummary.grandTotal) }}</td>
+                    </tr>
+                    <tr v-if="!detailLoading && currentOrderLines.length === 0" class="text-white/50">
+                      <td class="px-3 py-2 text-center" colspan="7">暂无订单行项目</td>
                     </tr>
                   </tbody>
                 </table>

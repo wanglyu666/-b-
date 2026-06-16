@@ -253,11 +253,88 @@ export async function downloadReportZip(spotOrderId: string): Promise<void> {
   await downloadFileFromUrl(fileUrl, `日报合集_${spotOrderId}.zip`);
 }
 
+/** 维保项目施工状态映射 */
+const MAINTENANCE_STATUS_MAP: Record<string, string> = {
+  '1': '待开工',
+  '2': '施工中',
+  '3': '已完工',
+};
+
+/** 维保项目反向状态映射：中文 → API constructionStatus */
+const MAINTENANCE_STATUS_TO_API: Record<string, string> = {
+  '待开工': '1',
+  '施工中': '2',
+  '已完工': '3',
+};
+
 /**
- * 获取维保项目列表（使用 mock 数据，如需真接口请自行添加）
+ * 获取维保项目列表（根据状态筛选，支持分页和搜索）
+ * 接口与工程项目同源 /spot/spotorder/list3，projectType=2
+ * @param status 状态：待开工/施工中/已完工
+ * @param pageNum 页码，默认 1
+ * @param pageSize 每页条数，默认 9
+ * @param searchKey 搜索关键词
  */
-export async function fetchMaintenanceProjects(): Promise<any[]> {
-  return [];
+export async function fetchMaintenanceProjects(
+  status?: string,
+  pageNum: number = 1,
+  pageSize: number = 9,
+  searchKey?: string
+): Promise<ProjectListResponse> {
+  const params: Record<string, any> = {
+    pageNum,
+    pageSize,
+    projectType: '2',
+  };
+
+  if (status && MAINTENANCE_STATUS_TO_API[status]) {
+    params.constructionStatus = MAINTENANCE_STATUS_TO_API[status];
+  }
+
+  if (searchKey && searchKey.trim()) {
+    params.projectName = searchKey.trim();
+  }
+
+  try {
+    const res = await get(API_LIST, params);
+    const rawList = res.data?.list || res.data?.records || res.rows || [];
+    const total = res.data?.total || res.total || rawList.length;
+
+    const list: EngineeringProject[] = rawList.map((item: any) => ({
+      id: String(item.id || ''),
+      no: item.projectCode || '',
+      name: item.projectName || '',
+      address: item.projectAddress || '',
+      amount: item.contractAmount ? `¥ ${parseFloat(item.contractAmount).toLocaleString()}` : '¥ 0',
+      manager: item.headName2 || '',
+      contact: item.headPhone2 || '',
+      startDate: item.constructionBeginTime || '',
+      endDate: item.constructionEndTime || '',
+      status: (status || MAINTENANCE_STATUS_MAP[item.constructionStatus] || '待开工') as EngineeringProject['status'],
+      projectId: String(item.projectId || ''),
+      isEvaluate: String(item.isEvaluate ?? '0'),
+    }));
+
+    return { list, total: Number(total), pageNum, pageSize };
+  } catch (error) {
+    console.error('获取维保项目列表失败:', error);
+    return { list: [], total: 0, pageNum, pageSize };
+  }
+}
+
+/**
+ * 获取维保项目各状态数量（用于管理中心首页统计）
+ */
+export async function fetchMaintenanceProjectCounts(): Promise<Record<string, number>> {
+  const statusKeys = ['待开工', '施工中', '已完工'];
+  const results = await Promise.all(
+    statusKeys.map(status => fetchMaintenanceProjects(status, 1, 1))
+  );
+  const counts: Record<string, number> = {};
+  statusKeys.forEach((status, i) => {
+    counts[status] = results[i].total;
+  });
+  return counts;
 }
 
 // ========== 日报详情相关 ==========
@@ -904,19 +981,14 @@ export interface SubmitEvaluationParams {
 }
 
 /**
- * 获取项目评价（取第1条）
- * GET /spot/spotorderevaluate/list
+ * 获取项目评价
+ * GET /spot/spotorderevaluate/${id}
  */
 export async function fetchEvaluation(spotOrderId: string): Promise<EvaluationData | null> {
   try {
-    const res = await get('/spot/spotorderevaluate/list', {
-      pageNum: 1,
-      pageSize: 10,
-      spotOrderId,
-    });
-    const rows = res?.rows || [];
-    if (!rows.length) return null;
-    const item = rows[0];
+    const res = await get(`/spot/spotorderevaluate/${spotOrderId}`);
+    const item = res?.data || res;
+    if (!item || !item.spotOrderId) return null;
     return {
       spotOrderId: String(item.spotOrderId || ''),
       projectId: String(item.projectId || ''),
@@ -965,4 +1037,92 @@ export async function submitEvaluation(params: SubmitEvaluationParams): Promise<
     img04: params.img04 || '',
     img05: params.img05 || '',
   });
+}
+
+// ==================== 预约管理（客户确认） ====================
+
+/** 预约列表项（spotorder/listWorker 返回） */
+export interface SpotOrderWorkerItem {
+  id: number;
+  projectCode: string;
+  projectName: string;
+  /** 开工日期 */
+  startTime: string;
+  /** 竣工日期 */
+  endTime: string;
+  /** 预约时间 */
+  yuyueTime: string;
+  /** 倒计时 */
+  distanceDateTime: string;
+  /** 微信状态：2=待确认预约时间 3=待确认变更时间 4=待客户验收 */
+  wxStatus: string;
+  /** 客户权限类型：2=客户角色 */
+  authorityType: string;
+  /** 客户确认预约时间 */
+  kfqryyTime: string;
+  /** 客户确认变更时间 */
+  kfqrbgTime: string;
+  /** 变更原因 */
+  changeReason: string;
+  /** 变更原因备注 */
+  changeReasonRemark: string;
+  /** 验收图片（逗号分隔URL） */
+  ysImgs: string;
+  /** 预约次数 */
+  yuyueNumber?: number;
+}
+
+/** 预约列表分页响应 */
+export interface SpotOrderWorkerListResponse {
+  list: SpotOrderWorkerItem[];
+  total: number;
+}
+
+/**
+ * 获取现场订单工人端列表（预约管理）
+ * GET /spot/spotorder/listWorker
+ * @param projectId 项目ID
+ * @param pageNum 页码，默认 1
+ * @param pageSize 每页条数，默认 10
+ */
+export async function fetchSpotOrderWorkerList(
+  projectId: string,
+  pageNum: number = 1,
+  pageSize: number = 10
+): Promise<SpotOrderWorkerListResponse> {
+  try {
+    const res = await get('/spot/spotorder/listWorker', { projectId, pageNum, pageSize, projectType: '2' });
+    const rows = res?.rows || [];
+    const total = res?.total || rows.length;
+    const list: SpotOrderWorkerItem[] = rows.map((item: any) => ({
+      id: Number(item.id),
+      projectCode: item.projectCode || '',
+      projectName: item.projectName || '',
+      startTime: item.busProject?.startTime || item.startTime || '',
+      endTime: item.busProject?.endTime || item.endTime || '',
+      yuyueTime: item.yuyueTime || '',
+      distanceDateTime: item.distanceDateTime || '',
+      wxStatus: String(item.wxStatus ?? ''),
+      authorityType: String(item.authorityType ?? ''),
+      kfqryyTime: item.kfqryyTime || '',
+      kfqrbgTime: item.kfqrbgTime || '',
+      changeReason: item.changeReason || '',
+      changeReasonRemark: item.changeReasonRemark || '',
+      ysImgs: item.ysImgs || '',
+      yuyueNumber: Number(item.yuyueNumber) || 1,
+    }));
+    return { list, total };
+  } catch (error) {
+    console.error('获取预约列表失败:', error);
+    return { list: [], total: 0 };
+  }
+}
+
+/**
+ * 客户确认预约
+ * PUT /spot/spotorder/cus
+ * 参考: xyw-ui updateSpotorderCus({ id })
+ */
+export async function confirmSpotOrderCustomer(id: number): Promise<void> {
+  await put('/spot/spotorder/cus', { id });
 }

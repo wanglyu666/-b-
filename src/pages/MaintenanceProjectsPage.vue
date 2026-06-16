@@ -9,7 +9,6 @@ const appStore = useAppStore();
 
 <template>
   <MaintenanceProjectsView
-    :projects="appStore.maintenanceProjects"
     :initial-status="appStore.activeMaintenanceProjectStatus"
     @back="router.push({ name: 'management' })"
   />
