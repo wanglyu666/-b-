@@ -55,7 +55,7 @@ watch(
       class="relative z-10"
     />
 
-    <main id="main-content" class="main-scroll flex-1 overflow-y-auto h-full relative z-10 min-w-0">
+    <main id="main-content" class="main-scroll flex-1 overflow-x-hidden overflow-y-auto h-full relative z-10 min-w-0">
       <Transition name="page-transition" mode="out-in">
         <RouterView />
       </Transition>

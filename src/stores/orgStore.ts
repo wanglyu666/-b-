@@ -60,6 +60,16 @@ export const useOrgStore = defineStore('org', () => {
     teams.value = [...teams.value, team];
   }
 
+  /** 团队管理页本地更新（演示；持久化需对接后端） */
+  function updateTeam(
+    id: string,
+    patch: Partial<Omit<OrganizationTeam, 'id'>>,
+  ) {
+    teams.value = teams.value.map((t) =>
+      t.id === id ? { ...t, ...patch } : t,
+    );
+  }
+
   return {
     members,
     teams,
@@ -74,5 +84,6 @@ export const useOrgStore = defineStore('org', () => {
     addSpace,
     updateSpace,
     addTeam,
+    updateTeam,
   };
 });

@@ -8,7 +8,7 @@ import {
   watch,
 } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { ChevronDown, ChevronLeft, Plus, Search, X } from 'lucide-vue-next';
+import { Check, ChevronDown, ChevronLeft, Plus, Search, X } from 'lucide-vue-next';
 import checkMarkImg from '../../image asset/check mark.png';
 import { useOrgStore } from '../stores/orgStore';
 import type {
@@ -160,15 +160,19 @@ function onAddTeamSuccessClose() {
 const searchQuery = ref('');
 const selectedTeam = ref<OrganizationTeam | null>(null);
 
-/** 团队详情弹窗：概览 | 审批配置 | 提交成功（成功页尺寸对齐成员管理 success 弹窗） */
-const teamDetailInnerView = ref<'overview' | 'approvalFlow' | 'approvalSuccess'>(
-  'overview',
-);
+/** 团队详情弹窗：概览 | 审批配置 | 提交成功 | 更改负责人 | 更改负责人成功 */
+const teamDetailInnerView = ref<
+  | 'overview'
+  | 'approvalFlow'
+  | 'approvalSuccess'
+  | 'changeLeader'
+  | 'changeLeaderSuccess'
+>('overview');
 const activeApprovalLabel = ref<string | null>(null);
 
 const teamDetailModalStyle = computed(() => {
   const view = teamDetailInnerView.value;
-  if (view === 'approvalSuccess') {
+  if (view === 'approvalSuccess' || view === 'changeLeaderSuccess') {
     return {
       '--jp-modal-w': '800px',
       '--jp-modal-w-max': '800px',
@@ -182,14 +186,21 @@ const teamDetailModalStyle = computed(() => {
     } as Record<string, string>;
   }
   const flow = view === 'approvalFlow';
+  const changeLeader = view === 'changeLeader';
   return {
-    '--jp-modal-w': flow ? '920px' : '768px',
-    '--jp-modal-w-max': flow ? '920px' : '768px',
-    '--jp-modal-h': flow ? 'min(75vh, 720px)' : 'min(75vh, 720px)',
+    '--jp-modal-w': flow ? '920px' : changeLeader ? '870px' : '768px',
+    '--jp-modal-w-max': flow ? '920px' : changeLeader ? '870px' : '768px',
+    '--jp-modal-h': flow
+      ? 'min(75vh, 720px)'
+      : changeLeader
+        ? '640px'
+        : 'min(75vh, 720px)',
     '--jp-modal-max-h': 'min(96vh, 920px)',
-    '--jp-modal-radius': '40px',
-    '--jp-modal-scale': flow ? '1.01' : '1',
-    '--jp-modal-bg': 'rgba(255, 255, 255, 0.1)',
+    '--jp-modal-radius': changeLeader ? '32px' : '40px',
+    '--jp-modal-scale': flow ? '1.01' : changeLeader ? '1.02' : '1',
+    '--jp-modal-bg': changeLeader
+      ? 'rgba(255, 255, 255, 0.15)'
+      : 'rgba(255, 255, 255, 0.1)',
     '--jp-modal-morph-duration': '0.8s',
     '--jp-modal-morph-ease': 'cubic-bezier(0.16, 1, 0.3, 1)',
   } as Record<string, string>;
@@ -256,12 +267,14 @@ function closeTeamDetail() {
   selectedTeam.value = null;
   teamDetailInnerView.value = 'overview';
   activeApprovalLabel.value = null;
+  selectedLeaderMemberId.value = null;
   dragOverFlowTrack.value = false;
 }
 
 function backToTeamOverview() {
   teamDetailInnerView.value = 'overview';
   activeApprovalLabel.value = null;
+  selectedLeaderMemberId.value = null;
   dragOverFlowTrack.value = false;
 }
 
@@ -283,7 +296,15 @@ function onDocumentKeydown(e: KeyboardEvent) {
     backToTeamOverview();
     return;
   }
+  if (teamDetailInnerView.value === 'changeLeaderSuccess') {
+    backToTeamOverview();
+    return;
+  }
   if (teamDetailInnerView.value === 'approvalFlow') {
+    backToTeamOverview();
+    return;
+  }
+  if (teamDetailInnerView.value === 'changeLeader') {
     backToTeamOverview();
     return;
   }
@@ -475,6 +496,49 @@ function confirmApprovalFlow() {
   if (!approvalFlowHasChangesFromSnapshot.value) return;
   teamDetailInnerView.value = 'approvalSuccess';
 }
+
+/** 更改负责人：成员管理列表（卡片选择，单选） */
+const selectedLeaderMemberId = ref<number | null>(null);
+
+const membersForLeaderPicker = computed(() =>
+  props.members
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name, 'zh-Hans-CN')),
+);
+
+function openChangeLeader() {
+  const team = selectedTeam.value;
+  if (!team) return;
+  const current = props.members.find((m) => m.name === team.leader);
+  selectedLeaderMemberId.value = current?.id ?? null;
+  teamDetailInnerView.value = 'changeLeader';
+}
+
+function selectLeaderMember(id: number) {
+  selectedLeaderMemberId.value = id;
+}
+
+const changeLeaderHasChanges = computed(() => {
+  const team = selectedTeam.value;
+  if (!team || selectedLeaderMemberId.value == null) return false;
+  const member = props.members.find((m) => m.id === selectedLeaderMemberId.value);
+  return member ? member.name !== team.leader : false;
+});
+
+function confirmChangeLeader() {
+  if (!changeLeaderHasChanges.value) return;
+  const team = selectedTeam.value;
+  const member = props.members.find((m) => m.id === selectedLeaderMemberId.value);
+  if (!team || !member) return;
+  orgStore.updateTeam(team.id, { leader: member.name });
+  selectedTeam.value = { ...team, leader: member.name };
+  teamDetailInnerView.value = 'changeLeaderSuccess';
+}
+
+function memberTeamLabel(m: Member): string {
+  const t = m.team?.trim();
+  return t || '—';
+}
 </script>
 
 <template>
@@ -635,6 +699,12 @@ function confirmApprovalFlow() {
                 >
                   审批配置 · {{ activeApprovalLabel }}
                 </template>
+                <template v-else-if="teamDetailInnerView === 'changeLeader'">
+                  更改负责人
+                </template>
+                <template v-else-if="teamDetailInnerView === 'changeLeaderSuccess'">
+                  更改负责人
+                </template>
                 <template v-else>团队详情</template>
               </h2>
             </div>
@@ -642,7 +712,9 @@ function confirmApprovalFlow() {
               <button
                 v-if="
                   teamDetailInnerView === 'approvalFlow' ||
-                  teamDetailInnerView === 'approvalSuccess'
+                  teamDetailInnerView === 'approvalSuccess' ||
+                  teamDetailInnerView === 'changeLeader' ||
+                  teamDetailInnerView === 'changeLeaderSuccess'
                 "
                 type="button"
                 class="text-sm font-bold text-white/80 transition-colors hover:text-white"
@@ -753,7 +825,7 @@ function confirmApprovalFlow() {
                 >
                   审批配置
                 </p>
-                <div class="flex w-full gap-2 sm:gap-3">
+                <div class="flex w-full flex-wrap gap-2 sm:gap-3">
                   <button
                     v-for="label in teamApprovalPillLabels"
                     :key="label"
@@ -762,6 +834,13 @@ function confirmApprovalFlow() {
                     @click="openApprovalFlow(label)"
                   >
                     {{ label }}
+                  </button>
+                  <button
+                    type="button"
+                    class="flex min-w-0 flex-1 items-center justify-center rounded-full border border-white/25 bg-white/15 px-1.5 py-2.5 text-center text-xs font-medium text-white shadow-inner backdrop-blur-sm transition hover:bg-white/25 sm:min-w-[7rem] sm:px-2 sm:text-sm"
+                    @click="openChangeLeader"
+                  >
+                    更改负责人
                   </button>
                 </div>
               </div>
@@ -887,6 +966,109 @@ function confirmApprovalFlow() {
                   确认
                 </button>
               </div>
+              </div>
+
+              <div
+                v-else-if="teamDetailInnerView === 'changeLeader'"
+                key="team-change-leader"
+                class="flex min-h-[320px] flex-col gap-5"
+              >
+                <p class="text-sm text-white/60">
+                  为「<span class="font-semibold text-white">{{
+                    selectedTeam.name
+                  }}</span
+                  >」选择新负责人，数据与组织「成员管理」列表一致。
+                </p>
+                <div
+                  v-if="membersForLeaderPicker.length === 0"
+                  class="rounded-2xl border border-dashed border-white/15 bg-white/5 px-6 py-12 text-center text-sm text-white/50"
+                >
+                  暂无成员数据，请先在成员管理中维护成员
+                </div>
+                <div
+                  v-else
+                  class="grid grid-cols-1 gap-3 sm:grid-cols-2"
+                >
+                  <button
+                    v-for="m in membersForLeaderPicker"
+                    :key="m.id"
+                    type="button"
+                    class="group relative flex flex-col gap-2 rounded-2xl border px-4 py-3 text-left transition-all"
+                    :class="
+                      selectedLeaderMemberId === m.id
+                        ? 'border-[#FFE600]/80 bg-[#FFE600]/10 shadow-[0_0_12px_rgba(255,230,0,0.15)]'
+                        : 'border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10'
+                    "
+                    @click="selectLeaderMember(m.id)"
+                  >
+                    <span
+                      class="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-full border text-[#FFE600]"
+                      :class="
+                        selectedLeaderMemberId === m.id
+                          ? 'border-[#FFE600] bg-[#FFE600]/20'
+                          : 'border-white/20 bg-white/5 opacity-60 group-hover:opacity-100'
+                      "
+                    >
+                      <Check
+                        v-if="selectedLeaderMemberId === m.id"
+                        :size="14"
+                        class="text-[#FFE600]"
+                        stroke-width="3"
+                      />
+                    </span>
+                    <p class="pr-8 text-xs font-bold uppercase tracking-wider text-white/40">
+                      {{ memberRoleLabel(m) }}
+                    </p>
+                    <p class="line-clamp-2 text-sm font-bold text-white">
+                      {{ m.name }}
+                    </p>
+                    <p class="line-clamp-2 text-xs text-white/55">
+                      {{ memberTeamLabel(m) }}
+                    </p>
+                    <div class="mt-1 flex flex-wrap gap-2 text-[11px] font-bold text-white/50">
+                      <span
+                        class="rounded-md border border-white/10 bg-white/5 px-2 py-0.5 text-white/70"
+                        >{{ m.memberType ?? '内部成员' }}</span
+                      >
+                      <span class="tabular-nums">{{ m.phone?.trim() || '—' }}</span>
+                    </div>
+                  </button>
+                </div>
+                <div class="flex justify-end border-t border-white/10 pt-5">
+                  <button
+                    type="button"
+                    class="rounded-xl bg-[#FFE600] px-8 py-2.5 text-sm font-bold text-[#260A2F] shadow-[0_0_15px_rgba(255,230,0,0.25)] transition hover:brightness-95 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+                    :disabled="!changeLeaderHasChanges"
+                    @click="confirmChangeLeader"
+                  >
+                    确认
+                  </button>
+                </div>
+              </div>
+
+              <div
+                v-else-if="teamDetailInnerView === 'changeLeaderSuccess'"
+                key="team-change-leader-success"
+                class="animate-in zoom-in-95 duration-500 flex min-h-[min(360px,48vh)] flex-col items-center justify-center py-6"
+              >
+                <img
+                  :src="checkMarkImg"
+                  alt=""
+                  class="mb-6 h-36 w-56 object-contain"
+                />
+                <h2 class="mb-4 text-3xl font-bold tracking-tight text-white">
+                  已完成提交
+                </h2>
+                <p class="mb-12 max-w-md text-center text-white/60">
+                  团队负责人已成功更新至系统中
+                </p>
+                <button
+                  type="button"
+                  class="rounded-xl border border-white/10 bg-white/10 px-8 py-3 font-bold text-white transition-colors hover:bg-white/20"
+                  @click="backToTeamOverview"
+                >
+                  返回上级页面
+                </button>
               </div>
 
               <div

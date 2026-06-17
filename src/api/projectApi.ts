@@ -982,11 +982,11 @@ export interface SubmitEvaluationParams {
 
 /**
  * 获取项目评价
- * GET /spot/spotorderevaluate/${id}
+ * GET /spot/spotorderevaluate/spotOrderId/${id}
  */
 export async function fetchEvaluation(spotOrderId: string): Promise<EvaluationData | null> {
   try {
-    const res = await get(`/spot/spotorderevaluate/${spotOrderId}`);
+    const res = await get(`/spot/spotorderevaluate/spotOrderId/${spotOrderId}`);
     const item = res?.data || res;
     if (!item || !item.spotOrderId) return null;
     return {
