@@ -5,10 +5,12 @@ import { MoreHorizontal } from 'lucide-vue-next';
 import penImg from '../../image asset/pen.png';
 import noteImg from '../../image asset/note.png';
 import TopBarActions from './TopBarActions.vue';
+import { useAppStore } from '../stores/appStore';
 import { contractArchiveList, contractSigningList, billData, settlementData } from '../data';
 import type { Bill, ContractArchive, ContractSigningStatus, SettlementStatus } from '../types';
 
 const router = useRouter();
+const appStore = useAppStore();
 
 /** 合同档案卡片：按签订日期最新 4 条（与档案页同源数据） */
 const contractHomePreview = computed(() =>
@@ -99,7 +101,7 @@ const settlementSettledCount = computed(
         <h1 class="text-3xl font-bold text-gray-800">合同与结算</h1>
         <p class="text-gray-500 mt-1">管理所有合同文档及相关账单结算</p>
       </div>
-      <TopBarActions :isShop="false" />
+      <TopBarActions :isShop="false" :userName="appStore.customerName" />
     </header>
 
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">

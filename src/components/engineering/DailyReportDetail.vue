@@ -15,12 +15,27 @@
       </button>
     </div>
 
+    <!-- Loading -->
+    <div v-if="loading" class="flex-1 flex items-center justify-center">
+      <div class="flex flex-col items-center gap-3 opacity-50">
+        <div class="w-10 h-10 border-2 border-white/20 border-t-[#FFE600] rounded-full animate-spin"></div>
+        <p class="text-sm">加载日报详情...</p>
+      </div>
+    </div>
+
+    <!-- Error -->
+    <div v-else-if="error" class="flex-1 flex items-center justify-center">
+      <div class="flex flex-col items-center gap-4 opacity-50">
+        <AlertCircle :size="48" class="text-red-400" />
+        <p class="text-lg">{{ error }}</p>
+      </div>
+    </div>
+
     <!-- Content Area -->
-    <div class="flex-1 overflow-hidden px-6 pb-6 relative">
+    <div v-else class="flex-1 overflow-hidden px-6 pb-6 relative">
       <Transition name="fade-slide" mode="out-in">
         <!-- Construction Content Tab -->
         <div v-if="activeTab === 'content'" :key="'content'" class="h-full flex flex-col gap-6">
-          <!-- Top Row: Area and Progress -->
           <div class="grid grid-cols-2 gap-6">
             <!-- 施工区域 -->
             <div class="space-y-2">
@@ -28,11 +43,9 @@
                 <MapPin :size="16" />
                 <span class="font-bold text-xs tracking-widest uppercase">施工区域</span>
               </div>
-              <textarea 
-                v-model="reportData.area"
-                placeholder="请输入施工区域..."
-                class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors h-[150px] resize-none"
-              ></textarea>
+              <div class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm h-[150px] overflow-y-auto whitespace-pre-wrap custom-scrollbar">
+                {{ area }}
+              </div>
             </div>
 
             <!-- 完成进度 -->
@@ -41,25 +54,21 @@
                 <TrendingUp :size="16" />
                 <span class="font-bold text-xs tracking-widest uppercase">完成进度</span>
               </div>
-              <textarea 
-                v-model="reportData.progressDesc"
-                placeholder="请输入进度说明..."
-                class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors h-[150px] resize-none"
-              ></textarea>
+              <div class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm h-[150px] overflow-y-auto whitespace-pre-wrap custom-scrollbar">
+                {{ progress }}
+              </div>
             </div>
           </div>
 
-          <!-- Bottom Row: Content -->
+          <!-- 施工内容 -->
           <div class="flex-1 space-y-2">
             <div class="flex items-center gap-2 text-[#FFE600]">
               <Hammer :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">施工内容</span>
             </div>
-            <textarea 
-              v-model="reportData.content"
-              placeholder="请输入详细施工内容..."
-              class="w-full h-[300px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none"
-            ></textarea>
+            <div class="w-full h-[300px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm overflow-y-auto whitespace-pre-wrap custom-scrollbar">
+              {{ content }}
+            </div>
           </div>
         </div>
 
@@ -71,11 +80,9 @@
               <Package :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">进场材料</span>
             </div>
-            <textarea 
-              v-model="reportData.materials"
-              placeholder="请输入进场材料信息..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none"
-            ></textarea>
+            <div class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm overflow-y-auto whitespace-pre-wrap custom-scrollbar">
+              {{ materials }}
+            </div>
           </div>
 
           <!-- 工种表格 -->
@@ -86,21 +93,22 @@
             </div>
             
             <div class="flex-1 bg-white/5 border border-white/10 rounded-xl overflow-hidden flex flex-col">
-              <!-- Table Header -->
               <div class="grid grid-cols-2 px-6 py-3 border-b border-white/10 bg-white/5 text-xs font-bold text-white/40 uppercase tracking-widest">
                 <div>工种</div>
                 <div class="text-center">数量</div>
               </div>
               
-              <!-- Table Body -->
               <div class="flex-1 overflow-y-auto custom-scrollbar">
                 <div 
-                  v-for="(worker, index) in reportData.workers" 
+                  v-for="(worker, index) in workers" 
                   :key="index"
                   class="grid grid-cols-2 px-6 py-4 border-b border-white/5 hover:bg-white/5 transition-colors items-center"
                 >
                   <div class="text-sm text-white font-medium">{{ worker.type }}</div>
                   <div class="text-center text-sm text-white font-medium">{{ worker.count }}</div>
+                </div>
+                <div v-if="workers.length === 0" class="px-6 py-8 text-center text-sm text-white/30">
+                  暂无工种数据
                 </div>
               </div>
             </div>
@@ -115,11 +123,9 @@
               <AlertCircle :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">现场问题与解决</span>
             </div>
-            <textarea 
-              v-model="reportData.issues"
-              placeholder="请输入现场问题及解决方案..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none"
-            ></textarea>
+            <div class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm overflow-y-auto whitespace-pre-wrap custom-scrollbar">
+              {{ issues }}
+            </div>
           </div>
 
           <!-- 次日施工区域 -->
@@ -128,11 +134,9 @@
               <MapPin :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">次日施工区域</span>
             </div>
-            <textarea 
-              v-model="reportData.nextDayArea"
-              placeholder="请输入次日施工区域..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none"
-            ></textarea>
+            <div class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm overflow-y-auto whitespace-pre-wrap custom-scrollbar">
+              {{ nextDayArea }}
+            </div>
           </div>
 
           <!-- 次日施工内容 -->
@@ -141,11 +145,9 @@
               <Hammer :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">次日施工内容</span>
             </div>
-            <textarea 
-              v-model="reportData.nextDayContent"
-              placeholder="请输入次日施工内容..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none"
-            ></textarea>
+            <div class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm overflow-y-auto whitespace-pre-wrap custom-scrollbar">
+              {{ nextDayContent }}
+            </div>
           </div>
 
           <!-- 次日人员安排 -->
@@ -154,11 +156,9 @@
               <Users :size="16" />
               <span class="font-bold text-xs tracking-widest uppercase">次日人员安排</span>
             </div>
-            <textarea 
-              v-model="reportData.nextDayWorkers"
-              placeholder="请输入次日人员安排..."
-              class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm focus:outline-none focus:border-[#FFE600]/50 transition-colors resize-none"
-            ></textarea>
+            <div class="w-full h-[200px] bg-white/5 border border-white/10 rounded-xl p-4 text-white text-sm overflow-y-auto whitespace-pre-wrap custom-scrollbar">
+              {{ nextDayWorkers }}
+            </div>
           </div>
         </div>
 
@@ -166,13 +166,13 @@
         <div v-else-if="activeTab === 'photos'" :key="'photos'" class="h-full overflow-y-auto custom-scrollbar pr-2">
           <div class="grid grid-cols-3 gap-4">
             <div 
-              v-for="(photo, index) in reportData.photos" 
+              v-for="(photo, index) in photos" 
               :key="index"
-              @click="selectedPhoto = photo"
+              @click="selectedPhoto = photo.imgUrl"
               class="aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10 cursor-pointer hover:border-[#FFE600]/50 transition-all group relative"
             >
               <img 
-                :src="photo" 
+                :src="photo.imgUrl" 
                 class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
                 referrerPolicy="no-referrer"
               />
@@ -180,6 +180,9 @@
                 <Camera :size="24" class="text-white/70" />
               </div>
             </div>
+          </div>
+          <div v-if="photos.length === 0" class="h-64 flex items-center justify-center opacity-50">
+            <p class="text-sm">暂无施工照片</p>
           </div>
         </div>
 
@@ -195,9 +198,7 @@
           class="fixed inset-0 z-[9999] bg-black flex items-center justify-center overflow-hidden"
           @click="closePhoto"
         >
-          <!-- Controls -->
           <div class="absolute top-6 right-6 flex gap-4 z-[10000]">
-            <!-- Fullscreen Toggle -->
             <button 
               @click.stop="toggleFullscreen"
               class="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-all border border-white/10"
@@ -206,8 +207,6 @@
               <Maximize2 v-if="!isFullscreen" :size="20" />
               <Minimize2 v-else :size="20" />
             </button>
-
-            <!-- Close Button -->
             <button 
               @click="closePhoto"
               class="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center text-white hover:bg-white/20 transition-all border border-white/10"
@@ -217,7 +216,6 @@
             </button>
           </div>
 
-          <!-- Image Container -->
           <div class="w-full h-full flex items-center justify-center p-0">
             <img 
               :src="selectedPhoto" 
@@ -233,8 +231,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { MapPin, Hammer, TrendingUp, Users, Package, AlertCircle, Camera, X, Maximize2, Minimize2 } from 'lucide-vue-next';
+import { fetchDailyReportDetail, fetchWorkTypeMap } from '../../api/projectApi';
 
 const props = defineProps<{
   report: any;
@@ -250,6 +249,71 @@ const tabs = [
 const activeTab = ref('content');
 const selectedPhoto = ref<string | null>(null);
 const isFullscreen = ref(false);
+const loading = ref(false);
+const error = ref('');
+
+// ========== 数据字段 ==========
+const area = ref('');
+const progress = ref('');
+const content = ref('');
+const materials = ref('');
+const workers = ref<{ type: string; count: string | number }[]>([]);
+const issues = ref('');
+const nextDayArea = ref('');
+const nextDayContent = ref('');
+const nextDayWorkers = ref('');
+const photos = ref<any[]>([]);
+
+const safeStr = (v: any) => (v == null ? '' : String(v));
+
+/** 加载日报详情 */
+async function loadDetail() {
+  const reportId = props.report?.id;
+  if (!reportId) return;
+
+  loading.value = true;
+  error.value = '';
+
+  try {
+    const [detail, workTypeMap] = await Promise.all([
+      fetchDailyReportDetail(reportId),
+      fetchWorkTypeMap(),
+    ]);
+
+    const dj = detail.dailyJson;
+    const dl = detail.dayLaborList;
+
+    // 施工内容
+    area.value = safeStr(dj.sgnr?.[0]?.text1);
+    progress.value = safeStr(dj.sgnr?.[0]?.text3);
+    content.value = safeStr(dj.sgnr?.[0]?.text2);
+
+    // 进场材料
+    materials.value = safeStr(dj.jrjccl?.text1);
+
+    // 工种人员 —— 从 dayLaborList 查找 workType → 字典 name
+    workers.value = (dl || []).map((item: any) => {
+      const typeId = Number(item.workType);
+      const typeName = workTypeMap.get(typeId) || `工种${typeId}`;
+      const count = item.count ?? item.num ?? item.number ?? '-';
+      return { type: typeName, count };
+    });
+
+    // 问题与次日计划
+    issues.value = safeStr(dj.wtyjj?.text1);
+    nextDayArea.value = safeStr(dj.crsgjh?.[0]?.text1);
+    nextDayContent.value = safeStr(dj.crsgjh?.[0]?.text2);
+    nextDayWorkers.value = safeStr(dj.crsgjh?.[0]?.text3);
+
+    // 施工照片
+    photos.value = dj.jrsgzp || [];
+  } catch (e: any) {
+    console.error('加载日报详情失败:', e);
+    error.value = '加载日报详情失败，请稍后重试';
+  } finally {
+    loading.value = false;
+  }
+}
 
 const closePhoto = () => {
   if (isFullscreen.value && document.fullscreenElement) {
@@ -281,43 +345,17 @@ const handleFullscreenChange = () => {
 
 onMounted(() => {
   document.addEventListener('fullscreenchange', handleFullscreenChange);
+  loadDetail();
 });
 
 onUnmounted(() => {
   document.removeEventListener('fullscreenchange', handleFullscreenChange);
 });
 
-const activeTabIcon = computed(() => {
-  return tabs.find(t => t.id === activeTab.value)?.icon;
-});
-
-const reportData = ref({
-  area: '客厅、主卧、次卧',
-  content: '1. 客厅吊顶骨架安装完成；\n2. 主卧墙面找平处理；\n3. 次卧地面清理，准备铺设地暖。',
-  progress: 65,
-  progressDesc: '整体进度符合预期，木工进场顺利。',
-  materials: '1. 轻钢龙骨：50支\n2. 石膏板：30张\n3. 腻子粉：10袋',
-  workers: [
-    { type: '装饰木工', count: 2 },
-    { type: '装修水工', count: 2 },
-    { type: '瓦工 (贴砖)', count: 2 },
-    { type: '电工', count: 2 },
-  ],
-  issues: '暂无重大问题，现场施工环境整洁。',
-  nextDayArea: '客厅、走廊',
-  nextDayContent: '1. 客厅吊顶封板；\n2. 走廊灯具线路铺设。',
-  nextDayWorkers: '木工2人，电工1人。',
-  photos: [
-    'https://picsum.photos/seed/const1/800/600',
-    'https://picsum.photos/seed/const2/800/600',
-    'https://picsum.photos/seed/const3/800/600',
-    'https://picsum.photos/seed/const4/800/600',
-    'https://picsum.photos/seed/const5/800/600',
-    'https://picsum.photos/seed/const6/800/600',
-    'https://picsum.photos/seed/const7/800/600',
-    'https://picsum.photos/seed/const8/800/600',
-    'https://picsum.photos/seed/const9/800/600',
-  ]
+// 切换日报时重新加载
+watch(() => props.report?.id, () => {
+  activeTab.value = 'content';
+  loadDetail();
 });
 </script>
 

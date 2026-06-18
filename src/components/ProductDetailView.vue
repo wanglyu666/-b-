@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue';
 import { ArrowLeft, Star, Heart, Minus, Plus } from 'lucide-vue-next';
 import TopBarActions from './TopBarActions.vue';
+import { useAppStore } from '../stores/appStore';
 import type { Product } from '../types';
 
 const props = defineProps<{
@@ -21,6 +22,7 @@ const emit = defineEmits([
   'messageClick'
 ]);
 
+const appStore = useAppStore();
 const activeImg = ref(0);
 const quantity = ref(1);
 
@@ -56,6 +58,7 @@ const increment = () => {
           :wishlistCount="wishlistCount" 
           @messageClick="$emit('messageClick')" 
           :messageCount="messageCount" 
+          :userName="appStore.customerName"
         />
      </div>
 

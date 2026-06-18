@@ -23,10 +23,10 @@
           v-for="(photo, index) in completionPhotos" 
           :key="index"
           class="aspect-[4/3] rounded-2xl overflow-hidden border border-white/10 bg-white/5 cursor-pointer group relative"
-          @click="$emit('zoomImage', photo)"
+          @click="$emit('zoomImage', photo.imgUrl)"
         >
           <img 
-            :src="photo" 
+            :src="photo.imgUrl" 
             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
             referrerpolicy="no-referrer"
           />
@@ -88,9 +88,13 @@ import {
   ArrowLeftRight,
   Download
 } from 'lucide-vue-next';
+import type { CompletedPhotoItem, CompletedFileItem, CompletedData } from '../../api/projectApi';
+import { downloadFileFromUrl } from '../../api/projectApi';
 
 const props = defineProps<{
   projectId: string;
+  completedPhotos?: CompletedPhotoItem[];
+  completedData?: CompletedData;
 }>();
 
 defineEmits(['zoomImage']);
@@ -113,57 +117,31 @@ const activeTabIcon = computed(() => {
   return tabs.find(t => t.id === activeTab.value)?.icon;
 });
 
-// Mock data for files
-const mockFiles = {
-  acceptance: [
-    { name: '隐蔽工程验收记录表.pdf', size: '1.2MB' },
-    { name: '分部分项工程质量验收单.docx', size: '850KB' },
-    { name: '竣工预验收报告.pdf', size: '2.4MB' },
-    { name: '水电工程验收合格证.pdf', size: '1.1MB' },
-    { name: '防水工程闭水试验记录.pdf', size: '920KB' },
-  ],
-  documents: [
-    { name: '工程竣工图纸全集.zip', size: '45.8MB' },
-    { name: '设计变更通知单汇总.pdf', size: '3.2MB' },
-    { name: '工程质量保修书.pdf', size: '1.5MB' },
-    { name: '消防安全检查合格证.pdf', size: '1.8MB' },
-  ],
-  materials: [
-    { name: '主要材料合格证及检测报告.pdf', size: '12.4MB' },
-    { name: '设备安装调试运行记录.docx', size: '2.1MB' },
-    { name: '进场材料报验单汇总.pdf', size: '5.6MB' },
-    { name: '特种设备使用登记证.pdf', size: '1.2MB' },
-  ],
-  handover: [
-    { name: '工程移交证书.pdf', size: '1.1MB' },
-    { name: '物业管理交接清单.xlsx', size: '450KB' },
-    { name: '钥匙及相关配件交接单.pdf', size: '320KB' },
-    { name: '设施设备操作维护手册.pdf', size: '15.2MB' },
-  ]
-};
-
 const activeTabData = computed(() => {
   if (activeTab.value === 'photos') return [];
-  return mockFiles[activeTab.value as keyof typeof mockFiles] || [];
+  const data = props.completedData;
+  if (!data) return [];
+  const map: Record<string, CompletedFileItem[]> = {
+    acceptance: data.acceptance,
+    documents: data.documents,
+    materials: data.materials,
+    handover: data.handover,
+  };
+  return map[activeTab.value] || [];
 });
 
-const handleDownload = (file: any) => {
-  console.log('Downloading:', file.name);
-  // In a real app, this would trigger a file download
+const handleDownload = async (file: CompletedFileItem) => {
+  if (!file.attachment) return;
+  try {
+    await downloadFileFromUrl(file.attachment, file.name || '文件');
+  } catch (e) {
+    console.error('下载文件失败:', e);
+  }
 };
 
-// Mock data for completion photos
-const completionPhotos = [
-  'https://picsum.photos/seed/eng1/800/800',
-  'https://picsum.photos/seed/eng2/800/800',
-  'https://picsum.photos/seed/eng3/800/800',
-  'https://picsum.photos/seed/eng4/800/800',
-  'https://picsum.photos/seed/eng5/800/800',
-  'https://picsum.photos/seed/eng6/800/800',
-  'https://picsum.photos/seed/eng7/800/800',
-  'https://picsum.photos/seed/eng8/800/800',
-  'https://picsum.photos/seed/eng9/800/800',
-];
+const completionPhotos = computed(() => {
+  return props.completedPhotos || [];
+});
 </script>
 
 <style scoped>

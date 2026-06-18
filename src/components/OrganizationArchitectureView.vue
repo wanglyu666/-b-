@@ -7,6 +7,7 @@ import {
 } from 'lucide-vue-next';
 import { computed } from 'vue';
 import TopBarActions from './TopBarActions.vue';
+import { useAppStore } from '../stores/appStore';
 import spaceIllustration from '../../image asset/space.png';
 import membersMgmtIllustration from '../../image asset/group icon.png';
 import { approvalFlowCardsOrgPreview } from '../data/approvalFlowCards';
@@ -22,6 +23,8 @@ const props = defineProps<{
   /** 空间总数（与空间管理列表一致） */
   spaceCount: number;
 }>();
+
+const appStore = useAppStore();
 
 const emit = defineEmits<{
   /** 不传 id：仅进入成员管理页；传成员 id：进入成员管理页并打开该成员详情 */
@@ -85,7 +88,7 @@ const approvalBlocks = approvalFlowCardsOrgPreview;
           <h1 class="text-3xl font-bold text-gray-800">组织与架构</h1>
           <p class="text-gray-500 mt-1">成员、空间与审批配置</p>
         </div>
-        <TopBarActions :is-shop="false" />
+        <TopBarActions :is-shop="false" :userName="appStore.customerName" />
       </header>
 
       <!--

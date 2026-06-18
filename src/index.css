@@ -1,3 +1,5 @@
+/* 字体加载不阻塞渲染：display=swap + 本地回退已在 @theme 中声明 */
+/* 如果 Google Fonts 不可用（国内网络），直接使用系统字体 */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 @import "./styles/modal-morph.css";

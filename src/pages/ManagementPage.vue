@@ -35,7 +35,6 @@ function viewMaintenanceProjects(status: string) {
     @view-projects="viewProjects"
     @view-maintenance="router.push({ name: 'maintenance-repair' })"
     @view-maintenance-projects="viewMaintenanceProjects"
-    @add-repair="appStore.addRepairReport"
     @view-orders="router.push({ name: 'order-management' })"
   />
 </template>

@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-vue-next';
 import TopBarActions from '../TopBarActions.vue';
+import { useAppStore } from '../../stores/appStore';
 import { engineeringProjects as engineeringProjectsFallback } from '../../data';
 import type { EngineeringProject } from '../../types';
 import {
@@ -59,6 +60,7 @@ const props = withDefaults(
   },
 );
 
+const appStore = useAppStore();
 const consultationSheetStatus = ref<ConsultationSheetStatus>('待回复');
 const statusOptions = CONSULTATION_STATUSES;
 
@@ -415,7 +417,7 @@ function submitConsultationForm() {
           <h1 class="text-3xl font-bold text-gray-800">咨询与反馈</h1>
           <p class="text-gray-500 mt-1">咨询单与意见反馈入口</p>
         </div>
-        <TopBarActions :isShop="false" />
+        <TopBarActions :isShop="false" :userName="appStore.customerName" />
       </header>
 
       <!-- 左约 1/3：咨询单全高；右约 2/3：上两格等宽 + 下通栏 -->

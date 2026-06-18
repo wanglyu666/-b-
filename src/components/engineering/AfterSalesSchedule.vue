@@ -5,18 +5,18 @@
       <div class="grid grid-cols-1 gap-6">
         <div class="flex items-center gap-4">
           <div class="w-24 text-right text-sm text-white/60">
-            <span class="mr-1 text-red-400">*</span>{{ plan?.nodeName ? '验收节点名称' : '售后计划' }}
+            <span class="mr-1 text-red-400">*</span>{{ isAfterSales ? '售后计划' : (plan?.nodeName ? '验收节点名称' : '售后计划') }}
           </div>
-          <div class="font-medium text-white">{{ plan?.nodeName || plan?.planName }}</div>
+          <div class="font-medium text-white">{{ isAfterSales ? plan?.plan : (plan?.nodeName || plan?.planName) }}</div>
         </div>
 
         <div class="flex items-center gap-4">
           <div class="w-24 text-right text-sm text-white/60"><span class="mr-1 text-red-400">*</span>计划时间</div>
-          <div class="font-mono text-white/40">{{ plan?.plannedTime || plan?.planDate }}</div>
+          <div class="font-mono text-white/40">{{ isAfterSales ? plan?.planTime : (plan?.plannedTime || plan?.planDate) }}</div>
         </div>
 
         <div class="flex items-center gap-4">
-          <div class="w-24 text-right text-sm text-white/60"><span class="mr-1 text-red-400">*</span>{{ plan?.nodeName ? '预约验收时间' : '预约巡检时间' }}</div>
+          <div class="w-24 text-right text-sm text-white/60"><span class="mr-1 text-red-400">*</span>{{ isAfterSales ? '预约验收时间' : (plan?.nodeName ? '预约验收时间' : '预约巡检时间') }}</div>
           <div class="relative w-48">
             <input
               ref="datePickerRef"
@@ -35,6 +35,43 @@
               @click="openDatePicker"
             />
           </div>
+        </div>
+      </div>
+
+      <!-- Acceptance Type Section - only for progress node control -->
+      <div v-if="mode === 'progress'" class="mt-2">
+        <div class="flex items-center gap-4">
+          <div class="w-24 text-right text-sm text-white/60"><span class="mr-1 text-red-400">*</span>验收类型</div>
+          <label
+            class="flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 transition-colors"
+            :class="xmzType === '2' ? 'border-[#FFE600] bg-[#FFE600]/10 text-white' : 'border-white/10 bg-white/5 text-white/60'"
+            @click="xmzType = '2'"
+          >
+            <span class="relative h-4 w-4 flex-shrink-0 rounded-full border-2 transition-colors" :class="xmzType === '2' ? 'border-[#FFE600]' : 'border-white/20'">
+              <span v-if="xmzType === '2'" class="absolute inset-1 rounded-full bg-[#FFE600]"></span>
+            </span>
+            现场验收
+          </label>
+          <label
+            class="flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 transition-colors"
+            :class="xmzType === '1' ? 'border-[#FFE600] bg-[#FFE600]/10 text-white' : 'border-white/10 bg-white/5 text-white/60'"
+            @click="xmzType = '1'"
+          >
+            <span class="relative h-4 w-4 flex-shrink-0 rounded-full border-2 transition-colors" :class="xmzType === '1' ? 'border-[#FFE600]' : 'border-white/20'">
+              <span v-if="xmzType === '1'" class="absolute inset-1 rounded-full bg-[#FFE600]"></span>
+            </span>
+            线上验收
+          </label>
+        </div>
+
+        <div v-if="xmzType === '1'" class="ml-[112px] mt-4 flex items-center gap-4">
+          <span class="text-sm text-white/60">会议号</span>
+          <input
+            v-model="meetingNo"
+            type="text"
+            placeholder="请输入会议号"
+            class="w-48 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm text-white transition-colors focus:border-[#FFE600] focus:outline-none"
+          />
         </div>
       </div>
 
@@ -127,11 +164,18 @@ import { Trash2 } from 'lucide-vue-next';
 
 const props = defineProps<{
   plan: any;
+  /** 'progress' 过程验收-进度管控 | 'after_sales' 售后计划 */
+  mode?: 'progress' | 'after_sales';
 }>();
 
 const emit = defineEmits(['submit']);
 
-const scheduledDate = ref('');
+const isAfterSales = computed(() => props.mode === 'after_sales');
+const isProgress = computed(() => !isAfterSales.value);
+
+const scheduledDate = ref(props.plan?.xmzYuyueTime || props.plan?.kfYuyueTime || '');
+const xmzType = ref('2'); // '1' 线上验收  '2' 现场验收
+const meetingNo = ref('');
 const contacts = ref<{ name: string; position: string; phone: string }[]>([]);
 
 /** YYYY-MM-DD → yyyy/mm/dd */
@@ -166,6 +210,11 @@ const removeContact = (index: number) => {
 
 const isValid = computed(() => {
   if (!scheduledDate.value) return false;
+  // 过程验收模式下校验验收类型
+  if (isProgress.value) {
+    if (!xmzType.value) return false;
+    if (xmzType.value === '1' && !meetingNo.value.trim()) return false;
+  }
 
   for (const contact of contacts.value) {
     if (!contact.name.trim() || !contact.position.trim() || !contact.phone.trim()) {
@@ -181,6 +230,8 @@ const submit = () => {
     emit('submit', {
       plan: props.plan,
       scheduledDate: scheduledDate.value,
+      xmzType: isAfterSales.value ? '' : xmzType.value,
+      meetingNo: isAfterSales.value ? '' : (xmzType.value === '1' ? meetingNo.value : ''),
       contacts: contacts.value
     });
   }

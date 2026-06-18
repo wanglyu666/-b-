@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { debounce } from '../utils/debounce';
 import { 
   ArrowLeft, 
   X, 
@@ -10,6 +11,7 @@ import {
 import type { EngineeringProject } from '../types';
 import { engineeringProjects as engineeringProjectsFallback } from '../data';
 import { useProjectData } from '../composables/useProjectData';
+import { fetchEngineeringProjects, updateSpotordernodecontrol, updateAftersalesplan, fetchAfterSalesPlans, fetchCompletedPhotos, fetchCompletedData, fetchDefectReportList, deleteDefectRecord, reviewDefect, fetchEvaluation, submitEvaluation as submitEvaluationApi, type AfterSalesPlanItem, type CompletedPhotoItem, type CompletedData, type DefectItem, type EvaluationData } from '../api/projectApi';
 
 import ProjectCard from './engineering/ProjectCard.vue';
 import ImagePreviewModal from './engineering/ImagePreviewModal.vue';
@@ -46,10 +48,63 @@ const activeStatus = ref(props.initialStatus || '施工中');
 const selectedProject = ref<EngineeringProject | null>(null);
 const selectedProjectId = computed(() => selectedProject.value?.id);
 
+// 项目列表数据（支持 API 动态加载）
+const projectList = ref<EngineeringProject[]>(props.projects ?? []);
+const totalProjects = ref(0);
+const isLoadingProjects = ref(false);
+const searchQuery = ref('');
+const currentPage = ref(1);
+const itemsPerPage = 9;
+
+// 当 tab 切换时，重新请求对应状态的数据
+watch(activeStatus, async (newStatus) => {
+  currentPage.value = 1;
+  await loadProjectsByStatus(newStatus);
+}, { immediate: false });
+
+// 加载指定状态的项目列表
+async function loadProjectsByStatus(status: string, search?: string) {
+  isLoadingProjects.value = true;
+  try {
+    const result = await fetchEngineeringProjects(status, currentPage.value, itemsPerPage, search);
+    projectList.value = result.list;
+    totalProjects.value = result.total;
+  } catch (error) {
+    console.error(`加载 ${status} 项目失败:`, error);
+    projectList.value = engineeringProjectsFallback.filter(p => p.status === status);
+    totalProjects.value = projectList.value.length;
+  } finally {
+    isLoadingProjects.value = false;
+  }
+}
+
+// 防抖搜索
+const debouncedSearch = debounce((query: string) => {
+  currentPage.value = 1;
+  loadProjectsByStatus(activeStatus.value, query);
+}, 300);
+
+// 监听搜索输入变化
+watch(searchQuery, (newQuery) => {
+  debouncedSearch(newQuery);
+});
+
+// 切换分页
+function handlePageChange(page: number) {
+  currentPage.value = page;
+  loadProjectsByStatus(activeStatus.value, searchQuery.value);
+}
+
 const viewMode = ref<'details' | 'acceptance' | 'material_detail' | 'progress_detail' | 'progress_schedule' | 'progress_schedule_success' | 'defect_report' | 'defect_detail' | 'defect_add' | 'after_sales' | 'after_sales_schedule' | 'after_sales_success' | 'evaluation' | 'evaluation_success' | 'completion' | 'standards' | 'reports' | 'report_detail'>('details');
 const lastViewMode = ref<string>('');
 const defectReportOrigin = ref<string>('');
 const successSource = ref<'progress_schedule' | 'defect_add' | ''>('');
+const defectReportList = ref<any[]>([]);
+
+/** 缺陷表单类型：从缺陷汇报进入则为 '2'，否则 '1'（缺陷整改） */
+const currentDefectType = computed<'1' | '2'>(() => {
+  return lastViewMode.value === 'defect_report' ? '2' : '1';
+});
 const acceptanceTab = ref<'material' | 'progress'>('material');
 const progressDetailTab = ref<'acceptance_check' | 'defect_rectification'>('acceptance_check');
 
@@ -66,17 +121,21 @@ const {
 const selectedDefect = ref<any>(null);
 const selectedMaterialItem = ref<any>(null);
 const selectedProgressItem = ref<any>(null);
+const selectedNodeId = ref<number>(0);
+const selectedNodeName = ref('');
+const selectedNodeStatus = ref('');
+const selectedYsStatus = ref('');
 const isImageZoomed = ref(false);
 const zoomedImageUrl = ref('');
-const searchQuery = ref('');
-const projectList = computed(() => props.projects ?? engineeringProjectsFallback);
-
-const currentPage = ref(1);
-const itemsPerPage = 9;
 
 const windowSize = ref({ width: window.innerWidth, height: window.innerHeight });
-window.addEventListener('resize', () => {
+const handleResize = () => {
   windowSize.value = { width: window.innerWidth, height: window.innerHeight };
+};
+window.addEventListener('resize', handleResize);
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize);
 });
 
 const modalDimensions = computed(() => {
@@ -157,34 +216,15 @@ const headerTitle = computed(() => {
   return '详细信息';
 });
 
+// 搜索已由 API 端处理（projectName），此处直接返回数据
 const filteredProjects = computed(() => {
-  let projects = projectList.value;
-  
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    projects = projects.filter(p => 
-      p.name.toLowerCase().includes(query) || 
-      p.no.toLowerCase().includes(query) ||
-      p.manager.toLowerCase().includes(query) ||
-      p.address.toLowerCase().includes(query)
-    );
-  } else {
-    projects = projects.filter(p => p.status === activeStatus.value);
-  }
-  
-  return projects;
+  return projectList.value;
 });
 
-const totalPages = computed(() => Math.ceil(filteredProjects.value.length / itemsPerPage));
+const totalPages = computed(() => Math.ceil(totalProjects.value / itemsPerPage));
 
 const paginatedProjects = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  const end = start + itemsPerPage;
-  return filteredProjects.value.slice(start, end);
-});
-
-watch([activeStatus, searchQuery], () => {
-  currentPage.value = 1;
+  return filteredProjects.value;
 });
 
 const openModal = (project: EngineeringProject) => {
@@ -202,9 +242,13 @@ const enterAcceptance = () => {
 };
 
 const selectedAfterSalesPlan = ref<any>(null);
+const afterSalesPlans = ref<AfterSalesPlanItem[]>([]);
 
-const enterAfterSales = () => {
+const enterAfterSales = async () => {
   viewMode.value = 'after_sales';
+  if (selectedProject.value?.id) {
+    afterSalesPlans.value = await fetchAfterSalesPlans(selectedProject.value.id);
+  }
 };
 
 const handleScheduleAcceptance = (plan: any) => {
@@ -212,41 +256,110 @@ const handleScheduleAcceptance = (plan: any) => {
   viewMode.value = 'after_sales_schedule';
 };
 
-const handleScheduleSubmit = (formData: any) => {
-  console.log('Submitting schedule:', formData);
-  // Here you would typically make an API call to save the schedule
-  // For now, we'll just simulate success and update the local state
-  
-  if (selectedAfterSalesPlan.value) {
-    selectedAfterSalesPlan.value.isConfirmed = true;
-    selectedAfterSalesPlan.value.scheduledTime = formData.scheduledDate;
+/**
+ * 售后计划 - 预约验收提交
+ */
+const handleScheduleSubmit = async (formData: any) => {
+  const plan = selectedAfterSalesPlan.value;
+  if (!plan) return;
+
+  try {
+    const payload: Record<string, any> = {
+      id: plan.id,
+      spotOrderId: selectedProject.value?.id,
+      kfYuyueTime: formData.scheduledDate,
+      controlUser: JSON.stringify((formData.contacts || []).map((c: any) => ({
+        name: c.name,
+        position: c.position,
+        mobile: c.phone,
+        email: '',
+      }))),
+    };
+
+    await updateAftersalesplan(payload);
+    successSource.value = 'after_sales_schedule';
+    viewMode.value = 'after_sales_success';
+  } catch (error) {
+    console.error('预约验收提交失败:', error);
+    alert('提交失败，请稍后重试');
   }
-  
-  viewMode.value = 'after_sales_success';
 };
 
-const handleProgressScheduleSubmit = (formData: any) => {
-  if (selectedProgressItem.value) {
-    const index = progressData.value.findIndex(item => item.node === selectedProgressItem.value.node);
-    if (index !== -1) {
-      progressData.value[index] = {
-        ...progressData.value[index],
-        appointmentDate: formData.scheduledDate
-      };
-    }
+/**
+ * 进度管控 - 预约验收提交
+ */
+const handleProgressScheduleSubmit = async (formData: any) => {
+  const item = selectedProgressItem.value;
+  if (!item) return;
+
+  try {
+    const payload: Record<string, any> = {
+      id: item.id,
+      spotOrderId: selectedProject.value?.id,
+      kfYuyueTime: formData.scheduledDate,
+      kfType: formData.xmzType,
+      meetingNo: formData.xmzType === '2' ? '' : (formData.meetingNo || ''),
+      spotOrderNodecontrolUserList: (formData.contacts || []).map((c: any) => ({
+        name: c.name,
+        position: c.position,
+        mobile: c.phone,
+        email: '',
+      })),
+    };
+
+    await updateSpotordernodecontrol(payload);
+    successSource.value = 'progress_schedule';
+    viewMode.value = 'progress_schedule_success';
+  } catch (error) {
+    console.error('预约验收提交失败:', error);
+    alert('提交失败，请稍后重试');
   }
-  successSource.value = 'progress_schedule';
-  viewMode.value = 'progress_schedule_success';
 };
 
-const projectEvaluations = ref<Record<string, { rating: number; feedback: string }>>({});
+/** 评价相关状态 */
+const isEvaluationEditable = ref(false);
+const existingEvalRating = ref(0);
+const existingEvalFeedback = ref('');
 
-const enterEvaluation = () => {
+const enterEvaluation = async () => {
   viewMode.value = 'evaluation';
+  const project = selectedProject.value;
+  if (!project?.id) return;
+
+  // 判断 isEvaluate 是否为 1 → 可编辑
+  isEvaluationEditable.value = project.isEvaluate === '1';
+
+  // 拉取已有评价数据（用于回显）
+  try {
+    const evalData = await fetchEvaluation(project.id);
+    if (evalData) {
+      existingEvalRating.value = Number(evalData.syntheticScore) || 0;
+      existingEvalFeedback.value = evalData.content || '';
+    } else {
+      existingEvalRating.value = 0;
+      existingEvalFeedback.value = '';
+    }
+  } catch (e) {
+    console.error('获取评价数据失败:', e);
+    existingEvalRating.value = 0;
+    existingEvalFeedback.value = '';
+  }
 };
 
-const enterCompletion = () => {
+const completedPhotos = ref<CompletedPhotoItem[]>([]);
+const completedData = ref<CompletedData>({ acceptance: [], documents: [], materials: [], handover: [] });
+
+const enterCompletion = async () => {
   viewMode.value = 'completion';
+  if (selectedProject.value?.id) {
+    const id = selectedProject.value.id;
+    const [photos, data] = await Promise.all([
+      fetchCompletedPhotos(id),
+      fetchCompletedData(id),
+    ]);
+    completedPhotos.value = photos;
+    completedData.value = data;
+  }
 };
 
 const enterStandards = () => {
@@ -263,47 +376,100 @@ const enterReportDetail = (report: any) => {
   viewMode.value = 'report_detail';
 };
 
-const handleEvaluationSubmit = (data: { rating: number; feedback: string }) => {
-  if (selectedProjectId.value) {
-    projectEvaluations.value[selectedProjectId.value] = data;
+const handleEvaluationSubmit = async (data: { rating: number; feedback: string }) => {
+  const project = selectedProject.value;
+  if (!project?.id || !project?.projectId) return;
+  try {
+    await submitEvaluationApi({
+      spotOrderId: project.id,
+      projectId: project.projectId,
+      syntheticScore: data.rating,
+      content: data.feedback,
+    });
+  } catch (e) {
+    console.error('提交评价失败:', e);
   }
   viewMode.value = 'evaluation_success';
 };
 
-const enterDefects = () => {
+const enterDefects = async () => {
   defectReportOrigin.value = viewMode.value;
   lastViewMode.value = viewMode.value;
   viewMode.value = 'defect_report';
+  // 拉取缺陷汇报真实数据
+  if (selectedProject.value?.projectId) {
+    const res = await fetchDefectReportList(selectedProject.value.projectId);
+    defectReportList.value = (res.list || []).map(mapDefectItem);
+  }
+};
+
+/** 将 API 返回的 DefectItem 转为组件期望格式 */
+const mapDefectItem = (item: DefectItem) => {
+  const statusMap: Record<string, string> = {
+    '0': '待整改',
+    '5': '待验收',
+    '6': '已通过',
+    '7': '不通过',
+  };
+  return {
+    id: item.id,
+    image: (item.defectFile || '').split(',')[0] || '',
+    rectifiedImage: (item.completeFile || '').split(',')[0] || '',
+    description: item.defectDescribe || '',
+    date: item.createTime || '',
+    planDate: item.planTime || '',
+    finishDate: item.completeTime || '',
+    status: statusMap[String(item.status)] || '待整改',
+  };
 };
 
 const viewDefectDetail = (defect: any) => {
-  selectedDefect.value = defect;
+  // 如果传进来的是 API 原始数据（有 defectFile 没有 image），先做映射转换
+  // 从 defect_report 进来的已经映射过了，不需要重复映射
+  selectedDefect.value = defect.image !== undefined ? defect : mapDefectItem(defect);
   lastViewMode.value = viewMode.value;
   viewMode.value = 'defect_detail';
 };
 
-const deleteDefect = (id: number) => {
-  if (lastViewMode.value === 'defect_report') {
-    reportDefects.value = reportDefects.value.filter(d => d.id !== id);
-  } else {
-    defects.value = defects.value.filter(d => d.id !== id);
+const deleteDefect = async (id: number) => {
+  try {
+    await deleteDefectRecord(id);
+    if (lastViewMode.value === 'defect_report') {
+      defectReportList.value = defectReportList.value.filter(d => d.id !== id);
+    } else {
+      defects.value = defects.value.filter(d => d.id !== id);
+    }
+  } catch (e) {
+    console.error('删除缺陷失败:', e);
   }
   goBack();
 };
 
-const handleDefectReview = (payload: { id: number, status: 'pass' | 'fail', description: string }) => {
-  const targetArray = lastViewMode.value === 'defect_report' ? reportDefects.value : defects.value;
-  const index = targetArray.findIndex(d => d.id === payload.id);
-  
-  if (index !== -1) {
-    if (payload.status === 'pass') {
-      targetArray[index].status = '已通过';
-    } else {
-      targetArray[index].status = lastViewMode.value === 'defect_report' ? '待处理' : '待整改';
-      targetArray[index].description = payload.description;
-      targetArray[index].finishDate = '';
-      targetArray[index].rectifiedImage = '';
+const handleDefectReview = async (payload: { id: number, status: 'pass' | 'fail', description: string }) => {
+  try {
+    // 调用后端验收接口
+    // 通过 → status=6，不通过 → status=7，khReason=原因
+    await reviewDefect({
+      id: payload.id,
+      status: payload.status === 'pass' ? '6' : '7',
+      khReason: payload.status === 'fail' ? payload.description : '',
+    });
+
+    // 本地更新状态
+    const targetArray = lastViewMode.value === 'defect_report' ? defectReportList.value : defects.value;
+    const index = targetArray.findIndex(d => d.id === payload.id);
+    if (index !== -1) {
+      if (payload.status === 'pass') {
+        targetArray[index].status = '已通过';
+      } else {
+        targetArray[index].status = lastViewMode.value === 'defect_report' ? '待处理' : '待整改';
+        targetArray[index].description = payload.description;
+        targetArray[index].finishDate = '';
+        targetArray[index].rectifiedImage = '';
+      }
     }
+  } catch (e) {
+    console.error('验收提交失败:', e);
   }
   goBack();
 };
@@ -313,24 +479,12 @@ const addDefect = () => {
   viewMode.value = 'defect_add';
 };
 
-const confirmAddDefect = (payload: { image: string, description: string }) => {
-  const newDefect = {
-    id: Date.now(),
-    image: payload.image,
-    rectifiedImage: '',
-    description: payload.description,
-    date: new Date().toISOString().split('T')[0],
-    planDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    finishDate: '',
-    status: lastViewMode.value === 'defect_report' ? '待处理' : '待整改'
-  };
-  
-  if (lastViewMode.value === 'defect_report') {
-    reportDefects.value.unshift(newDefect);
-  } else {
-    defects.value.unshift(newDefect);
+const handleDefectAddSuccess = async () => {
+  // 刷新缺陷列表
+  if (lastViewMode.value === 'defect_report' && selectedProject.value?.projectId) {
+    const res = await fetchDefectReportList(selectedProject.value.projectId);
+    defectReportList.value = (res.list || []).map(mapDefectItem);
   }
-  
   successSource.value = 'defect_add';
   viewMode.value = 'progress_schedule_success';
 };
@@ -342,12 +496,19 @@ const viewMaterialDetail = (item: any) => {
 
 const viewProgressDetail = (item: any) => {
   selectedProgressItem.value = item;
-  progressDetailTab.value = 'acceptance_check';
+  selectedNodeId.value = item.id;
+  selectedNodeName.value = item.nodeName;
+  selectedNodeStatus.value = String(item.status ?? '');
+  selectedYsStatus.value = String(item.ysStatus ?? '');
+  // status==1 只显示缺陷整改, status==3 显示验收标签页
+  progressDetailTab.value = item.status === '1' ? 'defect_rectification' : 'acceptance_check';
   viewMode.value = 'progress_detail';
 };
 
 const scheduleProgressAcceptance = (item: any) => {
   selectedProgressItem.value = item;
+  selectedNodeId.value = item.id;
+  selectedNodeName.value = item.nodeName;
   viewMode.value = 'progress_schedule';
 };
 
@@ -399,6 +560,12 @@ const goBack = () => {
     viewMode.value = 'details';
   } else if (viewMode.value === 'after_sales_schedule' || viewMode.value === 'after_sales_success') {
     viewMode.value = 'after_sales';
+    // 返回时重新拉取售后计划列表，确保数据最新
+    if (selectedProject.value?.id) {
+      fetchAfterSalesPlans(selectedProject.value.id).then(data => {
+        afterSalesPlans.value = data;
+      });
+    }
   }
 };
 
@@ -408,6 +575,9 @@ const zoomImage = (url: string) => {
 };
 
 onMounted(async () => {
+  // 初始加载当前 tab 的数据
+  await loadProjectsByStatus(activeStatus.value);
+  
   if (props.autoOpenProjectId) {
     await nextTick();
     const target = projectList.value.find(p => p.id === props.autoOpenProjectId);
@@ -482,22 +652,30 @@ onMounted(async () => {
 
     <!-- 项目卡片网格 -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      <ProjectCard
-        v-for="project in paginatedProjects" 
-        :key="project.id"
-        :project="project"
-        @click="openModal(project)"
-      />
-      
-      <div v-if="paginatedProjects.length === 0" class="col-span-full py-20 flex flex-col items-center justify-center text-gray-500 bg-white/30 backdrop-blur-md rounded-3xl border border-dashed border-white/40">
-        <p class="text-lg font-medium text-gray-600">{{ searchQuery ? '没有找到匹配的项目' : '暂无该状态的项目' }}</p>
+      <!-- 加载中状态 -->
+      <div v-if="isLoadingProjects" class="col-span-full py-20 flex flex-col items-center justify-center text-gray-500">
+        <div class="w-8 h-8 border-4 border-gray-200 border-t-[#FFE600] rounded-full animate-spin mb-4"></div>
+        <p class="text-lg font-medium text-gray-600">加载中...</p>
       </div>
+
+      <template v-else>
+        <ProjectCard
+          v-for="project in paginatedProjects" 
+          :key="project.id"
+          :project="project"
+          @click="openModal(project)"
+        />
+        
+        <div v-if="paginatedProjects.length === 0" class="col-span-full py-20 flex flex-col items-center justify-center text-gray-500 bg-white/30 backdrop-blur-md rounded-3xl border border-dashed border-white/40">
+          <p class="text-lg font-medium text-gray-600">{{ searchQuery ? '没有找到匹配的项目' : '暂无该状态的项目' }}</p>
+        </div>
+      </template>
     </div>
 
     <!-- Pagination -->
     <div v-if="totalPages > 1" class="flex justify-center items-center space-x-4 mt-12 pb-8">
       <button 
-        @click="currentPage > 1 && currentPage--" 
+        @click="handlePageChange(currentPage - 1)" 
         :disabled="currentPage === 1"
         class="p-2 rounded-full bg-white border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
       >
@@ -508,7 +686,7 @@ onMounted(async () => {
         <button 
           v-for="page in totalPages" 
           :key="page"
-          @click="currentPage = page"
+          @click="handlePageChange(page)"
           :class="['w-10 h-10 rounded-full text-sm font-bold transition-all',
             currentPage === page 
               ? 'bg-[#FFE600] text-[#260A2F] shadow-sm' 
@@ -520,13 +698,16 @@ onMounted(async () => {
       </div>
 
       <button 
-        @click="currentPage < totalPages && currentPage++" 
+        @click="handlePageChange(currentPage + 1)" 
         :disabled="currentPage === totalPages"
         class="p-2 rounded-full bg-white border border-gray-200 disabled:opacity-30 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
       >
         <ChevronRight :size="20" />
       </button>
     </div>
+
+    <!-- 暂无数据时隐藏分页 -->
+    <div v-else-if="!isLoadingProjects && projectList.length === 0 && totalProjects === 0" class="hidden"></div>
 
     <!-- 详情弹窗 -->
     <div v-if="selectedProject" class="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/40 backdrop-blur-md animate-in fade-in duration-300" @click.self="closeModal">
@@ -581,7 +762,7 @@ onMounted(async () => {
                 v-else-if="viewMode === 'defect_report'" 
                 :key="'defect_report'" 
                 title="缺陷记录列表" 
-                :defects="reportDefects" 
+                :defects="defectReportList" 
                 @add="addDefect" 
                 @viewDetail="viewDefectDetail" 
               />
@@ -605,17 +786,19 @@ onMounted(async () => {
             <DefectForm 
               v-else-if="viewMode === 'defect_add'"
               :key="'defect_add'"
-              @submit="confirmAddDefect"
+              :spotOrderId="selectedProject?.id || ''"
+              :projectId="selectedProject?.projectId || ''"
+              :nodeName="selectedNodeName"
+              :defectType="currentDefectType"
+              @success="handleDefectAddSuccess"
             />
 
                 <!-- Acceptance Mode -->
                 <div v-else-if="viewMode === 'acceptance'" :key="'acceptance'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
                   <ProcessAcceptance
-                    :materialData="materialData"
-                    :progressData="progressData"
+                    :spotOrderId="selectedProject?.id || ''"
                     :initialTab="acceptanceTab"
                     @update:tab="acceptanceTab = $event"
-                    @viewMaterialDetail="viewMaterialDetail"
                     @viewProgressDetail="viewProgressDetail"
                     @scheduleAcceptance="scheduleProgressAcceptance"
                   />
@@ -636,9 +819,12 @@ onMounted(async () => {
                 <!-- Progress Detail Mode -->
                 <div v-else-if="viewMode === 'progress_detail'" :key="'progress_detail'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
                   <ProgressDetail
-                    :progressItem="selectedProgressItem"
-                    :defects="defects"
-                    :isSubmitted="submittedProgressItems.includes(selectedProgressItem?.node)"
+                    :nodeId="selectedNodeId"
+                    :nodeName="selectedNodeName"
+                    :spotOrderId="selectedProject?.id || ''"
+                    :isSubmitted="submittedProgressItems.includes(selectedNodeName)"
+                    :nodeStatus="selectedNodeStatus"
+                    :ysStatus="selectedYsStatus"
                     :initialTab="progressDetailTab"
                     @update:tab="progressDetailTab = $event"
                     @goBack="goBack"
@@ -652,7 +838,8 @@ onMounted(async () => {
                 <!-- Progress Schedule Mode -->
                 <div v-else-if="viewMode === 'progress_schedule'" :key="'progress_schedule'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
                   <AfterSalesSchedule
-                    :plan="{ nodeName: selectedProgressItem?.node, plannedTime: selectedProgressItem?.planDate }"
+                    mode="progress"
+                    :plan="{ id: selectedProgressItem?.id, nodeName: selectedProgressItem?.nodeName || selectedProgressItem?.node, plannedTime: selectedProgressItem?.planTime || selectedProgressItem?.planDate, xmzYuyueTime: selectedProgressItem?.xmzYuyueTime }"
                     @submit="handleProgressScheduleSubmit"
                     @cancel="goBack"
                   />
@@ -670,7 +857,7 @@ onMounted(async () => {
                 <!-- After Sales Plan Mode -->
                 <div v-else-if="viewMode === 'after_sales'" :key="'after_sales'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
                   <AfterSalesPlan
-                    :afterSalesData="afterSalesData"
+                    :afterSalesData="afterSalesPlans"
                     @scheduleAcceptance="handleScheduleAcceptance"
                   />
                 </div>
@@ -678,6 +865,7 @@ onMounted(async () => {
                 <!-- After Sales Schedule Mode -->
                 <div v-else-if="viewMode === 'after_sales_schedule'" :key="'after_sales_schedule'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
                   <AfterSalesSchedule
+                    mode="after_sales"
                     :plan="selectedAfterSalesPlan"
                     @submit="handleScheduleSubmit"
                     @cancel="goBack"
@@ -694,7 +882,9 @@ onMounted(async () => {
                 <!-- Evaluation Mode -->
                 <div v-else-if="viewMode === 'evaluation'" :key="'evaluation'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col gap-6">
                   <ProjectEvaluation
-                    :existingEvaluation="selectedProjectId ? projectEvaluations[selectedProjectId] : null"
+                    :editable="isEvaluationEditable"
+                    :existingRating="existingEvalRating"
+                    :existingFeedback="existingEvalFeedback"
                     @submit="handleEvaluationSubmit"
                   />
                 </div>
@@ -710,6 +900,8 @@ onMounted(async () => {
                 <div v-else-if="viewMode === 'completion'" :key="'completion'" class="animate-in slide-in-from-right-4 duration-500 flex flex-col h-full">
                   <CompletionMaterials
                     :projectId="selectedProject?.id || ''"
+                    :completedPhotos="completedPhotos"
+                    :completedData="completedData"
                     @zoomImage="zoomImage"
                   />
                 </div>

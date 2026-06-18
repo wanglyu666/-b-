@@ -6,7 +6,7 @@ import type { MaintenanceRepairItem, OrderItem, TodoNotification } from '../type
 import { fetchProducts } from '../api/commerceApi';
 import { fetchTodoNotifications } from '../api/notificationApi';
 import { fetchMaintenanceRepairOrders, fetchOrders } from '../api/operationApi';
-import { fetchEngineeringProjects, fetchMaintenanceProjects } from '../api/projectApi';
+import { fetchEngineeringProjects, fetchMaintenanceProjects, fetchUserInfo } from '../api/projectApi';
 
 export const useAppStore = defineStore('app', () => {
   const selectedProduct = ref<Product | null>(null);
@@ -22,6 +22,7 @@ export const useAppStore = defineStore('app', () => {
   const engineeringProjects = ref<EngineeringProject[]>([]);
   const maintenanceProjects = ref<MaintenanceProject[]>([]);
 
+  const customerName = ref('管理员');
   const loadingGlobalModules = ref(false);
   const globalModulesLoaded = ref(false);
   const globalLoadError = ref<string | null>(null);
@@ -38,8 +39,8 @@ export const useAppStore = defineStore('app', () => {
   const messageCount = computed(() =>
     todoNotifications.value.filter((item) => item.unread !== false).length,
   );
-  const repairOrderCount = computed(() => maintenanceRepairData.value.length);
-  const orderTotalCount = computed(() => orderData.value.length);
+  const repairOrderCount = ref(0);
+  const orderTotalCount = ref(0);
 
   async function loadGlobalModules(force = false) {
     if (globalModulesLoaded.value && !force) return;
@@ -63,10 +64,20 @@ export const useAppStore = defineStore('app', () => {
       ]);
       products.value = productList;
       todoNotifications.value = notificationList;
-      maintenanceRepairData.value = repairList;
-      orderData.value = orders;
-      engineeringProjects.value = engineeringList;
-      maintenanceProjects.value = maintenanceList;
+      maintenanceRepairData.value = repairList.list || repairList;
+      repairOrderCount.value = repairList.total || 0;
+      orderData.value = orders.list || orders;
+      orderTotalCount.value = orders.total || 0;
+      engineeringProjects.value = engineeringList.list;
+      maintenanceProjects.value = maintenanceList.list || maintenanceList;
+      
+      // 拉取用户信息（非关键路径，独立 try）
+      try {
+        customerName.value = await fetchUserInfo();
+      } catch {
+        // 用户信息获取失败不阻塞，保持默认值
+      }
+      
       globalModulesLoaded.value = true;
     } catch (e) {
       globalLoadError.value = e instanceof Error ? e.message : '全局模块加载失败';
@@ -208,6 +219,7 @@ export const useAppStore = defineStore('app', () => {
     activeConsultationStatus,
     pendingOpenConsultationId,
     pendingOpenFeedbackConsultationId,
+    customerName,
     messageCount,
     repairOrderCount,
     orderTotalCount,

@@ -10,12 +10,14 @@ const props = withDefaults(defineProps<{
   wishlistCount?: number;
   messageCount?: number;
   showBell?: boolean;
+  userName?: string;
 }>(), {
   isShop: false,
   cartCount: 0,
   wishlistCount: 0,
   messageCount: 0,
-  showBell: false
+  showBell: false,
+  userName: '管理员',
 });
 
 defineEmits(['cartClick', 'wishlistClick', 'messageClick', 'bellClick']);
@@ -62,7 +64,7 @@ function goPersonalCenter() {
       @click="goPersonalCenter"
     >
       <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Cooper" alt="" class="h-9 w-9 rounded-full bg-gray-100" />
-      <span class="text-sm font-bold text-gray-700">管理员</span>
+      <span class="text-sm font-bold text-gray-700">{{ props.userName }}</span>
     </button>
   </div>
 </template>

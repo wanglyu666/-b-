@@ -67,15 +67,48 @@ function startHalo(el: HTMLElement | null, isYellow: boolean) {
   running.value.push(anim);
 }
 
+let idleTimer: ReturnType<typeof setTimeout> | null = null;
+let isPaused = false;
+
+function pauseAnimations() {
+  if (isPaused) return;
+  isPaused = true;
+  running.value.forEach((a) => a.pause());
+}
+
+function resumeAnimations() {
+  if (!isPaused) return;
+  isPaused = false;
+  running.value.forEach((a) => a.play());
+}
+
+// 用户 2 秒无交互后暂停动画，节约 GPU
+function schedulePause() {
+  if (idleTimer) clearTimeout(idleTimer);
+  resumeAnimations();
+  idleTimer = setTimeout(pauseAnimations, 2000);
+}
+
 onMounted(() => {
   running.value = [];
+  // 减少到 2 个光晕：去掉 C/D，保留 A（大绿色）和 D（黄色）
   startHalo(haloA.value, false);
-  startHalo(haloB.value, false);
-  startHalo(haloC.value, false);
+  // startHalo(haloB.value, false);
+  // startHalo(haloC.value, false);
   startHalo(haloD.value, true);
+
+  // 在交互时恢复动画
+  ['mousemove', 'scroll', 'touchmove'].forEach((ev) =>
+    window.addEventListener(ev, schedulePause, { passive: true })
+  );
+  // schedulePause();
 });
 
 onUnmounted(() => {
+  if (idleTimer) clearTimeout(idleTimer);
+  ['mousemove', 'scroll', 'touchmove'].forEach((ev) =>
+    window.removeEventListener(ev, schedulePause)
+  );
   running.value.forEach((a) => a.cancel());
   running.value = [];
 });
@@ -105,7 +138,7 @@ onUnmounted(() => {
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
-  will-change: transform, opacity, filter;
+  /* 移除 will-change 减少合成层开销 */
   /* 径向光晕：中心 #A1D573，提高中心与过渡区不透明度 */
   background: radial-gradient(
     circle closest-side,
@@ -115,34 +148,28 @@ onUnmounted(() => {
     rgba(161, 213, 115, 0.04) 76%,
     transparent 88%
   );
-  filter: blur(68px);
+  filter: blur(40px);
 }
 
 .halo-a {
-  width: min(82vw, 1020px);
-  height: min(82vw, 1020px);
-  left: -14%;
-  top: -18%;
+  width: min(60vw, 680px);
+  height: min(60vw, 680px);
+  left: -10%;
+  top: -14%;
 }
 
 .halo-b {
-  width: min(72vw, 900px);
-  height: min(72vw, 900px);
-  right: -12%;
-  top: 4%;
+  display: none; /* 已禁用 */
 }
 
 .halo-c {
-  width: min(62vw, 760px);
-  height: min(62vw, 760px);
-  left: 22%;
-  top: 18%;
+  display: none; /* 已禁用 */
 }
 
-/* 黄色光斑 #FFEB69 — 更强、略大 */
+/* 黄色光斑 #FFEB69 */
 .halo-d {
-  width: min(58vw, 700px);
-  height: min(58vw, 700px);
+  width: min(44vw, 480px);
+  height: min(44vw, 480px);
   right: 4%;
   bottom: 4%;
   background: radial-gradient(
@@ -153,6 +180,6 @@ onUnmounted(() => {
     rgba(255, 235, 105, 0.05) 74%,
     transparent 88%
   );
-  filter: blur(64px);
+  filter: blur(40px);
 }
 </style>

@@ -67,7 +67,7 @@
 
       <!-- Right: Actions -->
       <div class="pb-1 flex items-center gap-4">
-        <template v-if="defect.status === '已完成' || defect.status === '已处理'">
+        <template v-if="defect.status === '待验收'">
           <div class="flex items-center gap-6 mr-4">
             <label class="flex items-center gap-2 cursor-pointer group">
               <div class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors"

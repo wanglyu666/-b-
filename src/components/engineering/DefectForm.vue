@@ -18,19 +18,28 @@
           
           <template v-if="newDefectImage">
             <img :src="newDefectImage" class="w-full h-full object-cover" />
-            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <ImageIcon :size="32" class="text-white" />
-              <span class="text-white text-xs font-bold ml-2">更换图片</span>
+            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+              <Loader v-if="uploading" :size="32" class="text-white animate-spin" />
+              <template v-else>
+                <ImageIcon :size="32" class="text-white" />
+                <span class="text-white text-xs font-bold">更换图片</span>
+              </template>
             </div>
           </template>
           <template v-else>
-            <div class="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Plus :size="32" class="text-white/40" />
+            <div v-if="uploading" class="flex flex-col items-center gap-4">
+              <div class="w-10 h-10 border-2 border-white/20 border-t-[#FFE600] rounded-full animate-spin"></div>
+              <p class="text-white/60 font-bold text-sm">上传中...</p>
             </div>
-            <div class="text-center">
-              <p class="text-white/60 font-bold text-sm">点击上传缺陷照片</p>
-              <p class="text-white/20 text-[10px] mt-1 uppercase tracking-widest">支持 JPG, PNG 格式</p>
-            </div>
+            <template v-else>
+              <div class="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Plus :size="32" class="text-white/40" />
+              </div>
+              <div class="text-center">
+                <p class="text-white/60 font-bold text-sm">点击上传缺陷照片</p>
+                <p class="text-white/20 text-[10px] mt-1 uppercase tracking-widest">支持 JPG, PNG 格式</p>
+              </div>
+            </template>
           </template>
         </div>
       </div>
@@ -50,8 +59,15 @@
     <div class="flex justify-end pt-6">
       <button 
         @click="confirmAddDefect"
-        class="px-12 py-4 rounded-2xl bg-[#FFE600] text-[#260A2F] font-bold hover:scale-105 active:scale-95 transition-all shadow-xl shadow-orange-500/20 flex items-center gap-2"
+        :disabled="uploading || !newDefectImage || !newDefectDescription"
+        :class="[
+          'px-12 py-4 rounded-2xl font-bold hover:scale-105 active:scale-95 transition-all shadow-xl shadow-orange-500/20 flex items-center gap-2',
+          (uploading || !newDefectImage || !newDefectDescription)
+            ? 'bg-white/10 text-white/30 cursor-not-allowed'
+            : 'bg-[#FFE600] text-[#260A2F]'
+        ]"
       >
+        <Loader v-if="uploading" :size="18" class="animate-spin" />
         确定发布
       </button>
     </div>
@@ -60,37 +76,73 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { Image as ImageIcon, Plus } from 'lucide-vue-next';
+import { Image as ImageIcon, Plus, Loader } from 'lucide-vue-next';
+import { uploadFile, createDefect } from '../../api/projectApi';
 
-const emit = defineEmits(['submit']);
+const props = defineProps<{
+  spotOrderId: string;
+  projectId: string;
+  nodeName: string;
+  /** defectType: 1=缺陷整改 2=缺陷汇报 */
+  defectType?: '1' | '2';
+}>();
+
+const emit = defineEmits(['submit', 'success']);
 
 const fileInput = ref<HTMLInputElement | null>(null);
 const newDefectImage = ref('');
+const uploadedUrl = ref('');
 const newDefectDescription = ref('');
+const uploading = ref(false);
 
 const triggerFileInput = () => {
   fileInput.value?.click();
 };
 
-const handleImageUpload = (event: Event) => {
+const handleImageUpload = async (event: Event) => {
   const target = event.target as HTMLInputElement;
-  if (target.files && target.files[0]) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      newDefectImage.value = e.target?.result as string;
-    };
-    reader.readAsDataURL(target.files[0]);
+  if (!target.files || !target.files[0]) return;
+
+  const file = target.files[0];
+  // 本地预览
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    newDefectImage.value = e.target?.result as string;
+  };
+  reader.readAsDataURL(file);
+
+  // 上传到服务器
+  uploading.value = true;
+  try {
+    const url = await uploadFile(file);
+    uploadedUrl.value = url;
+  } catch (e) {
+    console.error('图片上传失败:', e);
+    alert('图片上传失败，请重试');
+    newDefectImage.value = '';
+  } finally {
+    uploading.value = false;
   }
 };
 
-const confirmAddDefect = () => {
-  if (!newDefectImage.value || !newDefectDescription.value) {
+const confirmAddDefect = async () => {
+  if (!uploadedUrl.value || !newDefectDescription.value) {
     alert('请上传照片并输入描述');
     return;
   }
-  emit('submit', {
-    image: newDefectImage.value,
-    description: newDefectDescription.value
-  });
+  try {
+    await createDefect({
+      spotOrderId: props.spotOrderId,
+      projectId: props.projectId,
+      nodeName: props.nodeName,
+      defectFile: uploadedUrl.value,
+      defectDescribe: newDefectDescription.value,
+      defectType: props.defectType || '1',
+    });
+    emit('success');
+  } catch (e) {
+    console.error('新增缺陷失败:', e);
+    alert('新增缺陷失败，请重试');
+  }
 };
 </script>

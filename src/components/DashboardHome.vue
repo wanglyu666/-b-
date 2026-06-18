@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { TrendingUp, Package, MoreHorizontal, ChevronLeft, ChevronRight, FileText, FolderCheck, ClipboardCheck, Star, CalendarClock, ChevronRight as ChevronRightSmall } from 'lucide-vue-next';
 import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { get } from '../utils/request';
 import TopBarActions from './TopBarActions.vue';
+import { useAppStore } from '../stores/appStore';
 import { 
   pieDataStatus, 
   pieDataWarranty, 
@@ -44,6 +46,8 @@ const props = defineProps<{
 
 const emit = defineEmits(['cartClick', 'wishlistClick', 'messageClick', 'openProjectView']);
 
+const appStore = useAppStore();
+
 const iconMap = {
   report: { icon: FileText, color: 'text-blue-400', bg: 'bg-blue-400/10' },
   completion: { icon: FolderCheck, color: 'text-indigo-400', bg: 'bg-indigo-400/10' },
@@ -63,24 +67,47 @@ const handleTodoClick = (item: TodoItem) => {
 };
 
 const currentSlide = ref(0);
-const slides = [
-  {
-    title: '智能维保系统',
-    subtitle: '全方位保障您的设备安全',
-    image: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800',
-  },
-  {
-    title: '高效订单管理',
-    subtitle: '实时追踪，精准把控',
-    image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=800',
+const bannerLoading = ref(false);
+interface BannerSlide {
+  image: string;
+  title?: string;
+  subtitle?: string;
+}
+const slides = ref<BannerSlide[]>([]);
+
+/** 获取首页轮播图 */
+async function fetchBanners() {
+  bannerLoading.value = true;
+  try {
+    const res = await get('/app/homepagemanage');
+    const banners = res?.data?.banner;
+    if (Array.isArray(banners) && banners.length > 0) {
+      slides.value = banners.map((item: any) => ({
+        image: item.fileUrl || '',
+        title: item.title || '',
+        subtitle: item.subtitle || '',
+      }));
+    }
+  } catch (e) {
+    console.error('获取轮播图失败:', e);
+  } finally {
+    bannerLoading.value = false;
   }
-];
+}
 
 let interval: any;
-onMounted(() => {
+
+function startAutoSlide() {
+  clearInterval(interval);
   interval = setInterval(() => {
-    currentSlide.value = (currentSlide.value + 1) % slides.length;
+    if (slides.value.length > 0) {
+      currentSlide.value = (currentSlide.value + 1) % slides.value.length;
+    }
   }, 5000);
+}
+
+onMounted(() => {
+  fetchBanners().then(() => startAutoSlide());
 });
 
 onUnmounted(() => {
@@ -180,37 +207,45 @@ const distributionOption = computed(() => ({
         :wishlistCount="wishlistCount" 
         @bellClick="$emit('messageClick')" 
         :messageCount="messageCount" 
+        :userName="appStore.customerName"
       />
     </header>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <!-- Carousel Card -->
       <div class="lg:col-span-8 h-[340px] relative overflow-hidden rounded-3xl shadow-sm group">
-        <div class="absolute inset-0 transition-transform duration-700 ease-in-out flex" :style="{ transform: `translateX(-${currentSlide * 100}%)` }">
-          <div v-for="(slide, index) in slides" :key="index" class="min-w-full h-full relative">
-            <img :src="slide.image" class="w-full h-full object-cover" alt="Slide" />
-            <div class="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent flex flex-col justify-center px-12">
-              <h2 class="text-4xl font-bold text-white mb-2">{{ slide.title }}</h2>
-              <p class="text-white/80 text-lg">{{ slide.subtitle }}</p>
-              <button class="mt-6 bg-white text-gray-900 px-6 py-2 rounded-full font-bold w-fit hover:bg-gray-100 transition-colors">了解更多</button>
+        <div v-if="bannerLoading" class="absolute inset-0 bg-gray-100 flex items-center justify-center">
+          <p class="text-gray-400">加载中...</p>
+        </div>
+        <template v-else-if="slides.length > 0">
+          <div class="absolute inset-0 transition-transform duration-700 ease-in-out flex" :style="{ transform: `translateX(-${currentSlide * 100}%)` }">
+            <div v-for="(slide, index) in slides" :key="index" class="min-w-full h-full relative">
+              <img :src="slide.image" class="w-full h-full object-cover" alt="Banner" />
+              <div class="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent flex flex-col justify-center px-12">
+                <h2 v-if="slide.title" class="text-4xl font-bold text-white mb-2">{{ slide.title }}</h2>
+                <p v-if="slide.subtitle" class="text-white/80 text-lg">{{ slide.subtitle }}</p>
+              </div>
             </div>
           </div>
+          
+          <!-- Controls -->
+          <div v-if="slides.length > 1" class="absolute bottom-6 left-12 flex space-x-2">
+            <div v-for="(_, index) in slides" :key="index" 
+              @click="currentSlide = index"
+              class="w-2 h-2 rounded-full cursor-pointer transition-all duration-300"
+              :class="currentSlide === index ? 'bg-white w-6' : 'bg-white/40'"
+            ></div>
+          </div>
+          
+          <button @click="currentSlide = (currentSlide - 1 + slides.length) % slides.length" class="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+            <ChevronLeft :size="24" />
+          </button>
+          <button @click="currentSlide = (currentSlide + 1) % slides.length" class="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+            <ChevronRight :size="24" />
+          </button>
+        </template>
+        <div v-else class="absolute inset-0 bg-gray-100 flex items-center justify-center">
+          <p class="text-gray-400">暂无轮播图</p>
         </div>
-        
-        <!-- Controls -->
-        <div class="absolute bottom-6 left-12 flex space-x-2">
-          <div v-for="(_, index) in slides" :key="index" 
-            @click="currentSlide = index"
-            class="w-2 h-2 rounded-full cursor-pointer transition-all duration-300"
-            :class="currentSlide === index ? 'bg-white w-6' : 'bg-white/40'"
-          ></div>
-        </div>
-        
-        <button @click="currentSlide = (currentSlide - 1 + slides.length) % slides.length" class="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
-          <ChevronLeft :size="24" />
-        </button>
-        <button @click="currentSlide = (currentSlide + 1) % slides.length" class="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/20 backdrop-blur-md rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
-          <ChevronRight :size="24" />
-        </button>
       </div>
 
       <!-- Stats Cards -->
