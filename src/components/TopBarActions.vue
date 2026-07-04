@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
-import { Search, ShoppingBag, Heart, Bell } from 'lucide-vue-next';
+import { Search, ShoppingBag, Star, Bell } from 'lucide-vue-next';
 
 const router = useRouter();
 
@@ -50,9 +50,9 @@ function goPersonalCenter() {
       
       <div v-if="isShop"
         @click="$emit('wishlistClick')"
-        class="relative cursor-pointer hover:text-red-500 transition-colors"
+        class="relative cursor-pointer hover:text-yellow-500 transition-colors"
       >
-        <Heart :size="20" class="text-gray-600" />
+        <Star :size="20" class="text-gray-600" />
         <span v-if="wishlistCount > 0" class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border border-white"></span>
       </div>
 
