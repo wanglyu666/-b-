@@ -1,8 +1,16 @@
-import { products } from '../data';
+import { annualProducts, normalProducts } from '../data';
 import type { Product } from '../types';
 import { mockLatency } from './mockUtils';
 
-export async function fetchProducts(): Promise<Product[]> {
+export interface ProductCatalog {
+  normal: Product[];
+  annual: Product[];
+}
+
+export async function fetchProducts(): Promise<ProductCatalog> {
   await mockLatency();
-  return products.map((p) => ({ ...p }));
+  return {
+    normal: normalProducts.map((p) => ({ ...p })),
+    annual: annualProducts.map((p) => ({ ...p })),
+  };
 }

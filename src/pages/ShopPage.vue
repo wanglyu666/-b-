@@ -8,16 +8,21 @@ const router = useRouter();
 const appStore = useAppStore();
 
 function onProductClick(product: Product) {
-  const mainEl = document.getElementById('main-content');
-  appStore.setShopScrollTop(mainEl?.scrollTop ?? 0);
+  appStore.persistShopScroll();
   appStore.setSelectedProduct(product);
   router.push({ name: 'product-detail' });
+}
+
+function navigateFromShop(routeName: 'cart' | 'wishlist' | 'messages') {
+  appStore.persistShopScroll();
+  router.push({ name: routeName });
 }
 </script>
 
 <template>
   <ShopView
-    :products="appStore.products"
+    :normal-products="appStore.normalProducts"
+    :annual-products="appStore.annualProducts"
     :current-page="appStore.shopPage"
     :initial-scroll-top="appStore.shopScrollTop"
     :cart-count="appStore.cart.length"
@@ -26,10 +31,10 @@ function onProductClick(product: Product) {
     :message-count="appStore.messageCount"
     @update:current-page="appStore.setShopPage"
     @product-click="onProductClick"
-    @add-to-cart="appStore.addToCart"
-    @cart-click="router.push({ name: 'cart' })"
-    @wishlist-click="router.push({ name: 'wishlist' })"
-    @toggle-wishlist="appStore.toggleWishlist"
-    @message-click="router.push({ name: 'messages' })"
+    @add-to-cart="(product, count, options) => appStore.addToCart(product, count, options)"
+    @cart-click="navigateFromShop('cart')"
+    @wishlist-click="navigateFromShop('wishlist')"
+    @toggle-wishlist="(product, options) => appStore.toggleWishlist(product, options)"
+    @message-click="navigateFromShop('messages')"
   />
 </template>

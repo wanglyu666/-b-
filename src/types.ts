@@ -1,3 +1,5 @@
+export type ProductKind = 'normal' | 'annual';
+
 export interface Product {
   id: number;
   name: string;
@@ -6,10 +8,23 @@ export interface Product {
   rating: number;
   image: string;
   desc: string;
+  productKind: ProductKind;
 }
 
 export interface CartItem extends Product {
   quantity: number;
+}
+
+export type CartDisplayMode = 'card' | 'list';
+
+export interface AddToCartOptions {
+  fromListView?: boolean;
+}
+
+export type WishlistDisplayMode = 'card' | 'list';
+
+export interface ToggleWishlistOptions {
+  fromListView?: boolean;
 }
 
 export interface EngineeringProject {

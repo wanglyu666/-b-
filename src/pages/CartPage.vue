@@ -10,8 +10,9 @@ const appStore = useAppStore();
 <template>
   <CartView
     :cart-items="appStore.cart"
-    @update-quantity="appStore.updateCartQuantity"
-    @remove-item="appStore.removeFromCart"
+    :cart-annual-display-mode="appStore.cartAnnualDisplayMode"
+    @update-quantity="(id, delta, kind) => appStore.updateCartQuantity(id, delta, kind)"
+    @remove-item="(id, kind) => appStore.removeFromCart(id, kind)"
     @back="router.push({ name: 'shop' })"
   />
 </template>

@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue';
-import { Search, Star, ShoppingBag, ChevronLeft, ChevronRight, Info } from 'lucide-vue-next';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
+import { storeToRefs } from 'pinia';
+import { Search, Star, ShoppingBag, ChevronLeft, ChevronRight, Info, MessageCircle } from 'lucide-vue-next';
 import TopBarActions from './TopBarActions.vue';
+import { useAppStore, type ShopCategory } from '../stores/appStore';
 import type { Product } from '../types';
 import post1Img from '../../image asset/post1.png';
 import post2Img from '../../image asset/post2.png';
@@ -27,7 +29,8 @@ const props = defineProps<{
   wishlistCount: number;
   wishlistItems: Product[];
   messageCount: number;
-  products: Product[];
+  normalProducts: Product[];
+  annualProducts: Product[];
 }>();
 
 const emit = defineEmits([
@@ -37,11 +40,14 @@ const emit = defineEmits([
   'cartClick', 
   'wishlistClick', 
   'toggleWishlist', 
-  'messageClick'
+  'messageClick',
 ]);
 
+const appStore = useAppStore();
+const { shopUiState } = storeToRefs(appStore);
+
 const categories = ['全部商品', '椅子', '桌子', '沙发', '脚凳', '办公'] as const;
-type Category = (typeof categories)[number];
+type Category = ShopCategory;
 type SubCategoryGroup = Exclude<Category, '全部商品'>;
 
 const categoryFilters: Record<Category, (product: Product) => boolean> = {
@@ -51,7 +57,10 @@ const categoryFilters: Record<Category, (product: Product) => boolean> = {
   沙发: (product) => product.name.includes('沙发'),
   脚凳: (product) => product.name.includes('脚凳'),
   办公: (product) =>
-    product.name.includes('书架') || product.name.includes('储物') || product.category === '收纳',
+    product.name.includes('书架') ||
+    product.name.includes('储物') ||
+    product.name.includes('文件柜') ||
+    product.category === '收纳',
 };
 
 const subCategories: Record<SubCategoryGroup, readonly string[]> = {
@@ -62,8 +71,14 @@ const subCategories: Record<SubCategoryGroup, readonly string[]> = {
   办公: ['文件柜', '书架', '储物柜', '办公桌', '会议桌', '隔断'],
 };
 
-const itemsPerPage = 16;
-const isAnnualMode = ref(false);
+const GRID_ITEMS_PER_PAGE = 16;
+const LIST_ITEMS_PER_PAGE = 11;
+
+const isAnnualMode = computed({
+  get: () => shopUiState.value.isAnnualMode,
+  set: (value: boolean) => appStore.patchShopUiState({ isAnnualMode: value }),
+});
+
 type AnnualRegion = 'north' | 'west' | 'south' | 'east';
 
 const SHELF_CYCLE = ['货架', '清单', '品牌表'] as const;
@@ -75,8 +90,15 @@ const ANNUAL_REGIONS: { key: AnnualRegion; label: string }[] = [
   { key: 'east', label: '东区年框' },
 ];
 
-const shelfCycleIndex = ref(0);
-const selectedAnnualRegion = ref<AnnualRegion>('north');
+const shelfCycleIndex = computed({
+  get: () => shopUiState.value.shelfCycleIndex,
+  set: (value: number) => appStore.patchShopUiState({ shelfCycleIndex: value }),
+});
+
+const selectedAnnualRegion = computed({
+  get: () => shopUiState.value.selectedAnnualRegion,
+  set: (value: AnnualRegion) => appStore.patchShopUiState({ selectedAnnualRegion: value }),
+});
 const showRegionDropdown = ref(false);
 const regionDropdownRef = ref<HTMLElement | null>(null);
 const shelfFlashActive = ref(false);
@@ -87,6 +109,18 @@ const shelfCycleLabel = computed(() => SHELF_CYCLE[shelfCycleIndex.value]);
 
 const showProductListTable = computed(
   () => isAnnualMode.value && shelfCycleLabel.value === '清单',
+);
+
+const showBrandTable = computed(
+  () => isAnnualMode.value && shelfCycleLabel.value === '品牌表',
+);
+
+const showAnnualTableView = computed(
+  () => showProductListTable.value || showBrandTable.value,
+);
+
+const itemsPerPage = computed(() =>
+  showAnnualTableView.value ? LIST_ITEMS_PER_PAGE : GRID_ITEMS_PER_PAGE,
 );
 
 const LIST_TABLE_COLUMNS = [
@@ -102,9 +136,23 @@ const LIST_TABLE_COLUMNS = [
   '综合含税单价',
 ] as const;
 
+const BRAND_TABLE_HEADERS = [
+  { key: 'major', label: '专业' },
+  { key: 'materialCode', label: '物料编码' },
+  { key: 'materialName', label: '物料名称' },
+  { key: 'materialGrade', label: '材料等级' },
+  { key: 'brand', label: '品牌' },
+  { key: 'specModel', label: '规格型号' },
+  { key: 'unit', label: '单位' },
+  { key: 'remark', label: '备注' },
+] as const;
+
+const MATERIAL_GRADES = ['A级', 'B级', '优选', '标准'] as const;
+
 const DESCRIPTION_MAX_LEN = 10;
-const selectedListRowIds = ref<Set<number>>(new Set());
-const hoveredDescId = ref<number | null>(null);
+const hoveredDescTooltip = ref<{ description: string; x: number; y: number } | null>(null);
+
+const selectedListRowIds = computed(() => new Set(shopUiState.value.selectedListRowIds));
 
 const selectedRegionLabel = computed(
   () => ANNUAL_REGIONS.find((r) => r.key === selectedAnnualRegion.value)?.label ?? '北区年框',
@@ -128,16 +176,12 @@ function closeRegionDropdown() {
 }
 
 function handleShelfCycleClick() {
-  const wasListView = showProductListTable.value;
-  shelfCycleIndex.value = (shelfCycleIndex.value + 1) % SHELF_CYCLE.length;
   closeRegionDropdown();
   flashShelfButton();
-
-  if (wasListView !== showProductListTable.value) {
-    runProductGridTransition(() => {
-      emit('update:currentPage', 1);
-    });
-  }
+  runProductGridTransition(() => {
+    shelfCycleIndex.value = (shelfCycleIndex.value + 1) % SHELF_CYCLE.length;
+    emit('update:currentPage', 1);
+  });
 }
 
 function handleRegionButtonClick(e: MouseEvent) {
@@ -166,8 +210,15 @@ function handleDocumentClick(e: MouseEvent) {
   if (regionDropdownRef.value?.contains(target)) return;
   closeRegionDropdown();
 }
-const activeCategory = ref<Category>('全部商品');
-const activeSubCategory = ref<string | null>(null);
+const activeCategory = computed({
+  get: () => shopUiState.value.activeCategory,
+  set: (value: Category) => appStore.patchShopUiState({ activeCategory: value }),
+});
+
+const activeSubCategory = computed({
+  get: () => shopUiState.value.activeSubCategory,
+  set: (value: string | null) => appStore.patchShopUiState({ activeSubCategory: value }),
+});
 const showProductGrid = ref(true);
 const productGridRef = ref<HTMLElement | null>(null);
 const gridShellMinHeight = ref<number | null>(null);
@@ -175,11 +226,15 @@ const gridTransitionKey = ref(0);
 const searchQuery = ref('');
 const isSearchFocused = ref(false);
 
+const catalogProducts = computed(() =>
+  isAnnualMode.value ? props.annualProducts : props.normalProducts,
+);
+
 const searchResults = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
   if (!q) return [];
 
-  return props.products
+  return catalogProducts.value
     .filter(
       (product) =>
         product.name.toLowerCase().includes(q) || product.category.toLowerCase().includes(q),
@@ -199,19 +254,19 @@ const currentSubCategories = computed(() => {
 });
 
 const filteredProducts = computed(() => {
-  let result = props.products.filter(categoryFilters[activeCategory.value]);
+  let result = catalogProducts.value.filter(categoryFilters[activeCategory.value]);
   if (activeSubCategory.value) {
     result = result.filter((product) => product.name.includes(activeSubCategory.value!));
   }
   return result;
 });
 
-const totalPages = computed(() => Math.ceil(filteredProducts.value.length / itemsPerPage));
+const totalPages = computed(() => Math.ceil(filteredProducts.value.length / itemsPerPage.value));
 
 const currentProducts = computed(() => {
   return filteredProducts.value.slice(
-    (props.currentPage - 1) * itemsPerPage,
-    props.currentPage * itemsPerPage,
+    (props.currentPage - 1) * itemsPerPage.value,
+    props.currentPage * itemsPerPage.value,
   );
 });
 
@@ -232,6 +287,21 @@ const productListRows = computed(() =>
   })),
 );
 
+const brandTableRows = computed(() =>
+  currentProducts.value.map((product, index) => ({
+    id: product.id,
+    product,
+    major: '装饰',
+    materialCode: `WL-${String(product.id).padStart(4, '0')}`,
+    materialName: product.name,
+    materialGrade: MATERIAL_GRADES[index % MATERIAL_GRADES.length],
+    brand: product.category,
+    specModel: product.name.split(' ')[0] ?? product.name,
+    unit: '项',
+    remark: product.desc,
+  })),
+);
+
 function truncateDescription(text: string, max = DESCRIPTION_MAX_LEN) {
   if (text.length <= max) return text;
   return `${text.slice(0, max)}…`;
@@ -241,47 +311,132 @@ function isDescriptionTruncated(text: string, max = DESCRIPTION_MAX_LEN) {
   return text.length > max;
 }
 
+const isInWishlist = (product: Product) => {
+  return props.wishlistItems.some((item) => item.id === product.id);
+};
+
+const selectedListProducts = computed(() =>
+  catalogProducts.value.filter((product) => selectedListRowIds.value.has(product.id)),
+);
+
+const hasListSelection = computed(() => selectedListRowIds.value.size > 0);
+
+const allSelectedInWishlist = computed(
+  () =>
+    hasListSelection.value &&
+    selectedListProducts.value.every((product) => isInWishlist(product)),
+);
+
 function isListRowSelected(id: number) {
   return selectedListRowIds.value.has(id);
 }
 
-function toggleListRowSelection(id: number, e: Event) {
-  e.stopPropagation();
-  const next = new Set(selectedListRowIds.value);
+function selectListRow(id: number) {
+  const next = new Set(shopUiState.value.selectedListRowIds);
   if (next.has(id)) {
     next.delete(id);
   } else {
     next.add(id);
   }
-  selectedListRowIds.value = next;
+  appStore.setShopSelectedListRowIds([...next]);
+}
+
+function clearListRowSelection() {
+  appStore.setShopSelectedListRowIds([]);
+}
+
+function handleListFavorite() {
+  if (!hasListSelection.value) return;
+  for (const product of selectedListProducts.value) {
+    if (allSelectedInWishlist.value) {
+      emit('toggleWishlist', product);
+    } else if (!isInWishlist(product)) {
+      emit('toggleWishlist', product, { fromListView: true });
+    }
+  }
+}
+
+function handleListAddToCart() {
+  if (!hasListSelection.value) return;
+  for (const product of selectedListProducts.value) {
+    emit('addToCart', product, 1, { fromListView: true });
+  }
+}
+
+function handleListConsult() {
+  if (!hasListSelection.value) return;
+  emit('messageClick');
+}
+
+watch(
+  showProductListTable,
+  (visible) => {
+    if (!isAnnualMode.value) return;
+
+    if (visible) {
+      appStore.setAnnualCommerceListDisplayMode();
+    } else {
+      clearListRowSelection();
+      appStore.resetAnnualCommerceDisplayMode();
+    }
+  },
+  { immediate: true },
+);
+
+watch(isAnnualMode, () => {
+  clearListRowSelection();
+});
+
+function showDescTooltip(description: string, e: MouseEvent) {
+  if (!isDescriptionTruncated(description)) return;
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+  hoveredDescTooltip.value = {
+    description,
+    x: rect.left,
+    y: rect.top,
+  };
+}
+
+function hideDescTooltip() {
+  hoveredDescTooltip.value = null;
 }
 
 const productViewKey = computed(
   () =>
-    `${gridTransitionKey.value}-${showProductListTable.value ? 'list' : 'grid'}-${isAnnualMode.value}-${props.currentPage}`,
+    `${gridTransitionKey.value}-${showProductListTable.value ? 'list' : showBrandTable.value ? 'brand' : 'grid'}-${isAnnualMode.value}-${props.currentPage}`,
 );
 
-const listPageStart = computed(() => (props.currentPage - 1) * itemsPerPage + 1);
+const listPageStart = computed(() => (props.currentPage - 1) * itemsPerPage.value + 1);
 
 const listPageEnd = computed(() =>
-  Math.min(props.currentPage * itemsPerPage, filteredProducts.value.length),
+  Math.min(props.currentPage * itemsPerPage.value, filteredProducts.value.length),
 );
 
 onMounted(() => {
-  const mainEl = document.getElementById('main-content');
-  if (mainEl && props.initialScrollTop > 0) {
-    mainEl.scrollTop = props.initialScrollTop;
-  }
+  restoreShopScroll();
   document.addEventListener('click', handleDocumentClick);
 });
 
+function restoreShopScroll() {
+  if (props.initialScrollTop <= 0) return;
+
+  const apply = () => {
+    const mainEl = document.getElementById('main-content');
+    if (mainEl) mainEl.scrollTop = props.initialScrollTop;
+  };
+
+  apply();
+  requestAnimationFrame(apply);
+}
+
+function persistShopScrollPosition() {
+  appStore.persistShopScroll();
+}
+
 onBeforeUnmount(() => {
+  persistShopScrollPosition();
   document.removeEventListener('click', handleDocumentClick);
 });
-
-const isInWishlist = (product: Product) => {
-  return props.wishlistItems.some(item => item.id === product.id);
-};
 
 function setCurrentPage(page: number) {
   if (props.currentPage === page) return;
@@ -621,27 +776,10 @@ function handleSearchSelect(product: Product) {
           v-if="showProductGrid && showProductListTable"
           ref="productGridRef"
           key="shop-list-view"
-          class="overflow-hidden rounded-[32px] border border-white/30 bg-white/40 shadow-xl backdrop-blur-xl"
+          class="shop-list-view"
         >
-          <div class="flex">
-            <div class="shop-list-check-column shrink-0 border-r border-white/10 pl-4 pr-3">
-              <div class="shop-list-check-header" aria-hidden="true" />
-              <label
-                v-for="row in productListRows"
-                :key="`check-${row.id}`"
-                class="shop-list-check-row flex cursor-pointer items-center justify-center"
-                @click.stop
-              >
-                <input
-                  type="checkbox"
-                  class="shop-list-checkbox h-4 w-4 rounded border-gray-300 text-[#9FE870] focus:ring-[#9FE870]/40"
-                  :checked="isListRowSelected(row.id)"
-                  @change="toggleListRowSelection(row.id, $event)"
-                />
-              </label>
-            </div>
-
-            <div class="min-w-0 flex-1 overflow-x-auto">
+          <div class="min-w-0 overflow-hidden rounded-[32px] border border-white/30 bg-white/40 shadow-xl backdrop-blur-xl">
+            <div class="overflow-x-auto">
             <table class="shop-list-table w-full min-w-[960px] border-collapse text-left">
               <thead>
                 <tr class="border-b border-white/10 text-sm font-medium text-gray-500">
@@ -649,7 +787,7 @@ function handleSearchSelect(product: Product) {
                     v-for="column in LIST_TABLE_COLUMNS"
                     :key="column"
                     :class="[
-                      'px-6 py-5 whitespace-nowrap',
+                      'h-[3.75rem] px-6 align-middle whitespace-nowrap',
                       column === '工作内容及特征描述' ? 'min-w-[8rem]' : '',
                     ]"
                   >
@@ -657,47 +795,43 @@ function handleSearchSelect(product: Product) {
                   </th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-white/10">
+              <tbody class="shop-list-table-body">
                 <tr
-                  v-for="row in productListRows"
+                  v-for="(row, index) in productListRows"
                   :key="row.id"
-                  class="cursor-pointer transition-colors hover:bg-white/30"
-                  @click="$emit('productClick', row.product)"
+                  :class="[
+                    'shop-list-data-row h-[3.75rem] cursor-pointer transition-colors',
+                    isListRowSelected(row.id)
+                      ? 'bg-[#9FE870]/60'
+                      : 'hover:bg-white/30',
+                    index < productListRows.length - 1 ? 'border-b border-white/10' : '',
+                  ]"
+                  @click="selectListRow(row.id)"
                 >
-                  <td class="px-6 py-5 text-gray-600">{{ row.major }}</td>
-                  <td class="px-6 py-5 text-gray-600">{{ row.subjectCode }}</td>
-                  <td class="px-6 py-5 font-medium text-gray-800">{{ row.subjectName }}</td>
-                  <td class="px-6 py-5 text-gray-600">{{ row.calcRule }}</td>
-                  <td class="px-6 py-5 text-gray-600">{{ row.brand }}</td>
-                  <td class="px-6 py-5 text-gray-600">{{ row.model }}</td>
-                  <td class="px-6 py-5 text-gray-600">{{ row.spec }}</td>
-                  <td class="px-6 py-5 text-gray-500">
+                  <td class="h-[3.75rem] px-6 align-middle text-gray-600">{{ row.major }}</td>
+                  <td class="h-[3.75rem] px-6 align-middle text-gray-600">{{ row.subjectCode }}</td>
+                  <td class="h-[3.75rem] px-6 align-middle font-medium text-gray-800">{{ row.subjectName }}</td>
+                  <td class="h-[3.75rem] px-6 align-middle text-gray-600">{{ row.calcRule }}</td>
+                  <td class="h-[3.75rem] px-6 align-middle text-gray-600">{{ row.brand }}</td>
+                  <td class="h-[3.75rem] px-6 align-middle text-gray-600">{{ row.model }}</td>
+                  <td class="h-[3.75rem] px-6 align-middle text-gray-600">{{ row.spec }}</td>
+                  <td class="h-[3.75rem] px-6 align-middle text-gray-500">
                     <span
-                      class="desc-tooltip-trigger relative inline-block"
-                      @mouseenter="hoveredDescId = row.id"
-                      @mouseleave="hoveredDescId = null"
-                      @click.stop
+                      class="desc-tooltip-trigger inline-block"
+                      @mouseenter="showDescTooltip(row.description, $event)"
+                      @mouseleave="hideDescTooltip"
                     >
                       {{ truncateDescription(row.description) }}
-                      <Transition name="region-info">
-                        <div
-                          v-if="hoveredDescId === row.id && isDescriptionTruncated(row.description)"
-                          class="desc-tooltip pointer-events-none absolute bottom-[calc(100%+0.375rem)] left-0 z-[60] max-w-[16rem] rounded-xl border border-white/20 bg-white/50 px-3 py-2 text-xs leading-relaxed text-gray-600 shadow-lg backdrop-blur-md"
-                        >
-                          {{ row.description }}
-                        </div>
-                      </Transition>
                     </span>
                   </td>
-                  <td class="px-6 py-5 text-gray-600">{{ row.unit }}</td>
-                  <td class="whitespace-nowrap px-6 py-5 font-medium text-gray-800">
+                  <td class="h-[3.75rem] px-6 align-middle text-gray-600">{{ row.unit }}</td>
+                  <td class="h-[3.75rem] whitespace-nowrap px-6 align-middle font-medium text-gray-800">
                     ¥{{ row.taxIncludedPrice.toFixed(2) }}
                   </td>
                 </tr>
               </tbody>
             </table>
             </div>
-          </div>
 
           <div class="flex items-center justify-between border-t border-white/10 p-6 text-sm text-gray-500">
             <p>
@@ -735,6 +869,101 @@ function handleSearchSelect(product: Product) {
                 下一页
               </button>
             </div>
+          </div>
+          </div>
+        </div>
+
+        <div
+          v-else-if="showProductGrid && showBrandTable"
+          ref="productGridRef"
+          key="shop-brand-view"
+          class="shop-brand-view"
+        >
+          <div class="min-w-0 overflow-hidden rounded-[32px] border border-white/30 bg-white/40 shadow-xl backdrop-blur-xl">
+            <div class="overflow-x-auto">
+            <table class="shop-brand-table w-full min-w-[960px] border-collapse text-left">
+              <thead>
+                <tr class="border-b border-white/10 text-sm font-medium text-gray-500">
+                  <th
+                    v-for="column in BRAND_TABLE_HEADERS"
+                    :key="column.key"
+                    :class="[
+                      'h-[3.75rem] px-6 align-middle whitespace-nowrap',
+                      column.key === 'remark' ? 'min-w-[8rem]' : '',
+                      column.key === 'materialName' ? 'min-w-[9rem]' : '',
+                    ]"
+                  >
+                    {{ column.label }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="shop-brand-table-body">
+                <tr
+                  v-for="(row, index) in brandTableRows"
+                  :key="row.id"
+                  :class="[
+                    'shop-brand-data-row h-[3.75rem] transition-colors hover:bg-white/30',
+                    index < brandTableRows.length - 1 ? 'border-b border-white/10' : '',
+                  ]"
+                >
+                  <td class="h-[3.75rem] px-6 align-middle text-gray-600">{{ row.major }}</td>
+                  <td class="h-[3.75rem] px-6 align-middle text-gray-600">{{ row.materialCode }}</td>
+                  <td class="h-[3.75rem] px-6 align-middle font-medium text-gray-800">{{ row.materialName }}</td>
+                  <td class="h-[3.75rem] px-6 align-middle text-gray-600">{{ row.materialGrade }}</td>
+                  <td class="h-[3.75rem] px-6 align-middle text-gray-600">{{ row.brand }}</td>
+                  <td class="h-[3.75rem] px-6 align-middle text-gray-600">{{ row.specModel }}</td>
+                  <td class="h-[3.75rem] px-6 align-middle text-gray-600">{{ row.unit }}</td>
+                  <td class="h-[3.75rem] px-6 align-middle text-gray-500">
+                    <span
+                      class="desc-tooltip-trigger inline-block"
+                      @mouseenter="showDescTooltip(row.remark, $event)"
+                      @mouseleave="hideDescTooltip"
+                    >
+                      {{ truncateDescription(row.remark) }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            </div>
+
+          <div class="flex items-center justify-between border-t border-white/10 p-6 text-sm text-gray-500">
+            <p>
+              显示 {{ listPageStart }} 到 {{ listPageEnd }} 条，共 {{ filteredProducts.length }} 条记录
+            </p>
+            <div class="flex space-x-2">
+              <button
+                type="button"
+                class="rounded-lg border border-white/20 bg-white/50 px-3 py-1 transition-colors hover:bg-white/80 disabled:opacity-50"
+                :disabled="currentPage === 1"
+                @click="prevPage"
+              >
+                上一页
+              </button>
+              <button
+                v-for="page in totalPages"
+                :key="page"
+                type="button"
+                :class="[
+                  'rounded-lg border px-3 py-1 shadow-sm transition-colors tabular-nums',
+                  currentPage === page
+                    ? 'border-[#FFEB69] bg-[#FFEB69] text-[#3A341C]'
+                    : 'border-white/20 bg-white/50 text-[#3A341C] hover:bg-white/80',
+                ]"
+                @click="setCurrentPage(page)"
+              >
+                {{ page }}
+              </button>
+              <button
+                type="button"
+                class="rounded-lg border border-white/20 bg-white/50 px-3 py-1 transition-colors hover:bg-white/80 disabled:opacity-50"
+                :disabled="currentPage === totalPages"
+                @click="nextPage"
+              >
+                下一页
+              </button>
+            </div>
+          </div>
           </div>
         </div>
 
@@ -782,7 +1011,7 @@ function handleSearchSelect(product: Product) {
       </Transition>
       </div>
 
-      <div v-if="!showProductListTable" class="mt-12 flex items-center justify-center space-x-4">
+      <div v-if="!showAnnualTableView" class="mt-12 flex items-center justify-center space-x-4">
         <button 
           @click="prevPage"
           :disabled="currentPage === 1"
@@ -815,6 +1044,59 @@ function handleSearchSelect(product: Product) {
         </button>
       </div>
     </section>
+
+    <Teleport to="body">
+      <Transition name="region-info">
+        <div
+          v-if="hoveredDescTooltip"
+          class="desc-tooltip pointer-events-none fixed z-[200] max-w-[22rem] rounded-xl border border-white/20 bg-white/70 px-4 py-3 text-sm leading-relaxed text-gray-700 shadow-xl backdrop-blur-md"
+          :style="{
+            left: `${hoveredDescTooltip.x}px`,
+            top: `${hoveredDescTooltip.y - 10}px`,
+            transform: 'translateY(-100%)',
+          }"
+        >
+          {{ hoveredDescTooltip.description }}
+        </div>
+      </Transition>
+
+      <Transition name="list-action-bar">
+        <div
+          v-if="showProductListTable && hasListSelection"
+          class="list-action-bar fixed bottom-8 right-8 z-[150] flex flex-col gap-3.5"
+        >
+          <button
+            type="button"
+            :class="[
+              'list-action-btn flex min-w-[10.5rem] items-center justify-center gap-2.5 rounded-full border px-7 py-4 text-base font-bold shadow-lg backdrop-blur-md transition-all',
+              allSelectedInWishlist
+                ? 'border-[#9FE870] bg-[#9FE870]/80 text-gray-900'
+                : 'border-white/30 bg-white/60 text-gray-800 hover:bg-white/80',
+            ]"
+            @click="handleListFavorite"
+          >
+            <Star :size="22" :fill="allSelectedInWishlist ? 'currentColor' : 'none'" />
+            {{ allSelectedInWishlist ? '已收藏' : '收藏' }}
+          </button>
+          <button
+            type="button"
+            class="list-action-btn flex min-w-[10.5rem] items-center justify-center gap-2.5 rounded-full border border-white/30 bg-white/60 px-7 py-4 text-base font-bold text-gray-800 shadow-lg backdrop-blur-md transition-all hover:bg-white/80"
+            @click="handleListConsult"
+          >
+            <MessageCircle :size="22" />
+            咨询
+          </button>
+          <button
+            type="button"
+            class="list-action-btn flex min-w-[10.5rem] items-center justify-center gap-2.5 rounded-full border border-[#9FE870] bg-[#9FE870] px-7 py-4 text-base font-bold text-gray-900 shadow-lg shadow-[#9FE870]/30 backdrop-blur-md transition-all hover:bg-[#8ed65f]"
+            @click="handleListAddToCart"
+          >
+            <ShoppingBag :size="22" />
+            加入购物车
+          </button>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -922,21 +1204,20 @@ function handleSearchSelect(product: Product) {
   min-width: 13.5rem;
 }
 
-.shop-list-check-header {
-  height: 3.125rem;
-  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+.list-action-bar-enter-active,
+.list-action-bar-leave-active {
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease;
 }
 
-.shop-list-check-row {
-  height: 3.75rem;
-  border-bottom: 1px solid rgb(255 255 255 / 0.1);
+.list-action-bar-enter-from,
+.list-action-bar-leave-to {
+  opacity: 0;
+  transform: translateY(12px);
 }
 
-.shop-list-check-column .shop-list-check-row:last-child {
-  border-bottom: none;
-}
-
-.shop-list-checkbox {
-  accent-color: #9fe870;
+.desc-tooltip {
+  min-width: 14rem;
 }
 </style>

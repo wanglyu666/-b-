@@ -25,9 +25,9 @@ watchEffect(() => {
     :wishlist-count="appStore.wishlist.length"
     :message-count="appStore.messageCount"
     @back="router.push({ name: 'shop' })"
-    @add-to-cart="appStore.addToCart"
+    @add-to-cart="(p, count) => appStore.addToCart(p, count)"
     @cart-click="router.push({ name: 'cart' })"
-    @toggle-wishlist="appStore.toggleWishlist"
+    @toggle-wishlist="(p) => appStore.toggleWishlist(p)"
     @wishlist-click="router.push({ name: 'wishlist' })"
     @message-click="router.push({ name: 'messages' })"
   />

@@ -10,8 +10,9 @@ const appStore = useAppStore();
 <template>
   <WishlistView
     :wishlist-items="appStore.wishlist"
-    @remove-item="appStore.removeFromWishlist"
+    :wishlist-annual-display-mode="appStore.wishlistAnnualDisplayMode"
+    @remove-item="(id, kind) => appStore.removeFromWishlist(id, kind)"
     @back="router.push({ name: 'shop' })"
-    @add-to-cart="appStore.addToCart"
+    @add-to-cart="(product, count, options) => appStore.addToCart(product, count, options)"
   />
 </template>

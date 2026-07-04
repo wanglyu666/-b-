@@ -43,18 +43,51 @@ const baseProducts = [
   { name: 'Lack 边桌', category: '桌子', price: 49.00, image: 'https://images.unsplash.com/photo-1532372320572-cda25653a26d?auto=format&fit=crop&q=80&w=600' },
 ];
 
-export const products: Product[] = Array.from({ length: 32 }, (_, i) => {
+const annualBaseProducts = [
+  { name: 'Muren 单人扶手椅', category: '北区集采', price: 186.00, image: 'https://images.unsplash.com/photo-1501045661009-f9b09d60b45a?auto=format&fit=crop&q=80&w=600' },
+  { name: 'Standmon 脚凳', category: '北区集采', price: 268.00, image: 'https://images.unsplash.com/photo-1551298370-9ae885b84313?auto=format&fit=crop&q=80&w=600' },
+  { name: 'Hemlingby 双人沙发', category: '西区集采', price: 528.00, image: 'https://images.unsplash.com/photo-1540574163026-d643ca2f2f08?auto=format&fit=crop&q=80&w=600' },
+  { name: 'Kallax 储物架', category: '南区集采', price: 98.00, image: 'https://images.unsplash.com/photo-1524758631624-e2822e304c36?auto=format&fit=crop&q=80&w=600' },
+  { name: 'Poäng 摇椅', category: '东区集采', price: 392.00, image: 'https://images.unsplash.com/photo-1519947484137-0f359af736b0?auto=format&fit=crop&q=80&w=600' },
+  { name: 'Billy 书架', category: '北区集采', price: 256.00, image: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&q=80&w=600' },
+  { name: 'Ektorp 三人沙发', category: '西区集采', price: 768.00, image: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=600' },
+  { name: 'Lack 边桌', category: '南区集采', price: 42.00, image: 'https://images.unsplash.com/photo-1611269156029-4f6834a2b20b?auto=format&fit=crop&q=80&w=600' },
+  { name: '办公区地毯铺贴', category: '北区集采', price: 145.00, image: 'https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&q=80&w=600' },
+  { name: '会议室吸顶灯安装', category: '东区集采', price: 320.00, image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&q=80&w=600' },
+  { name: '前台木饰面工程', category: '西区集采', price: 580.00, image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&q=80&w=600' },
+  { name: '文件柜采购安装', category: '南区集采', price: 215.00, image: 'https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&q=80&w=600' },
+];
+
+export const normalProducts: Product[] = Array.from({ length: 32 }, (_, i) => {
   const base = baseProducts[i % baseProducts.length];
   return {
     id: i + 1,
-    name: `${base.name} ${Math.floor(i / 8) > 0 ? (Math.floor(i / 8) + 1) + '代' : ''}`,
+    name: `${base.name}${Math.floor(i / 8) > 0 ? ` ${Math.floor(i / 8) + 1}代` : ''}`,
     category: base.category,
-    price: base.price + (i * 10),
+    price: base.price + i * 10,
     rating: 4 + (i % 2),
     image: base.image,
-    desc: `这款${base.name}将时尚设计与舒适感完美融合，线条流畅，符合人体工程学，色彩鲜艳。非常适合现代室内装饰，为您的空间增添风格与功能性。`
+    productKind: 'normal',
+    desc: `这款${base.name}将时尚设计与舒适感完美融合，线条流畅，符合人体工程学，色彩鲜艳。非常适合现代室内装饰，为您的空间增添风格与功能性。`,
   };
 });
+
+export const annualProducts: Product[] = Array.from({ length: 32 }, (_, i) => {
+  const base = annualBaseProducts[i % annualBaseProducts.length];
+  return {
+    id: 1001 + i,
+    name: `${base.name}${Math.floor(i / 8) > 0 ? ` · 增补${Math.floor(i / 8)}` : ''}`,
+    category: base.category,
+    price: base.price + i * 8,
+    rating: 4 + (i % 3 > 0 ? 1 : 0),
+    image: base.image,
+    productKind: 'annual',
+    desc: `年框清单科目：${base.name}。纳入综合单价体系，按项计量，报价含材料、运输、安装及税费，适用于批量采购与标准化交付场景。`,
+  };
+});
+
+/** 普通 + 年框全量（咨询单等模块按 id 查找时兼容） */
+export const products: Product[] = [...normalProducts, ...annualProducts];
 
 export const pieDataStatus = [
   { name: '完工', value: 70, color: '#B0D4C5' },

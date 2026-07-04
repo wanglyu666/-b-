@@ -34,6 +34,8 @@ onMounted(() => {
 watch(
   () => route.fullPath,
   () => {
+    if (route.name === 'shop') return;
+
     const mainEl = document.getElementById('main-content');
     if (mainEl) mainEl.scrollTop = 0;
     requestAnimationFrame(() => {
