@@ -3,8 +3,9 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { storeToRefs } from 'pinia';
 import { Search, Star, ShoppingBag, ChevronLeft, ChevronRight, Info, MessageCircle } from 'lucide-vue-next';
 import TopBarActions from './TopBarActions.vue';
+import CartConsultationModal from './consultation-feedback/CartConsultationModal.vue';
 import { useAppStore, type ShopCategory } from '../stores/appStore';
-import type { Product } from '../types';
+import type { CartItem, Product } from '../types';
 import post1Img from '../../image asset/post1.png';
 import post2Img from '../../image asset/post2.png';
 
@@ -321,6 +322,12 @@ const selectedListProducts = computed(() =>
 
 const hasListSelection = computed(() => selectedListRowIds.value.size > 0);
 
+const cartConsultModalOpen = ref(false);
+
+const consultCartItems = computed((): CartItem[] =>
+  selectedListProducts.value.map((product) => ({ ...product, quantity: 1 })),
+);
+
 const allSelectedInWishlist = computed(
   () =>
     hasListSelection.value &&
@@ -365,7 +372,7 @@ function handleListAddToCart() {
 
 function handleListConsult() {
   if (!hasListSelection.value) return;
-  emit('messageClick');
+  cartConsultModalOpen.value = true;
 }
 
 watch(
@@ -1097,6 +1104,12 @@ function handleSearchSelect(product: Product) {
         </div>
       </Transition>
     </Teleport>
+
+    <CartConsultationModal
+      v-model="cartConsultModalOpen"
+      :cart-items="consultCartItems"
+      :show-as-list="true"
+    />
   </div>
 </template>
 

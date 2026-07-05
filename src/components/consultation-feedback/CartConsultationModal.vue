@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { X } from 'lucide-vue-next';
 import type { CartItem } from '../../types';
 import type {
@@ -11,21 +11,51 @@ import {
   prependDynamicConsultation,
   appendDynamicInquiryMessages,
 } from '../../data/consultations';
+import { useAppStore } from '../../stores/appStore';
 import AfterSalesSuccess from '../engineering/AfterSalesSuccess.vue';
+
+const appStore = useAppStore();
+const contactName = computed(() => appStore.customerName);
+const contactPhone = '138-0013-8000';
 
 const props = defineProps<{
   modelValue: boolean;
   cartItems: CartItem[];
+  /** 年框产品表格模式时为 true */
+  showAsList?: boolean;
 }>();
 
 const emit = defineEmits<{
   'update:modelValue': [open: boolean];
 }>();
 
+const serviceAddress = ref('');
 const shortExchangeContent = ref('');
 const shortExchangeFileInputRef = ref<HTMLInputElement | null>(null);
 const shortExchangeFileName = ref('');
 const step = ref<'form' | 'success'>('form');
+
+const LIST_TABLE_COLUMNS = [
+  '专业',
+  '科目编号',
+  '科目名称',
+  '系列/型号',
+  '数量',
+  '综合含税单价',
+] as const;
+
+const cartListRows = computed(() =>
+  props.cartItems.map((item) => ({
+    id: item.id,
+    item,
+    major: '装饰',
+    subjectCode: `KM-${String(item.id).padStart(4, '0')}`,
+    subjectName: item.name,
+    model: item.name.split(' ')[0] ?? item.name,
+    quantity: item.quantity,
+    lineTotal: item.price * item.quantity,
+  })),
+);
 
 function formatConsultationTime(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -48,6 +78,7 @@ function buildConsultationNo() {
 
 function resetDraft() {
   step.value = 'form';
+  serviceAddress.value = '';
   shortExchangeContent.value = '';
   shortExchangeFileName.value = '';
   const input = shortExchangeFileInputRef.value;
@@ -84,8 +115,9 @@ function onFileChange(e: Event) {
 }
 
 function submitCartConsultation() {
+  const address = serviceAddress.value.trim();
   const text = shortExchangeContent.value.trim();
-  if (!text || props.cartItems.length === 0) return;
+  if (!address || !text || props.cartItems.length === 0) return;
 
   const now = new Date();
   const id = `cart-${now.getTime()}`;
@@ -105,12 +137,12 @@ function submitCartConsultation() {
     time: formatConsultationTime(now),
     requirement: text,
     category: '商店采购',
-    contact: '我',
-    contactPhone: '—',
+    contact: contactName.value,
+    contactPhone,
     status: '待回复',
     cartLineItems: lines,
     quoteStatus: '暂无报价',
-    serviceAddress: '—',
+    serviceAddress: address,
     needQuote: '是',
     quoteTime: '待确认',
     relatedMaterials: '暂无上传',
@@ -120,7 +152,7 @@ function submitCartConsultation() {
 
   const inquiry: ConsultationInquiryMessage = {
     id: `${id}-inquiry-1`,
-    senderName: '我',
+    senderName: contactName.value,
     sentAt: formatInquirySentAt(now),
     content: text,
     attachmentFileName: shortExchangeFileName.value.trim() || undefined,
@@ -151,7 +183,7 @@ function onSuccessReturn() {
         <div class="flex flex-shrink-0 items-center justify-between border-b border-white/10 px-6 py-6 sm:px-10 sm:py-7">
           <div class="flex min-w-0 items-center gap-3">
             <div class="h-6 w-1.5 shrink-0 rounded-full bg-[#FFE600] shadow-[0_0_15px_rgba(255,230,0,0.5)]" />
-            <h2 class="truncate text-lg font-bold tracking-tight text-white sm:text-2xl">购物车咨询</h2>
+            <h2 class="truncate text-lg font-bold tracking-tight text-white sm:text-2xl">咨询</h2>
           </div>
           <button
             type="button"
@@ -165,9 +197,27 @@ function onSuccessReturn() {
 
         <div class="custom-scrollbar min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-6 py-8 sm:px-10 sm:py-10">
           <Transition name="cart-consult" mode="out-in">
-            <div v-if="step === 'form'" key="form" class="flex min-h-[min(52vh,520px)] flex-col text-left text-white/90">
-              <h3 class="mb-8 shrink-0 text-lg font-bold tracking-tight text-white">短交流</h3>
-              <div class="min-h-0 flex-1 space-y-8">
+            <div v-if="step === 'form'" key="form" class="text-left text-white/90">
+              <div class="mb-8 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-2">
+                <h3 class="shrink-0 text-lg font-bold tracking-tight text-white">短交流</h3>
+                <p class="text-xs text-white/45 sm:text-sm">批量咨询可将多个商品加入购物车中咨询</p>
+              </div>
+              <div class="space-y-8">
+                <div class="flex flex-col gap-3 sm:grid sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:items-center sm:gap-6">
+                  <label
+                    class="shrink-0 text-sm font-medium text-white/85 sm:text-right"
+                    for="cart-consult-address"
+                  >
+                    <span class="text-red-400">*</span>服务地址
+                  </label>
+                  <input
+                    id="cart-consult-address"
+                    v-model="serviceAddress"
+                    type="text"
+                    class="h-10 w-full rounded-xl border border-white/15 bg-white/[0.07] px-3 text-sm text-white placeholder:text-white/35 focus:border-[#FFE600]/60 focus:outline-none focus:ring-2 focus:ring-[#FFE600]/25"
+                    placeholder="请输入服务地址"
+                  />
+                </div>
                 <div class="flex flex-col gap-3 sm:grid sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:items-start sm:gap-6">
                   <label
                     class="shrink-0 pt-2 text-sm font-medium text-white/85 sm:text-right"
@@ -182,6 +232,19 @@ function onSuccessReturn() {
                     class="min-h-[10rem] w-full resize-y rounded-xl border border-white/15 bg-white/[0.07] px-3 py-2.5 text-sm text-white placeholder:text-white/35 focus:border-[#FFE600]/60 focus:outline-none focus:ring-2 focus:ring-[#FFE600]/25"
                     placeholder="请输入交流内容"
                   />
+                </div>
+                <div class="flex flex-col gap-3 sm:grid sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:items-center sm:gap-6">
+                  <span class="sr-only">联系信息</span>
+                  <div class="flex flex-wrap items-center gap-x-12 gap-y-2 sm:col-start-2">
+                    <div class="flex items-center gap-3 text-sm">
+                      <span class="font-medium text-white/85">联系人</span>
+                      <span class="text-white">{{ contactName }}</span>
+                    </div>
+                    <div class="flex items-center gap-3 text-sm">
+                      <span class="font-medium text-white/85">联系电话</span>
+                      <span class="font-mono text-white">{{ contactPhone }}</span>
+                    </div>
+                  </div>
                 </div>
                 <div class="flex flex-col gap-3 sm:grid sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:items-center sm:gap-6">
                   <span class="shrink-0 text-sm font-medium text-white/85 sm:text-right">交流附件</span>
@@ -209,16 +272,80 @@ function onSuccessReturn() {
                     </span>
                   </div>
                 </div>
-              </div>
-              <div class="mt-10 flex shrink-0 justify-end pt-2">
-                <button
-                  type="button"
-                  class="rounded-xl bg-[#FFE600] px-10 py-2.5 text-sm font-bold text-[#260A2F] shadow-[0_0_15px_rgba(255,230,0,0.25)] transition-all hover:bg-[#fff04d] disabled:cursor-not-allowed disabled:opacity-45"
-                  :disabled="!shortExchangeContent.trim()"
-                  @click="submitCartConsultation"
+
+                <div
+                  v-if="cartItems.length"
+                  class="flex flex-col gap-3 sm:grid sm:grid-cols-[6.5rem_minmax(0,1fr)] sm:items-start sm:gap-6"
                 >
-                  确定
-                </button>
+                  <span class="shrink-0 pt-2 text-sm font-medium text-white/85 sm:text-right">咨询商品</span>
+                  <div
+                    class="custom-scrollbar min-w-0 max-h-[min(32vh,280px)] overflow-y-auto overflow-x-hidden"
+                  >
+                    <div
+                      v-if="showAsList"
+                      class="overflow-x-auto rounded-xl border border-white/15 bg-white/[0.07]"
+                    >
+                      <table class="w-full min-w-[640px] border-collapse text-left text-sm">
+                        <thead>
+                          <tr class="border-b border-white/10 text-white/55">
+                            <th
+                              v-for="column in LIST_TABLE_COLUMNS"
+                              :key="column"
+                              class="h-11 whitespace-nowrap px-4 align-middle font-medium"
+                            >
+                              {{ column }}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr
+                            v-for="(row, index) in cartListRows"
+                            :key="`${row.item.productKind}-${row.id}`"
+                            :class="[
+                              'h-11 text-white/85',
+                              index < cartListRows.length - 1 ? 'border-b border-white/10' : '',
+                            ]"
+                          >
+                            <td class="px-4 align-middle">{{ row.major }}</td>
+                            <td class="px-4 align-middle">{{ row.subjectCode }}</td>
+                            <td class="px-4 align-middle font-medium text-white">{{ row.subjectName }}</td>
+                            <td class="px-4 align-middle">{{ row.model }}</td>
+                            <td class="px-4 align-middle tabular-nums">{{ row.quantity }}</td>
+                            <td class="whitespace-nowrap px-4 align-middle font-medium text-[#FFE600]">
+                              ¥{{ row.lineTotal.toFixed(2) }}
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    <div v-else class="space-y-3">
+                      <article
+                        v-for="item in cartItems"
+                        :key="`${item.productKind}-${item.id}`"
+                        class="flex items-center rounded-xl border border-white/15 bg-white/[0.07] p-3 sm:p-4"
+                      >
+                        <div class="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white/5 sm:h-20 sm:w-20">
+                          <img
+                            :src="item.image"
+                            :alt="item.name"
+                            class="h-full w-full object-cover opacity-90 mix-blend-multiply"
+                            referrerpolicy="no-referrer"
+                          />
+                        </div>
+                        <div class="ml-4 flex min-w-0 flex-1 flex-col justify-center">
+                          <h4 class="truncate text-sm font-bold text-white sm:text-base">{{ item.name }}</h4>
+                          <p class="mt-0.5 truncate text-xs text-white/50">{{ item.category }} / 标准规格</p>
+                          <div class="mt-2 flex items-end justify-between gap-3">
+                            <span class="text-sm font-bold text-[#FFE600] sm:text-base">
+                              ¥{{ item.price.toFixed(2) }}
+                            </span>
+                            <span class="shrink-0 text-xs text-white/55 sm:text-sm">×{{ item.quantity }}</span>
+                          </div>
+                        </div>
+                      </article>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
             <div v-else key="success" class="-mx-2 sm:-mx-4">
@@ -229,6 +356,20 @@ function onSuccessReturn() {
               />
             </div>
           </Transition>
+        </div>
+
+        <div
+          v-if="step === 'form'"
+          class="flex shrink-0 justify-end border-t border-white/10 px-6 py-5 sm:px-10 sm:py-6"
+        >
+          <button
+            type="button"
+            class="rounded-xl bg-[#FFE600] px-10 py-2.5 text-sm font-bold text-[#260A2F] shadow-[0_0_15px_rgba(255,230,0,0.25)] transition-all hover:bg-[#fff04d] disabled:cursor-not-allowed disabled:opacity-45"
+            :disabled="!serviceAddress.trim() || !shortExchangeContent.trim()"
+            @click="submitCartConsultation"
+          >
+            确定
+          </button>
         </div>
       </div>
     </div>

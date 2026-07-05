@@ -41,6 +41,7 @@ const defaultShopUiState = (): ShopUiState => ({
 export const useAppStore = defineStore('app', () => {
   const selectedProduct = ref<Product | null>(null);
   const cart = ref<CartItem[]>([]);
+  const cartSelectedKeys = ref<string[]>([]);
   const cartAnnualDisplayMode = ref<CartDisplayMode>('card');
   const wishlist = ref<Product[]>([]);
   const wishlistAnnualDisplayMode = ref<WishlistDisplayMode>('card');
@@ -122,6 +123,38 @@ export const useAppStore = defineStore('app', () => {
     }
   }
 
+  function cartItemSelectionKey(item: Pick<CartItem, 'id' | 'productKind'>) {
+    return `${item.productKind}-${item.id}`;
+  }
+
+  function isCartItemSelected(item: CartItem) {
+    return cartSelectedKeys.value.includes(cartItemSelectionKey(item));
+  }
+
+  function toggleCartItemSelection(item: CartItem) {
+    const key = cartItemSelectionKey(item);
+    if (cartSelectedKeys.value.includes(key)) {
+      cartSelectedKeys.value = cartSelectedKeys.value.filter((k) => k !== key);
+    } else {
+      cartSelectedKeys.value = [...cartSelectedKeys.value, key];
+    }
+  }
+
+  function pruneCartSelection() {
+    const valid = new Set(cart.value.map(cartItemSelectionKey));
+    cartSelectedKeys.value = cartSelectedKeys.value.filter((k) => valid.has(k));
+  }
+
+  function setCartItemsSelected(items: CartItem[], selected: boolean) {
+    const keys = items.map(cartItemSelectionKey);
+    if (selected) {
+      cartSelectedKeys.value = [...new Set([...cartSelectedKeys.value, ...keys])];
+    } else {
+      const remove = new Set(keys);
+      cartSelectedKeys.value = cartSelectedKeys.value.filter((k) => !remove.has(k));
+    }
+  }
+
   function addToCart(product: Product, count = 1, options?: AddToCartOptions) {
     if (product.productKind === 'annual' && options?.fromListView) {
       cartAnnualDisplayMode.value = 'list';
@@ -138,6 +171,7 @@ export const useAppStore = defineStore('app', () => {
       (item) =>
         !(item.id === productId && (productKind === undefined || item.productKind === productKind)),
     );
+    pruneCartSelection();
   }
 
   function updateCartQuantity(
@@ -289,6 +323,7 @@ export const useAppStore = defineStore('app', () => {
   return {
     selectedProduct,
     cart,
+    cartSelectedKeys,
     cartAnnualDisplayMode,
     wishlist,
     wishlistAnnualDisplayMode,
@@ -321,6 +356,11 @@ export const useAppStore = defineStore('app', () => {
     addToCart,
     removeFromCart,
     updateCartQuantity,
+    cartItemSelectionKey,
+    isCartItemSelected,
+    toggleCartItemSelection,
+    pruneCartSelection,
+    setCartItemsSelected,
     toggleWishlist,
     removeFromWishlist,
     setSelectedProduct,

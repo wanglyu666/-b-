@@ -2,8 +2,9 @@
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { ArrowLeft, Star, Minus, Plus, MessageCircle } from 'lucide-vue-next';
 import TopBarActions from './TopBarActions.vue';
+import CartConsultationModal from './consultation-feedback/CartConsultationModal.vue';
 import { useAppStore } from '../stores/appStore';
-import type { Product } from '../types';
+import type { CartItem, Product } from '../types';
 
 const props = defineProps<{
   product: Product;
@@ -25,6 +26,15 @@ const emit = defineEmits([
 const appStore = useAppStore();
 const activeImg = ref(0);
 const quantity = ref(1);
+const cartConsultModalOpen = ref(false);
+
+const consultCartItems = computed((): CartItem[] => [
+  { ...props.product, quantity: quantity.value },
+]);
+
+const showConsultAsList = computed(
+  () => props.product.productKind === 'annual' && appStore.cartAnnualDisplayMode === 'list',
+);
 
 type OptionRowKey = 'brand' | 'model' | 'spec' | 'color';
 
@@ -309,6 +319,7 @@ onBeforeUnmount(() => {
                  <button
                    type="button"
                    class="flex-1 py-2.5 rounded-full border-2 border-gray-300 font-bold text-gray-600 tracking-wider text-sm flex items-center justify-center gap-2 transition-all hover:border-[#A1D573] hover:text-[#A1D573]"
+                   @click="cartConsultModalOpen = true"
                  >
                    <MessageCircle :size="18" />
                    咨询
@@ -323,6 +334,12 @@ onBeforeUnmount(() => {
            </div>
         </div>
      </div>
+
+     <CartConsultationModal
+       v-model="cartConsultModalOpen"
+       :cart-items="consultCartItems"
+       :show-as-list="showConsultAsList"
+     />
   </div>
 </template>
 
