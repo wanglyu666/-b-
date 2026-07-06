@@ -19,6 +19,10 @@ withDefaults(
     department: '系统管理部',
   },
 );
+
+defineEmits<{
+  edit: [];
+}>();
 </script>
 
 <template>
@@ -68,6 +72,7 @@ withDefaults(
       <button
         type="button"
         class="absolute bottom-4 right-6 rounded-lg bg-[#B0D4C5] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#9bc4b3] sm:bottom-5 sm:right-8"
+        @click="$emit('edit')"
       >
         编辑资料
       </button>

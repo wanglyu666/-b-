@@ -4,6 +4,7 @@ import { storeToRefs } from 'pinia';
 import { ArrowLeft, ShoppingBag, Trash2, Minus, Plus, ArrowRight } from 'lucide-vue-next';
 import type { CartDisplayMode, CartItem } from '../types';
 import CartConsultationModal from './consultation-feedback/CartConsultationModal.vue';
+import CartCheckoutForm from './CartCheckoutForm.vue';
 import { useAppStore } from '../stores/appStore';
 
 const appStore = useAppStore();
@@ -46,6 +47,7 @@ const flashNormalTab = ref(false);
 const flashAnnualTab = ref(false);
 const flashSelectAll = ref(false);
 const TAB_FLASH_MS = 220;
+const checkoutViewActive = ref(false);
 const hoveredDescTooltip = ref<{ description: string; x: number; y: number } | null>(null);
 const selectionHintTooltip = ref<{
   x: number;
@@ -194,6 +196,16 @@ function hideSelectionHint() {
   selectionHintTooltip.value = null;
 }
 
+function handleCheckout() {
+  if (!hasVisibleSelection.value) return;
+  hideSelectionHint();
+  checkoutViewActive.value = true;
+}
+
+function handleCheckoutBack() {
+  checkoutViewActive.value = false;
+}
+
 function runCartContentTransition(update: () => void) {
   showCartContent.value = false;
   window.setTimeout(() => {
@@ -216,7 +228,9 @@ watch(productMode, () => hideSelectionHint());
 
 <template>
   <div class="relative min-h-screen bg-transparent overflow-x-hidden w-full">
-    <div class="relative z-10 flex flex-col min-h-screen max-w-[1600px] mx-auto w-full px-4 sm:px-6 md:px-8 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div class="relative z-10 flex flex-col min-h-screen max-w-[1600px] mx-auto w-full px-4 sm:px-6 md:px-8 py-8">
+     <Transition name="cart-page-shell" mode="out-in">
+     <div v-if="!checkoutViewActive" key="cart-shell" class="flex min-h-0 flex-1 flex-col animate-in fade-in slide-in-from-bottom-4 duration-500">
      <header class="flex-shrink-0 flex w-full items-center gap-4">
            <button
               type="button"
@@ -440,23 +454,45 @@ watch(productMode, () => hideSelectionHint());
           </div>
        </div>
        </Transition>
+     </template>
+     </div>
 
-       <div class="fixed bottom-6 left-0 right-0 z-10 px-4 md:left-64 md:px-8 pointer-events-none">
+     <div
+       v-else
+       key="checkout-shell"
+       class="mx-auto flex w-full max-w-6xl flex-1 flex-col"
+     >
+       <button
+         type="button"
+         class="mb-4 inline-flex w-fit items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-white/50 hover:text-gray-900"
+         @click="handleCheckoutBack"
+       >
+         <ArrowLeft :size="18" />
+         返回
+       </button>
+       <div
+         class="flex min-h-[calc(100vh-10rem)] flex-1 flex-col overflow-hidden rounded-3xl border border-white/20 bg-white/70 shadow-sm backdrop-blur-md"
+       >
+         <CartCheckoutForm
+           :order-amount="total"
+           :cart-items="selectedVisibleCartItems"
+           :show-as-list="showListLayout"
+         />
+       </div>
+     </div>
+     </Transition>
+
+     <Transition name="cart-footer-fade">
+       <div
+         v-if="!checkoutViewActive && cartItems.length > 0"
+         key="cart-footer"
+         class="fixed bottom-6 left-0 right-0 z-10 px-4 md:left-64 md:px-8 pointer-events-none"
+       >
           <div class="max-w-[1600px] mx-auto pointer-events-auto">
           <div class="bg-[#A1D573] text-[#163300] p-4 pl-8 pr-4 rounded-full shadow-2xl flex items-center justify-between border border-[#A1D573]">
              <div class="flex flex-col">
                 <span class="text-[#163300]/70 text-xs font-medium uppercase tracking-wider">总计 (Total)</span>
-                <span class="block min-h-8">
-                  <Transition name="cart-content" mode="out-in">
-                    <span
-                      v-if="showCartContent"
-                      :key="`${productMode}-${cartAnnualDisplayMode}`"
-                      class="inline-block text-2xl font-bold"
-                    >
-                      ¥{{ total.toFixed(2) }}
-                    </span>
-                  </Transition>
-                </span>
+                <span class="text-2xl font-bold">¥{{ total.toFixed(2) }}</span>
              </div>
              <div class="flex items-center gap-3">
                <span
@@ -482,6 +518,7 @@ watch(productMode, () => hideSelectionHint());
                    type="button"
                    class="cart-footer-action-btn"
                    :disabled="!hasVisibleSelection"
+                   @click="handleCheckout"
                  >
                    去结算 <ArrowRight :size="16" />
                  </button>
@@ -490,7 +527,7 @@ watch(productMode, () => hideSelectionHint());
           </div>
           </div>
        </div>
-     </template>
+     </Transition>
     </div>
 
     <Teleport to="body">
@@ -538,6 +575,36 @@ watch(productMode, () => hideSelectionHint());
 .cart-content-leave-from {
   opacity: 1;
   transform: translateY(0);
+}
+
+.cart-page-shell-enter-active,
+.cart-page-shell-leave-active {
+  transition: opacity 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cart-page-shell-enter-from,
+.cart-page-shell-leave-to {
+  opacity: 0;
+}
+
+.cart-page-shell-enter-to,
+.cart-page-shell-leave-from {
+  opacity: 1;
+}
+
+.cart-footer-fade-enter-active,
+.cart-footer-fade-leave-active {
+  transition: opacity 0.28s ease;
+}
+
+.cart-footer-fade-enter-from,
+.cart-footer-fade-leave-to {
+  opacity: 0;
+}
+
+.cart-footer-fade-enter-to,
+.cart-footer-fade-leave-from {
+  opacity: 1;
 }
 
 .cart-desc-tooltip-enter-active,

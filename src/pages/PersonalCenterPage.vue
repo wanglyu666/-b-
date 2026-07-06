@@ -7,6 +7,9 @@ import PhoneChangeView from '../components/PhoneChangeView.vue';
 import AccountDeactivationView from '../components/AccountDeactivationView.vue';
 import BillingInfoView from '../components/BillingInfoView.vue';
 import BasicRegistrationInfoView from '../components/BasicRegistrationInfoView.vue';
+import AddressInfoView from '../components/AddressInfoView.vue';
+import ProfileEditView, { type ProfileEditPayload } from '../components/ProfileEditView.vue';
+import EnterpriseUpgradeView from '../components/EnterpriseUpgradeView.vue';
 
 type ProfileSubView =
   | 'main'
@@ -14,9 +17,23 @@ type ProfileSubView =
   | 'phone-change'
   | 'deactivate'
   | 'billing-info'
-  | 'basic-registration';
+  | 'basic-registration'
+  | 'address-info'
+  | 'profile-edit'
+  | 'enterprise-upgrade';
 
 const subView = ref<ProfileSubView>('main');
+
+const profileName = ref('管理员');
+const profileEmail = ref('admin@justpai.com');
+const profileAvatarUrl = ref('https://api.dicebear.com/7.x/avataaars/svg?seed=Cooper');
+
+function handleProfileSave(payload: ProfileEditPayload) {
+  profileName.value = payload.name;
+  profileEmail.value = payload.email;
+  profileAvatarUrl.value = payload.avatarUrl;
+  subView.value = 'main';
+}
 </script>
 
 <template>
@@ -25,7 +42,12 @@ const subView = ref<ProfileSubView>('main');
   >
     <Transition name="pc-page" mode="out-in">
       <div v-if="subView === 'main'" key="profile" class="flex flex-1 flex-col">
-        <PersonalCenterProfileHeader />
+        <PersonalCenterProfileHeader
+          :name="profileName"
+          :email="profileEmail"
+          :avatar-url="profileAvatarUrl"
+          @edit="subView = 'profile-edit'"
+        />
         <PersonalCenterOptionsCard
           class="mt-6"
           @open-password-change="subView = 'password-change'"
@@ -33,6 +55,8 @@ const subView = ref<ProfileSubView>('main');
           @open-deactivate="subView = 'deactivate'"
           @open-billing-info="subView = 'billing-info'"
           @open-basic-registration="subView = 'basic-registration'"
+          @open-address-info="subView = 'address-info'"
+          @open-enterprise-upgrade="subView = 'enterprise-upgrade'"
         />
 
         <p class="mt-auto pt-10 text-center text-xs text-gray-400 sm:text-sm">
@@ -86,6 +110,32 @@ const subView = ref<ProfileSubView>('main');
         key="basic-registration"
         class="flex-1"
         @back="subView = 'main'"
+      />
+
+      <AddressInfoView
+        v-else-if="subView === 'address-info'"
+        key="address-info"
+        class="flex-1"
+        @back="subView = 'main'"
+      />
+
+      <ProfileEditView
+        v-else-if="subView === 'profile-edit'"
+        key="profile-edit"
+        class="flex-1"
+        :name="profileName"
+        :email="profileEmail"
+        :avatar-url="profileAvatarUrl"
+        @back="subView = 'main'"
+        @save="handleProfileSave"
+      />
+
+      <EnterpriseUpgradeView
+        v-else-if="subView === 'enterprise-upgrade'"
+        key="enterprise-upgrade"
+        class="flex-1"
+        @back="subView = 'main'"
+        @submit="subView = 'main'"
       />
     </Transition>
   </div>

@@ -8,6 +8,7 @@ import {
   FileText,
   HelpCircle,
   KeyRound,
+  MapPin,
   Shield,
   Smartphone,
   UserCircle,
@@ -31,8 +32,8 @@ const menuItems: MenuItem[] = [
   },
   {
     id: 'registration',
-    label: '注册信息',
-    description: '查看账号注册与认证信息',
+    label: '基本信息',
+    description: '查看注册信息、开票信息、地址信息',
     icon: ClipboardList,
   },
   {
@@ -67,8 +68,9 @@ const securityItems: { id: string; label: string; icon: LucideIcon }[] = [
 ];
 
 const registrationItems: { id: string; label: string; icon: LucideIcon }[] = [
-  { id: 'basic', label: '基本注册信息', icon: UserCircle },
+  { id: 'basic', label: '注册信息', icon: UserCircle },
   { id: 'billing', label: '开票信息', icon: Banknote },
+  { id: 'address', label: '地址信息', icon: MapPin },
 ];
 
 const ruleItems = [
@@ -86,6 +88,8 @@ const emit = defineEmits<{
   'open-deactivate': [];
   'open-billing-info': [];
   'open-basic-registration': [];
+  'open-address-info': [];
+  'open-enterprise-upgrade': [];
 }>();
 
 function handleSecurityItemClick(entryId: string) {
@@ -107,9 +111,17 @@ function handleRegistrationItemClick(entryId: string) {
   if (entryId === 'billing') {
     emit('open-billing-info');
   }
+  if (entryId === 'address') {
+    emit('open-address-info');
+  }
 }
 
 function handleItemClick(itemId: string) {
+  if (itemId === 'enterprise') {
+    emit('open-enterprise-upgrade');
+    return;
+  }
+
   const expandable = ['security', 'registration', 'help', 'rules'] as const;
   if (!expandable.includes(itemId as (typeof expandable)[number])) return;
 

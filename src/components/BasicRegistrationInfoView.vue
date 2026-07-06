@@ -61,7 +61,7 @@ const textFields = [
       class="flex min-h-[calc(100vh-10rem)] flex-1 flex-col overflow-hidden rounded-3xl border border-white/20 bg-white/70 shadow-sm backdrop-blur-md"
     >
       <div class="flex flex-1 flex-col px-6 py-10 sm:px-10 sm:py-12">
-        <h2 class="text-xl font-bold text-gray-900 sm:text-2xl">基本注册信息</h2>
+        <h2 class="text-xl font-bold text-gray-900 sm:text-2xl">注册信息</h2>
 
         <div class="mt-8 space-y-5 sm:mt-10 sm:space-y-6">
           <div class="border-b border-gray-200/60 pb-5 sm:pb-6">
