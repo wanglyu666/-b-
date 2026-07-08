@@ -17,7 +17,8 @@ const props = defineProps<{
 const emit = defineEmits([
   'back', 
   'addToCart', 
-  'cartClick', 
+  'cartClick',
+  'orderCenterClick',
   'toggleWishlist', 
   'wishlistClick', 
   'messageClick'
@@ -171,6 +172,7 @@ onBeforeUnmount(() => {
         <TopBarActions 
           :isShop="true" 
           :cartCount="cartCount" 
+          @order-center-click="$emit('orderCenterClick')"
           @cartClick="$emit('cartClick')" 
           @wishlistClick="$emit('wishlistClick')" 
           :wishlistCount="wishlistCount" 

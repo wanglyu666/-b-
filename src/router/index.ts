@@ -14,6 +14,7 @@ import ManagementPage from '../pages/ManagementPage.vue';
 import MaintenanceRepairPage from '../pages/MaintenanceRepairPage.vue';
 import MaintenanceProjectsPage from '../pages/MaintenanceProjectsPage.vue';
 import OrderManagementPage from '../pages/OrderManagementPage.vue';
+import OrderCenterPage from '../pages/OrderCenterPage.vue';
 import EngineeringProjectsPage from '../pages/EngineeringProjectsPage.vue';
 import OrganizationArchitecturePage from '../pages/OrganizationArchitecturePage.vue';
 import MemberManagementPage from '../pages/MemberManagementPage.vue';
@@ -34,6 +35,7 @@ const routes = [
   { path: '/shop/product', name: 'product-detail', component: ProductDetailPage, meta: { activeTab: 'shop' } },
   { path: '/shop/cart', name: 'cart', component: CartPage, meta: { activeTab: 'shop' } },
   { path: '/shop/wishlist', name: 'wishlist', component: WishlistPage, meta: { activeTab: 'shop' } },
+  { path: '/shop/order-center', name: 'order-center', component: OrderCenterPage, meta: { activeTab: 'shop' } },
 
   { path: '/management', name: 'management', component: ManagementPage, meta: { activeTab: 'management' } },
   { path: '/management/maintenance-repair', name: 'maintenance-repair', component: MaintenanceRepairPage, meta: { activeTab: 'management' } },

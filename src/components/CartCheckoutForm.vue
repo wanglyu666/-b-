@@ -11,7 +11,7 @@ import wechatPayImg from '../../image asset/wechat pay.png';
 
 type CheckoutStep = 'form' | 'payment';
 type PaymentChannel = 'alipay' | 'unionpay' | 'wechat';
-export type CheckoutMode = 'immediate' | 'purchaseOrder';
+export type CheckoutMode = 'immediate' | 'purchaseOrder' | 'contractSign';
 
 export interface PurchaseOrderDraft {
   confirmNo: string;
@@ -36,7 +36,7 @@ const props = withDefaults(
     cartItems: CartItem[];
     /** 年框产品表格模式时为 true */
     showAsList?: boolean;
-    /** immediate：线上立即支付；purchaseOrder：按产品采购单约定支付方式支付 */
+    /** immediate：线上立即支付；purchaseOrder / contractSign：按产品采购单约定支付方式支付 */
     mode?: CheckoutMode;
   }>(),
   {
@@ -112,12 +112,17 @@ function closeTermsModal() {
   termsModalOpen.value = false;
 }
 
-function openPurchaseOrderConfirmModal() {
+function openCheckoutConfirmModal() {
   purchaseOrderConfirmOpen.value = true;
 }
 
-function closePurchaseOrderConfirmModal() {
+function closeCheckoutConfirmModal() {
   purchaseOrderConfirmOpen.value = false;
+}
+
+function handleContractSignConfirm() {
+  closeCheckoutConfirmModal();
+  emit('pay');
 }
 
 function buildPurchaseOrderDraft(): PurchaseOrderDraft {
@@ -140,7 +145,7 @@ function buildPurchaseOrderDraft(): PurchaseOrderDraft {
 }
 
 function handlePurchaseOrderAction(action: 'engineer' | 'self') {
-  closePurchaseOrderConfirmModal();
+  closeCheckoutConfirmModal();
   if (action === 'self') {
     emit('createSelf', buildPurchaseOrderDraft());
     return;
@@ -151,8 +156,8 @@ function handlePurchaseOrderAction(action: 'engineer' | 'self') {
 function handleFooterAction() {
   if (checkoutStep.value === 'form') {
     if (!termsAccepted.value) return;
-    if (isPurchaseOrderMode.value) {
-      openPurchaseOrderConfirmModal();
+    if (usesPurchaseOrderPayment.value) {
+      openCheckoutConfirmModal();
       return;
     }
     checkoutStep.value = 'payment';
@@ -163,9 +168,13 @@ function handleFooterAction() {
 }
 
 const isPurchaseOrderMode = computed(() => props.mode === 'purchaseOrder');
+const isContractSignMode = computed(() => props.mode === 'contractSign');
+const usesPurchaseOrderPayment = computed(
+  () => isPurchaseOrderMode.value || isContractSignMode.value,
+);
 
 const paymentMethodLabel = computed(() =>
-  isPurchaseOrderMode.value ? '按产品采购单约定支付方式支付' : '线上立即支付',
+  usesPurchaseOrderPayment.value ? '按产品采购单约定支付方式支付' : '线上立即支付',
 );
 
 const footerActionDisabled = computed(() => {
@@ -174,7 +183,7 @@ const footerActionDisabled = computed(() => {
 });
 
 const footerActionLabel = computed(() => {
-  if (isPurchaseOrderMode.value) return '支付';
+  if (usesPurchaseOrderPayment.value) return '支付';
   return checkoutStep.value === 'form' ? '下一步' : '支付';
 });
 
@@ -446,7 +455,7 @@ const cartListRows = computed(() =>
         </div>
 
         <div
-          v-else-if="!isPurchaseOrderMode"
+          v-else-if="!usesPurchaseOrderPayment"
           key="payment"
           class="flex min-h-[min(60vh,520px)] flex-col items-center justify-center py-6"
         >
@@ -565,7 +574,7 @@ const cartListRows = computed(() =>
         role="dialog"
         aria-modal="true"
         aria-labelledby="purchase-order-confirm-title"
-        @click.self="closePurchaseOrderConfirmModal"
+        @click.self="closeCheckoutConfirmModal"
       >
         <div
           class="flex max-h-[min(80vh,560px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
@@ -578,13 +587,26 @@ const cartListRows = computed(() =>
           </div>
           <div class="custom-scrollbar flex-1 overflow-y-auto px-6 py-5">
             <div class="rounded-xl bg-gray-50 px-5 py-5 text-base leading-7 text-gray-800 sm:text-lg sm:leading-8">
-              <p>
+              <p v-if="isContractSignMode">
+                您好，根据这么派平台规则中订单支付的规则，您的订单已优享先服务后支付的优惠政策，平台会在与您沟通后创建一份产品采购合同，请根据提示前往合同管理中「签约管理」进行签约，给您带来的不便敬请谅解，如有其它问题请您拨打客服热线
+                <span class="font-semibold text-[#9FE870]">400-688-1997</span>
+              </p>
+              <p v-else>
                 您好，根据这么派平台规则中订单支付的规则，您的订单已优享先服务后支付的优惠政策。您可根据流程亲自创建产品采购单或由平台协助创建，创建完成后，请前往合同管理中「签约管理」进行签约确认，给您带来的不便敬请谅解，如有其它问题请您拨打客服热线
                 <span class="font-semibold text-[#9FE870]">400-688-1997</span>
               </p>
             </div>
           </div>
-          <div class="flex gap-3 border-t border-gray-100 px-6 py-4">
+          <div v-if="isContractSignMode" class="border-t border-gray-100 px-6 py-4">
+            <button
+              type="button"
+              class="purchase-order-confirm-btn purchase-order-confirm-btn--primary w-full"
+              @click="handleContractSignConfirm"
+            >
+              确认
+            </button>
+          </div>
+          <div v-else class="flex gap-3 border-t border-gray-100 px-6 py-4">
             <button
               type="button"
               class="purchase-order-confirm-btn purchase-order-confirm-btn--primary min-w-0 flex-1"

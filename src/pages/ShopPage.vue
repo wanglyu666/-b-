@@ -13,7 +13,7 @@ function onProductClick(product: Product) {
   router.push({ name: 'product-detail' });
 }
 
-function navigateFromShop(routeName: 'cart' | 'wishlist' | 'messages') {
+function navigateFromShop(routeName: 'cart' | 'wishlist' | 'messages' | 'order-center') {
   appStore.persistShopScroll();
   router.push({ name: routeName });
 }
@@ -33,6 +33,7 @@ function navigateFromShop(routeName: 'cart' | 'wishlist' | 'messages') {
     @product-click="onProductClick"
     @add-to-cart="(product, count, options) => appStore.addToCart(product, count, options)"
     @cart-click="navigateFromShop('cart')"
+    @order-center-click="navigateFromShop('order-center')"
     @wishlist-click="navigateFromShop('wishlist')"
     @toggle-wishlist="(product, options) => appStore.toggleWishlist(product, options)"
     @message-click="navigateFromShop('messages')"

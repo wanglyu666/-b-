@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router';
-import { Search, ShoppingBag, Star, Bell } from 'lucide-vue-next';
+import { Search, ShoppingBag, Star, Bell, ClipboardList } from 'lucide-vue-next';
 
 const router = useRouter();
 
@@ -20,7 +20,7 @@ const props = withDefaults(defineProps<{
   userName: '管理员',
 });
 
-defineEmits(['cartClick', 'wishlistClick', 'messageClick', 'bellClick']);
+defineEmits(['cartClick', 'wishlistClick', 'messageClick', 'bellClick', 'orderCenterClick']);
 
 function goPersonalCenter() {
   router.push({ name: 'personal-center' });
@@ -31,6 +31,13 @@ function goPersonalCenter() {
   <div class="flex items-center space-x-4">
     <div class="flex items-center bg-white rounded-full border border-gray-100 shadow-sm px-4 py-2 space-x-5 h-12">
       
+      <div v-if="isShop" 
+        @click="$emit('orderCenterClick')"
+        class="cursor-pointer hover:text-black transition-colors"
+        aria-label="订单中心"
+      >
+        <ClipboardList :size="20" class="text-gray-600" />
+      </div>
       <div v-if="isShop" 
         @click="$emit('cartClick')"
         class="relative cursor-pointer hover:text-black transition-colors"

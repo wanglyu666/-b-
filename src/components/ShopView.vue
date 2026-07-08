@@ -39,7 +39,8 @@ const emit = defineEmits([
   'productClick', 
   'addToCart', 
   'cartClick', 
-  'wishlistClick', 
+  'orderCenterClick',
+  'wishlistClick',
   'toggleWishlist', 
   'messageClick',
 ]);
@@ -591,6 +592,7 @@ function handleSearchSelect(product: Product) {
         <TopBarActions 
           :isShop="true" 
           :cartCount="cartCount" 
+          @order-center-click="$emit('orderCenterClick')"
           @cartClick="$emit('cartClick')" 
           @wishlistClick="$emit('wishlistClick')" 
           :wishlistCount="wishlistCount" 

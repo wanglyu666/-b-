@@ -210,7 +210,18 @@ function handleCheckout() {
 
 function handlePurchaseOrderCheckout() {
   hideSelectionHint();
+  purchaseOrderCreateActive.value = false;
+  purchaseOrderDraft.value = null;
   checkoutMode.value = 'purchaseOrder';
+  checkoutViewActive.value = true;
+}
+
+function handleSignPurchaseContract() {
+  if (!hasVisibleSelection.value) return;
+  hideSelectionHint();
+  purchaseOrderCreateActive.value = false;
+  purchaseOrderDraft.value = null;
+  checkoutMode.value = 'contractSign';
   checkoutViewActive.value = true;
 }
 
@@ -524,7 +535,9 @@ watch(productMode, () => hideSelectionHint());
              <button type="button" class="cart-test-btn" @click="handlePurchaseOrderCheckout">
                产品采购单支付
              </button>
-             <button type="button" class="cart-test-btn">测试按钮2</button>
+             <button type="button" class="cart-test-btn" @click="handleSignPurchaseContract">
+               签署产品采购合同
+             </button>
            </div>
          </div>
        </div>
