@@ -3,49 +3,69 @@ import { computed, onMounted, ref } from 'vue';
 import { Calendar } from 'lucide-vue-next';
 import type { CartItem } from '../types';
 import { useAppStore } from '../stores/appStore';
+import { INITIAL_SERVICE_PROVIDER_ADDRESSES } from '../data/serviceProviderAddresses';
+import ServiceProviderAddressPicker from './ServiceProviderAddressPicker.vue';
 import alipayImg from '../../image asset/alipay.png';
 import unionPayImg from '../../image asset/union pay.png';
 import wechatPayImg from '../../image asset/wechat pay.png';
 
 type CheckoutStep = 'form' | 'payment';
 type PaymentChannel = 'alipay' | 'unionpay' | 'wechat';
+export type CheckoutMode = 'immediate' | 'purchaseOrder';
 
-const props = defineProps<{
+export interface PurchaseOrderDraft {
+  confirmNo: string;
   orderAmount: number;
+  serviceTime: string;
+  serviceProviderAddress: string;
+  contactPhone: string;
+  contactName: string;
+  paymentTerm: string;
+  estimatedDuration: string;
+  purchaserCompany: string;
+  purchaserAddress: string;
+  purchaserContact: string;
+  purchaserPhone: string;
+  remarks: string;
   cartItems: CartItem[];
-  /** 年框产品表格模式时为 true */
-  showAsList?: boolean;
-}>();
+}
+
+const props = withDefaults(
+  defineProps<{
+    orderAmount: number;
+    cartItems: CartItem[];
+    /** 年框产品表格模式时为 true */
+    showAsList?: boolean;
+    /** immediate：线上立即支付；purchaseOrder：按产品采购单约定支付方式支付 */
+    mode?: CheckoutMode;
+  }>(),
+  {
+    mode: 'immediate',
+  },
+);
 
 const emit = defineEmits<{
   pay: [];
+  createSelf: [draft: PurchaseOrderDraft];
 }>();
 
 const appStore = useAppStore();
 
-const SERVICE_PROVIDER_ADDRESSES = [
-  '北京市海淀区中关村大街1号海龙大厦3层',
-  '北京市海淀区中关村软件园二期A座',
-  '北京市朝阳区望京街10号望京SOHO T3',
-  '北京市西城区金融大街35号国际企业大厦',
-  '北京市丰台区南四环西路188号总部基地17区',
-] as const;
-
 const PAYMENT_TERM_OPTIONS = ['7', '15', '30'] as const;
 
-const PAYMENT_METHOD = '线上立即支付';
 const DURATION_DAYS = '1';
 
 const confirmNo = ref('');
 const purchaser = ref('');
 const contactName = ref('');
 const contactPhone = ref('138-0013-8000');
-const serviceProviderAddress = ref<string>(SERVICE_PROVIDER_ADDRESSES[0]);
+const serviceProviderAddress = ref<string>(INITIAL_SERVICE_PROVIDER_ADDRESSES[0].address);
 const paymentTerm = ref<string>(PAYMENT_TERM_OPTIONS[0]);
 const serviceTime = ref('');
 const remarks = ref('');
 const termsAccepted = ref(false);
 const termsModalOpen = ref(false);
+const purchaseOrderConfirmOpen = ref(false);
 const checkoutStep = ref<CheckoutStep>('form');
 const selectedPaymentMethod = ref<PaymentChannel | null>(null);
 
@@ -92,9 +112,49 @@ function closeTermsModal() {
   termsModalOpen.value = false;
 }
 
+function openPurchaseOrderConfirmModal() {
+  purchaseOrderConfirmOpen.value = true;
+}
+
+function closePurchaseOrderConfirmModal() {
+  purchaseOrderConfirmOpen.value = false;
+}
+
+function buildPurchaseOrderDraft(): PurchaseOrderDraft {
+  return {
+    confirmNo: confirmNo.value,
+    orderAmount: props.orderAmount,
+    serviceTime: serviceTime.value,
+    serviceProviderAddress: serviceProviderAddress.value,
+    contactPhone: contactPhone.value,
+    contactName: contactName.value,
+    paymentTerm: paymentTerm.value,
+    estimatedDuration: DURATION_DAYS,
+    purchaserCompany: purchaser.value,
+    purchaserAddress: '北京市朝阳区',
+    purchaserContact: contactName.value,
+    purchaserPhone: contactPhone.value,
+    remarks: remarks.value,
+    cartItems: [...props.cartItems],
+  };
+}
+
+function handlePurchaseOrderAction(action: 'engineer' | 'self') {
+  closePurchaseOrderConfirmModal();
+  if (action === 'self') {
+    emit('createSelf', buildPurchaseOrderDraft());
+    return;
+  }
+  emit('pay');
+}
+
 function handleFooterAction() {
   if (checkoutStep.value === 'form') {
     if (!termsAccepted.value) return;
+    if (isPurchaseOrderMode.value) {
+      openPurchaseOrderConfirmModal();
+      return;
+    }
     checkoutStep.value = 'payment';
     return;
   }
@@ -102,13 +162,21 @@ function handleFooterAction() {
   emit('pay');
 }
 
-const footerActionDisabled = computed(() =>
-  checkoutStep.value === 'form' ? !termsAccepted.value : !selectedPaymentMethod.value,
+const isPurchaseOrderMode = computed(() => props.mode === 'purchaseOrder');
+
+const paymentMethodLabel = computed(() =>
+  isPurchaseOrderMode.value ? '按产品采购单约定支付方式支付' : '线上立即支付',
 );
 
-const footerActionLabel = computed(() =>
-  checkoutStep.value === 'form' ? '下一步' : '支付',
-);
+const footerActionDisabled = computed(() => {
+  if (checkoutStep.value === 'form') return !termsAccepted.value;
+  return !selectedPaymentMethod.value;
+});
+
+const footerActionLabel = computed(() => {
+  if (isPurchaseOrderMode.value) return '支付';
+  return checkoutStep.value === 'form' ? '下一步' : '支付';
+});
 
 onMounted(() => {
   confirmNo.value = buildConfirmNo();
@@ -195,7 +263,7 @@ const cartListRows = computed(() =>
             id="checkout-payment-method"
             type="text"
             readonly
-            :value="PAYMENT_METHOD"
+            :value="paymentMethodLabel"
             class="h-10 w-full min-w-0 flex-1 cursor-default rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-800 focus:outline-none"
           />
         </div>
@@ -235,15 +303,10 @@ const cartListRows = computed(() =>
           <label class="shrink-0 text-sm font-medium text-gray-700 sm:w-28 sm:text-right" for="checkout-provider-address">
             服务方地址
           </label>
-          <select
-            id="checkout-provider-address"
+          <ServiceProviderAddressPicker
             v-model="serviceProviderAddress"
-            class="h-10 w-full min-w-0 flex-1 rounded-lg border border-gray-200 bg-white px-3 text-sm text-gray-800 focus:border-[#FFEB69] focus:outline-none focus:ring-2 focus:ring-[#FFEB69]/30"
-          >
-            <option v-for="address in SERVICE_PROVIDER_ADDRESSES" :key="address" :value="address">
-              {{ address }}
-            </option>
-          </select>
+            input-id="checkout-provider-address"
+          />
         </div>
 
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-5">
@@ -383,7 +446,7 @@ const cartListRows = computed(() =>
         </div>
 
         <div
-          v-else
+          v-else-if="!isPurchaseOrderMode"
           key="payment"
           class="flex min-h-[min(60vh,520px)] flex-col items-center justify-center py-6"
         >
@@ -494,6 +557,53 @@ const cartListRows = computed(() =>
         </div>
       </div>
     </Teleport>
+
+    <Teleport to="body">
+      <div
+        v-if="purchaseOrderConfirmOpen"
+        class="fixed inset-0 z-[120] flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="purchase-order-confirm-title"
+        @click.self="closePurchaseOrderConfirmModal"
+      >
+        <div
+          class="flex max-h-[min(80vh,560px)] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
+          @click.stop
+        >
+          <div class="border-b border-gray-100 px-6 py-4">
+            <h2 id="purchase-order-confirm-title" class="text-lg font-bold text-gray-900">
+              确认信息
+            </h2>
+          </div>
+          <div class="custom-scrollbar flex-1 overflow-y-auto px-6 py-5">
+            <div class="rounded-xl bg-gray-50 px-5 py-5 text-base leading-7 text-gray-800 sm:text-lg sm:leading-8">
+              <p>
+                您好，根据这么派平台规则中订单支付的规则，您的订单已优享先服务后支付的优惠政策。您可根据流程亲自创建产品采购单或由平台协助创建，创建完成后，请前往合同管理中「签约管理」进行签约确认，给您带来的不便敬请谅解，如有其它问题请您拨打客服热线
+                <span class="font-semibold text-[#9FE870]">400-688-1997</span>
+              </p>
+            </div>
+          </div>
+          <div class="flex gap-3 border-t border-gray-100 px-6 py-4">
+            <button
+              type="button"
+              class="purchase-order-confirm-btn purchase-order-confirm-btn--primary min-w-0 flex-1"
+              @click="handlePurchaseOrderAction('engineer')"
+            >
+              专属工程师创建
+            </button>
+            <button
+              type="button"
+              class="purchase-order-confirm-btn purchase-order-confirm-btn--secondary min-w-0 flex-1"
+              @click="handlePurchaseOrderAction('self')"
+            >
+              亲自创建
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
   </div>
 </template>
 
@@ -525,6 +635,47 @@ const cartListRows = computed(() =>
 
 .checkout-terms-link:hover {
   color: #111827;
+}
+
+.purchase-order-confirm-btn {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  transition:
+    filter 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.purchase-order-confirm-btn--primary {
+  border: 1px solid rgba(159, 232, 112, 0.4);
+  background-color: #9fe870;
+  color: #163300;
+}
+
+.purchase-order-confirm-btn--primary:hover {
+  filter: brightness(0.97);
+}
+
+.purchase-order-confirm-btn--secondary {
+  border: 1px solid #e5e7eb;
+  background-color: #fff;
+  color: #111827;
+}
+
+.purchase-order-confirm-btn--secondary:hover {
+  background-color: #f9fafb;
+}
+
+.purchase-order-confirm-btn:focus,
+.purchase-order-confirm-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(159, 232, 112, 0.45);
 }
 
 .checkout-pay-btn {

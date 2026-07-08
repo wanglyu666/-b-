@@ -5,6 +5,8 @@ import { ArrowLeft, ShoppingBag, Trash2, Minus, Plus, ArrowRight } from 'lucide-
 import type { CartDisplayMode, CartItem } from '../types';
 import CartConsultationModal from './consultation-feedback/CartConsultationModal.vue';
 import CartCheckoutForm from './CartCheckoutForm.vue';
+import type { CheckoutMode, PurchaseOrderDraft } from './CartCheckoutForm.vue';
+import PurchaseOrderCreateForm from './PurchaseOrderCreateForm.vue';
 import { useAppStore } from '../stores/appStore';
 
 const appStore = useAppStore();
@@ -48,6 +50,9 @@ const flashAnnualTab = ref(false);
 const flashSelectAll = ref(false);
 const TAB_FLASH_MS = 220;
 const checkoutViewActive = ref(false);
+const checkoutMode = ref<CheckoutMode>('immediate');
+const purchaseOrderCreateActive = ref(false);
+const purchaseOrderDraft = ref<PurchaseOrderDraft | null>(null);
 const hoveredDescTooltip = ref<{ description: string; x: number; y: number } | null>(null);
 const selectionHintTooltip = ref<{
   x: number;
@@ -199,11 +204,29 @@ function hideSelectionHint() {
 function handleCheckout() {
   if (!hasVisibleSelection.value) return;
   hideSelectionHint();
+  checkoutMode.value = 'immediate';
   checkoutViewActive.value = true;
 }
 
+function handlePurchaseOrderCheckout() {
+  hideSelectionHint();
+  checkoutMode.value = 'purchaseOrder';
+  checkoutViewActive.value = true;
+}
+
+function handleCreateSelfPurchaseOrder(draft: PurchaseOrderDraft) {
+  purchaseOrderDraft.value = draft;
+  purchaseOrderCreateActive.value = true;
+}
+
 function handleCheckoutBack() {
+  if (purchaseOrderCreateActive.value) {
+    purchaseOrderCreateActive.value = false;
+    return;
+  }
   checkoutViewActive.value = false;
+  checkoutMode.value = 'immediate';
+  purchaseOrderDraft.value = null;
 }
 
 function runCartContentTransition(update: () => void) {
@@ -473,13 +496,38 @@ watch(productMode, () => hideSelectionHint());
        <div
          class="flex min-h-[calc(100vh-10rem)] flex-1 flex-col overflow-hidden rounded-3xl border border-white/20 bg-white/70 shadow-sm backdrop-blur-md"
        >
+         <PurchaseOrderCreateForm
+           v-if="purchaseOrderCreateActive && purchaseOrderDraft"
+           :draft="purchaseOrderDraft"
+         />
          <CartCheckoutForm
+           v-else
+           :key="checkoutMode"
+           :mode="checkoutMode"
            :order-amount="total"
            :cart-items="selectedVisibleCartItems"
            :show-as-list="showListLayout"
+           @create-self="handleCreateSelfPurchaseOrder"
          />
        </div>
      </div>
+     </Transition>
+
+     <Transition name="cart-footer-fade">
+       <div
+         v-if="!checkoutViewActive && cartItems.length > 0"
+         key="cart-test-buttons"
+         class="pointer-events-none fixed bottom-[6.75rem] left-0 right-0 z-10 px-4 md:left-64 md:px-8"
+       >
+         <div class="pointer-events-auto mx-auto flex max-w-[1600px] justify-end">
+           <div class="flex flex-col gap-3">
+             <button type="button" class="cart-test-btn" @click="handlePurchaseOrderCheckout">
+               产品采购单支付
+             </button>
+             <button type="button" class="cart-test-btn">测试按钮2</button>
+           </div>
+         </div>
+       </div>
      </Transition>
 
      <Transition name="cart-footer-fade">
@@ -696,5 +744,34 @@ watch(productMode, () => hideSelectionHint());
 .cart-footer-action-btn:focus-visible {
   outline: none;
   box-shadow: 0 10px 15px -3px rgb(22 51 0 / 0.2);
+}
+
+.cart-test-btn {
+  display: inline-flex;
+  min-width: 9rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  border: 1px solid #d1d5db;
+  background-color: #fff;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.cart-test-btn:hover {
+  border-color: #9fe870;
+  background-color: rgba(159, 232, 112, 0.08);
+}
+
+.cart-test-btn:focus,
+.cart-test-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(159, 232, 112, 0.45);
 }
 </style>
