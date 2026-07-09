@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onUnmounted, reactive, ref } from 'vue';
 import { ArrowLeft, ImagePlus } from 'lucide-vue-next';
+import checkMarkImg from '../../image asset/check mark.png';
 
 export type EnterpriseUpgradePayload = {
   businessLicenseUrl: string;
@@ -12,11 +13,14 @@ export type EnterpriseUpgradePayload = {
   bankAccount: string;
 };
 
+type Step = 'form' | 'success';
+
 const emit = defineEmits<{
   back: [];
   submit: [payload: EnterpriseUpgradePayload];
 }>();
 
+const step = ref<Step>('form');
 const businessLicenseUrl = ref('');
 
 const form = reactive({
@@ -82,6 +86,12 @@ function handleSubmit() {
     bankName: form.bankName.trim(),
     bankAccount: form.bankAccount.trim(),
   });
+
+  step.value = 'success';
+}
+
+function handleBack() {
+  emit('back');
 }
 
 onUnmounted(() => {
@@ -96,7 +106,7 @@ onUnmounted(() => {
     <button
       type="button"
       class="mb-4 inline-flex w-fit items-center gap-2 rounded-lg px-2 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-white/50 hover:text-gray-900"
-      @click="$emit('back')"
+      @click="handleBack"
     >
       <ArrowLeft :size="18" />
       返回
@@ -105,86 +115,128 @@ onUnmounted(() => {
     <div
       class="flex min-h-[calc(100vh-10rem)] flex-1 flex-col overflow-hidden rounded-3xl border border-white/20 bg-white/70 shadow-sm backdrop-blur-md"
     >
-      <div class="flex min-h-0 flex-1 flex-col px-6 py-10 sm:px-10 sm:py-12">
-        <div>
-          <h2 class="text-xl font-bold text-gray-900 sm:text-2xl">升级企业账号</h2>
-          <p class="mt-2 text-sm text-gray-500 sm:text-base">
-            上传营业执照并填写开票信息，提交后将进入企业账号审核流程
-          </p>
-        </div>
-
-        <div class="mt-8 flex flex-1 flex-col sm:mt-10">
+      <Transition name="pc-step" mode="out-in">
+        <div v-if="step === 'form'" key="form" class="flex min-h-0 flex-1 flex-col px-6 py-10 sm:px-10 sm:py-12">
           <div>
-            <p class="mb-3 text-sm font-medium text-gray-600">营业执照</p>
-            <button
-              type="button"
-              class="group block w-full max-w-md text-left"
-              @click="openLicensePicker"
-            >
-              <div
-                v-if="businessLicenseUrl"
-                class="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/90"
-              >
-                <img
-                  :src="businessLicenseUrl"
-                  alt="营业执照预览"
-                  class="h-[170px] w-full object-cover transition group-hover:brightness-95 sm:h-[190px]"
-                />
-              </div>
-              <div
-                v-else
-                class="flex h-[170px] w-full max-w-md flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200/90 bg-white/50 transition hover:border-[#B0D4C5]/80 hover:bg-white/80 sm:h-[190px]"
-              >
-                <ImagePlus :size="28" class="text-gray-400" />
-                <p class="mt-3 text-sm font-medium text-gray-600">点击上传营业执照</p>
-                <p class="mt-1 text-xs text-gray-400">支持 JPG、PNG 等图片格式</p>
-              </div>
-            </button>
-            <input
-              ref="fileInputRef"
-              type="file"
-              accept="image/*"
-              class="hidden"
-              @change="handleLicenseChange"
-            />
+            <h2 class="text-xl font-bold text-gray-900 sm:text-2xl">升级企业账号</h2>
+            <p class="mt-2 text-sm text-gray-500 sm:text-base">
+              上传营业执照并填写开票信息，提交后将进入企业账号审核流程
+            </p>
           </div>
 
-          <div class="mt-8 sm:mt-10">
-            <h3 class="text-base font-semibold text-gray-900 sm:text-lg">开票信息</h3>
-            <div class="mt-5 space-y-5 sm:mt-6 sm:space-y-6">
-              <div v-for="field in billingFields" :key="field.key">
-                <label :for="`enterprise-${field.key}`" class="mb-2 block text-sm font-medium text-gray-600">
-                  {{ field.label }}
-                </label>
-                <input
-                  :id="`enterprise-${field.key}`"
-                  v-model="form[field.key]"
-                  type="text"
-                  maxlength="256"
-                  :placeholder="field.placeholder"
-                  :class="inputClass"
-                />
+          <div class="mt-8 flex flex-1 flex-col sm:mt-10">
+            <div>
+              <p class="mb-3 text-sm font-medium text-gray-600">营业执照</p>
+              <button
+                type="button"
+                class="group block w-full max-w-md text-left"
+                @click="openLicensePicker"
+              >
+                <div
+                  v-if="businessLicenseUrl"
+                  class="overflow-hidden rounded-2xl border border-gray-200/80 bg-white/90"
+                >
+                  <img
+                    :src="businessLicenseUrl"
+                    alt="营业执照预览"
+                    class="h-[170px] w-full object-cover transition group-hover:brightness-95 sm:h-[190px]"
+                  />
+                </div>
+                <div
+                  v-else
+                  class="flex h-[170px] w-full max-w-md flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200/90 bg-white/50 transition hover:border-[#B0D4C5]/80 hover:bg-white/80 sm:h-[190px]"
+                >
+                  <ImagePlus :size="28" class="text-gray-400" />
+                  <p class="mt-3 text-sm font-medium text-gray-600">点击上传营业执照</p>
+                  <p class="mt-1 text-xs text-gray-400">支持 JPG、PNG 等图片格式</p>
+                </div>
+              </button>
+              <input
+                ref="fileInputRef"
+                type="file"
+                accept="image/*"
+                class="hidden"
+                @change="handleLicenseChange"
+              />
+            </div>
+
+            <div class="mt-8 sm:mt-10">
+              <h3 class="text-base font-semibold text-gray-900 sm:text-lg">开票信息</h3>
+              <div class="mt-5 space-y-5 sm:mt-6 sm:space-y-6">
+                <div v-for="field in billingFields" :key="field.key">
+                  <label :for="`enterprise-${field.key}`" class="mb-2 block text-sm font-medium text-gray-600">
+                    {{ field.label }}
+                  </label>
+                  <input
+                    :id="`enterprise-${field.key}`"
+                    v-model="form[field.key]"
+                    type="text"
+                    maxlength="256"
+                    :placeholder="field.placeholder"
+                    :class="inputClass"
+                  />
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="mt-auto flex justify-end pt-10">
-            <button
-              type="button"
-              class="min-w-[120px] rounded-xl px-8 py-3 text-sm font-bold transition-colors sm:min-w-[140px] sm:text-base"
-              :class="
-                canSubmit
-                  ? 'bg-[#B0D4C5] text-white hover:bg-[#9bc4b3]'
-                  : 'cursor-not-allowed bg-[#B0D4C5]/40 text-white/70'
-              "
-              :disabled="!canSubmit"
-              @click="handleSubmit"
-            >
-              提交申请
-            </button>
+            <div class="mt-auto flex justify-end pt-10">
+              <button
+                type="button"
+                class="min-w-[120px] rounded-xl px-8 py-3 text-sm font-bold transition-colors sm:min-w-[140px] sm:text-base"
+                :class="
+                  canSubmit
+                    ? 'bg-[#B0D4C5] text-white hover:bg-[#9bc4b3]'
+                    : 'cursor-not-allowed bg-[#B0D4C5]/40 text-white/70'
+                "
+                :disabled="!canSubmit"
+                @click="handleSubmit"
+              >
+                提交申请
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+
+        <div
+          v-else
+          key="success"
+          class="flex min-h-0 flex-1 flex-col items-center justify-center px-6 py-16 animate-in zoom-in-95 duration-500"
+        >
+          <img :src="checkMarkImg" alt="" class="mb-6 h-48 w-72 object-contain" />
+          <div class="text-center">
+            <h3 class="mb-2 text-3xl font-bold tracking-tight text-gray-900">已完成提交</h3>
+            <p class="text-gray-500">您的企业账号升级申请已提交，请等待审核</p>
+          </div>
+          <button
+            type="button"
+            class="mt-12 rounded-xl border border-gray-200/80 bg-white/80 px-8 py-3 text-sm font-bold text-gray-800 transition-colors hover:bg-white"
+            @click="handleBack"
+          >
+            返回个人中心
+          </button>
+        </div>
+      </Transition>
     </div>
   </div>
 </template>
+
+<style scoped>
+.pc-step-enter-active,
+.pc-step-leave-active {
+  transition:
+    opacity 0.32s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.32s cubic-bezier(0.33, 1, 0.32, 1);
+}
+
+.pc-step-enter-from,
+.pc-step-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.pc-step-enter-to,
+.pc-step-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+</style>

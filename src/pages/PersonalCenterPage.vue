@@ -135,7 +135,6 @@ function handleProfileSave(payload: ProfileEditPayload) {
         key="enterprise-upgrade"
         class="flex-1"
         @back="subView = 'main'"
-        @submit="subView = 'main'"
       />
     </Transition>
   </div>
