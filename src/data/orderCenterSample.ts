@@ -1,4 +1,4 @@
-export type OrderCenterStatus = '已签约' | '服务中' | '已完工' | '已取消' | '已评价';
+export type OrderCenterStatus = '待支付' | '已签约' | '服务中' | '已完工' | '已取消' | '已评价';
 
 export interface OrderCenterLineItem {
   id: number;
@@ -384,6 +384,64 @@ const ORDER_LINE_ITEMS: Record<string, OrderCenterLineItem[]> = {
       taxIncludedPrice: 720.0,
     },
   ],
+  'oc-501': [
+    {
+      id: 6001,
+      major: '装饰',
+      subjectCode: 'KM-0003',
+      subjectName: 'Hemlingby 双人沙发',
+      calcRule: '按项计',
+      brand: '宜家',
+      model: 'Hemlingby',
+      spec: '标准款',
+      description: '双人沙发，含基础安装服务',
+      unit: '项',
+      taxIncludedPrice: 630.0,
+    },
+  ],
+  'oc-502': [
+    {
+      id: 6002,
+      major: '装饰',
+      subjectCode: 'KM-0001',
+      subjectName: 'Poäng 摇椅',
+      calcRule: '按项计',
+      brand: '宜家',
+      model: 'Poäng',
+      spec: '标准款',
+      description: '摇椅，含基础安装服务',
+      unit: '项',
+      taxIncludedPrice: 980.0,
+    },
+    {
+      id: 6003,
+      major: '装饰',
+      subjectCode: 'KM-0002',
+      subjectName: 'Standmon 脚凳',
+      calcRule: '按项计',
+      brand: '宜家',
+      model: 'Standmon',
+      spec: '标准款',
+      description: '配套脚凳，含基础安装服务',
+      unit: '项',
+      taxIncludedPrice: 760.0,
+    },
+  ],
+  'oc-503': [
+    {
+      id: 6004,
+      major: '装饰',
+      subjectCode: 'KM-0004',
+      subjectName: 'Kallax 储物架',
+      calcRule: '按项计',
+      brand: '收纳',
+      model: 'Kallax',
+      spec: '2x4',
+      description: '储物架组装与固定',
+      unit: '项',
+      taxIncludedPrice: 580.0,
+    },
+  ],
 };
 
 export function getOrderLineItems(orderId: string): OrderCenterLineItem[] {
@@ -414,12 +472,62 @@ export function buildOrderCustomerInfo(
           ? '完工时间'
           : order.status === '已取消'
             ? '取消时间'
-            : '服务开始时间',
+            : order.status === '待支付'
+              ? '支付截止时间'
+              : '服务开始时间',
       value: order.signedTime,
     },
     { label: '订单金额', value: `¥${order.orderAmount.toFixed(2)}` },
   ];
 }
+
+export const PENDING_PAYMENT_ORDER_SAMPLES: OrderCenterItem[] = [
+  {
+    id: 'oc-501',
+    orderNo: 'JS-20260709-142',
+    contractNo: 'HT-20260709-501',
+    orderTime: '2026/07/09 11:20',
+    signedTime: '2026/07/12 23:59',
+    status: '待支付',
+    orderAmount: 630.0,
+    serviceAddress: '北京市海淀区中关村大街1号海龙大厦3层',
+    productTitle: 'Hemlingby 双人沙发',
+    productImage:
+      'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=600',
+    itemCount: 1,
+    lineItems: ORDER_LINE_ITEMS['oc-501'],
+  },
+  {
+    id: 'oc-502',
+    orderNo: 'JS-20260708-136',
+    contractNo: 'HT-20260708-502',
+    orderTime: '2026/07/08 16:35',
+    signedTime: '2026/07/11 23:59',
+    status: '待支付',
+    orderAmount: 1740.0,
+    serviceAddress: '北京市朝阳区建国门外大街1号国贸大厦',
+    productTitle: 'Poäng 摇椅 等 2 件商品',
+    productImage:
+      'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&q=80&w=600',
+    itemCount: 2,
+    lineItems: ORDER_LINE_ITEMS['oc-502'],
+  },
+  {
+    id: 'oc-503',
+    orderNo: 'JS-20260707-121',
+    contractNo: 'HT-20260707-503',
+    orderTime: '2026/07/07 09:50',
+    signedTime: '2026/07/10 23:59',
+    status: '待支付',
+    orderAmount: 580.0,
+    serviceAddress: '北京市西城区金融大街35号国际企业大厦',
+    productTitle: 'Kallax 储物架',
+    productImage:
+      'https://images.unsplash.com/photo-1594620302200-9a762244a156?auto=format&fit=crop&q=80&w=600',
+    itemCount: 1,
+    lineItems: ORDER_LINE_ITEMS['oc-503'],
+  },
+];
 
 export const SIGNED_ORDER_SAMPLES: OrderCenterItem[] = [
   {
@@ -677,6 +785,7 @@ export const EVALUATED_ORDER_SAMPLES: OrderCenterItem[] = [
 ];
 
 export const ALL_ORDER_SAMPLES: OrderCenterItem[] = [
+  ...PENDING_PAYMENT_ORDER_SAMPLES,
   ...SIGNED_ORDER_SAMPLES,
   ...IN_SERVICE_ORDER_SAMPLES,
   ...COMPLETED_ORDER_SAMPLES,

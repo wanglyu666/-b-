@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { TrendingUp, Package, MoreHorizontal, ChevronLeft, ChevronRight, FileText, FolderCheck, ClipboardCheck, Star, CalendarClock, ChevronRight as ChevronRightSmall } from 'lucide-vue-next';
+import { MoreHorizontal, ChevronLeft, ChevronRight, FileText, FolderCheck, ClipboardCheck, Star, CalendarClock, ChevronRight as ChevronRightSmall } from 'lucide-vue-next';
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { get } from '../utils/request';
 import TopBarActions from './TopBarActions.vue';
@@ -96,6 +96,7 @@ async function fetchBanners() {
 }
 
 let interval: any;
+let reviewInterval: ReturnType<typeof setInterval> | undefined;
 
 function startAutoSlide() {
   clearInterval(interval);
@@ -106,12 +107,60 @@ function startAutoSlide() {
   }, 5000);
 }
 
+type ReviewShareItem = {
+  id: number;
+  name: string;
+  rating: number;
+  content: string;
+};
+
+const reviewShares: ReviewShareItem[] = [
+  { id: 1, name: '张明', rating: 5, content: '安装师傅很专业，家具质量也好，整体服务非常满意。' },
+  { id: 2, name: '李婷', rating: 4, content: '沙发按时送达，安装顺利，希望售后也能保持这个水准。' },
+  { id: 3, name: '王浩', rating: 5, content: '储物架组装牢固，师傅还帮忙做了墙面固定，非常贴心。' },
+  { id: 4, name: '陈静', rating: 5, content: '沟通顺畅、响应及时，项目落地效果超出预期。' },
+  { id: 5, name: '赵磊', rating: 4, content: '施工过程规范，现场整洁，交付节点都按期完成。' },
+  { id: 6, name: '刘芳', rating: 5, content: '设计方案细致，材料品质可靠，推荐给同事了。' },
+  { id: 7, name: '周杰', rating: 4, content: '售后跟进很快，小问题当天就处理好了。' },
+  { id: 8, name: '吴倩', rating: 5, content: '从咨询到完工体验很流畅，会继续合作。' },
+];
+
+const reviewStartIndex = ref(0);
+
+const visibleReviews = computed(() => {
+  const list = reviewShares;
+  const result: ReviewShareItem[] = [];
+  for (let i = 0; i < 3; i++) {
+    result.push(list[(reviewStartIndex.value + i) % list.length]);
+  }
+  return result;
+});
+
+function reviewCardScale(slotIndex: number) {
+  if (slotIndex === 1) return 1;
+  return 0.92;
+}
+
+function reviewCardOpacity(slotIndex: number) {
+  if (slotIndex === 1) return 1;
+  return 0.68;
+}
+
+function startReviewScroll() {
+  clearInterval(reviewInterval);
+  reviewInterval = setInterval(() => {
+    reviewStartIndex.value = (reviewStartIndex.value + 1) % reviewShares.length;
+  }, 2800);
+}
+
 onMounted(() => {
   fetchBanners().then(() => startAutoSlide());
+  startReviewScroll();
 });
 
 onUnmounted(() => {
   clearInterval(interval);
+  clearInterval(reviewInterval);
 });
 
 const statusOption = {
@@ -248,22 +297,49 @@ const distributionOption = computed(() => ({
         </div>
       </div>
 
-      <!-- Stats Cards -->
-      <div class="lg:col-span-4 h-[340px] flex flex-col gap-6">
-          <div class="flex-1 bg-[#9FE870] rounded-3xl px-6 py-5 relative overflow-hidden shadow-sm hover:shadow-md transition-shadow group flex items-center justify-between">
-              <div class="relative z-10 flex flex-col justify-center h-full">
-                   <div class="flex items-center space-x-3 mb-2"><div class="p-2 bg-white/30 rounded-lg backdrop-blur-sm"><TrendingUp :size="18" class="text-gray-800" /></div><span class="bg-white/30 px-2 py-0.5 rounded-full text-[10px] font-bold backdrop-blur-sm text-gray-900">+12.5%</span></div>
-                   <p class="text-gray-800 font-medium text-sm opacity-80 mb-1">总收入</p>
-                   <h3 class="text-2xl font-bold tracking-tight text-gray-900">¥128,430</h3>
+      <!-- 评价分享 -->
+      <div class="lg:col-span-4 bg-white/50 backdrop-blur-md rounded-3xl p-5 shadow-sm border border-white/20 hover:shadow-md transition-shadow h-[340px] flex flex-col overflow-hidden">
+        <div class="flex justify-between items-center mb-3 flex-shrink-0">
+          <h3 class="font-bold text-xl text-gray-800">评价分享</h3>
+          <MoreHorizontal :size="20" class="text-gray-400 cursor-pointer" />
+        </div>
+        <div class="flex-1 min-h-0 relative overflow-hidden px-1">
+          <TransitionGroup
+            name="review-scroll"
+            tag="div"
+            class="absolute inset-x-1 inset-y-0 flex flex-col gap-3"
+          >
+            <div
+              v-for="(review, slotIndex) in visibleReviews"
+              :key="review.id"
+              class="review-scroll-item flex-1 min-h-0"
+            >
+              <div
+                class="review-share-card h-full origin-center rounded-2xl bg-white/80 border border-white/60 px-4 py-3 shadow-sm flex flex-col justify-center"
+                :style="{
+                  transform: `scale(${reviewCardScale(slotIndex)})`,
+                  opacity: reviewCardOpacity(slotIndex),
+                  zIndex: slotIndex === 1 ? 10 : 5 - Math.abs(slotIndex - 1),
+                  boxShadow: slotIndex === 1 ? '0 8px 24px rgba(0,0,0,0.08)' : undefined,
+                }"
+              >
+                <div class="flex items-center justify-between gap-2 mb-1.5">
+                  <span class="text-sm font-bold text-gray-800 truncate">{{ review.name }}</span>
+                  <div class="flex items-center gap-0.5 flex-shrink-0 text-yellow-400">
+                    <Star
+                      v-for="star in 5"
+                      :key="star"
+                      :size="13"
+                      :fill="star <= review.rating ? 'currentColor' : 'none'"
+                      :class="star <= review.rating ? '' : 'text-gray-200'"
+                    />
+                  </div>
+                </div>
+                <p class="text-xs leading-relaxed text-gray-600 line-clamp-2">{{ review.content }}</p>
               </div>
-              <div class="hidden sm:block absolute -bottom-10 -right-10 w-48 h-48 bg-white/20 rounded-full blur-3xl group-hover:scale-110 transition-transform duration-700"></div>
-          </div>
-          <div class="flex-1 bg-white/50 backdrop-blur-md rounded-3xl px-6 py-5 shadow-sm border border-white/20 flex items-center justify-between hover:shadow-md transition-shadow">
-               <div class="flex flex-col justify-center h-full">
-                   <div class="flex items-center space-x-3 mb-2"><div class="p-2 bg-white/30 rounded-lg backdrop-blur-sm"><Package :size="18" class="text-gray-800" /></div><span class="text-gray-700 font-medium text-sm">总订单数</span></div>
-                   <div class="flex items-end space-x-3"><h3 class="text-2xl font-bold text-gray-800">2,219</h3><p class="text-[#A1D573] font-bold flex items-center bg-[#A1D573]/10 px-2 py-0.5 rounded-lg text-xs mb-0.5"><TrendingUp :size="12" class="mr-1" /> +1.18%</p></div>
-               </div>
-          </div>
+            </div>
+          </TransitionGroup>
+        </div>
       </div>
       <div class="lg:col-span-5 bg-white/50 backdrop-blur-md rounded-3xl p-6 shadow-sm border border-white/20 hover:shadow-md transition-shadow h-[340px] flex flex-col">
         <div class="flex justify-between items-center mb-4"><h3 class="font-bold text-xl text-gray-800">订单状态概览</h3><MoreHorizontal :size="20" class="text-gray-400 cursor-pointer" /></div>
@@ -342,4 +418,36 @@ const distributionOption = computed(() => ({
   </div>
 </div>
 </template>
+
+<style scoped>
+.review-share-card {
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.65s ease, box-shadow 0.65s ease;
+}
+
+.review-scroll-move {
+  transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.review-scroll-enter-active,
+.review-scroll-leave-active {
+  transition: all 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.review-scroll-enter-from {
+  opacity: 0;
+  transform: translateY(28px);
+}
+
+.review-scroll-leave-to {
+  opacity: 0;
+  transform: translateY(-28px);
+}
+
+.review-scroll-leave-active {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 100%;
+}
+</style>
 

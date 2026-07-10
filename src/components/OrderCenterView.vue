@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import { ArrowLeft, ClipboardList } from 'lucide-vue-next';
-import { ALL_ORDER_SAMPLES, CANCELLED_ORDER_SAMPLES, COMPLETED_ORDER_SAMPLES, EVALUATED_ORDER_SAMPLES, IN_SERVICE_ORDER_SAMPLES, SIGNED_ORDER_SAMPLES, type OrderCenterItem } from '../data/orderCenterSample';
+import { ALL_ORDER_SAMPLES, CANCELLED_ORDER_SAMPLES, COMPLETED_ORDER_SAMPLES, EVALUATED_ORDER_SAMPLES, IN_SERVICE_ORDER_SAMPLES, PENDING_PAYMENT_ORDER_SAMPLES, SIGNED_ORDER_SAMPLES, type OrderCenterItem } from '../data/orderCenterSample';
 import {
   getOrderRefund,
   hasOrderRefund,
@@ -23,14 +23,14 @@ import OrderCenterReorderSuccessView from './OrderCenterReorderSuccessView.vue';
 
 const appStore = useAppStore();
 
-const ORDER_FILTERS = ['全部订单', '已签约', '服务中', '已完工', '已取消', '已评价'] as const;
+const ORDER_FILTERS = ['全部订单', '待支付', '已签约', '服务中', '已完工', '已取消', '已评价'] as const;
 type OrderFilter = (typeof ORDER_FILTERS)[number];
 
 const emit = defineEmits<{
   back: [];
 }>();
 
-const activeFilter = ref<OrderFilter>('已签约');
+const activeFilter = ref<OrderFilter>('全部订单');
 const refundOrder = ref<OrderCenterItem | null>(null);
 const refundDetailRecord = ref<OrderRefundRecord | null>(null);
 const orderDetail = ref<OrderCenterItem | null>(null);
@@ -40,6 +40,9 @@ const reorderOrder = ref<OrderCenterItem | null>(null);
 const visibleOrders = computed(() => {
   if (activeFilter.value === '全部订单') {
     return ALL_ORDER_SAMPLES;
+  }
+  if (activeFilter.value === '待支付') {
+    return PENDING_PAYMENT_ORDER_SAMPLES;
   }
   if (activeFilter.value === '已签约') {
     return SIGNED_ORDER_SAMPLES;
@@ -154,6 +157,8 @@ function handleReorder(order: OrderCenterItem) {
 function handleReorderBack() {
   reorderOrder.value = null;
 }
+
+function handleProceedPayment(_order: OrderCenterItem) {}
 </script>
 
 <template>
@@ -254,6 +259,7 @@ function handleReorderBack() {
                   class="order-center-status-badge"
                   :class="{
                     'order-center-status-badge--signed': order.status === '已签约',
+                    'order-center-status-badge--pending': order.status === '待支付',
                     'order-center-status-badge--service': order.status === '服务中',
                     'order-center-status-badge--completed': order.status === '已完工',
                     'order-center-status-badge--cancelled': order.status === '已取消',
@@ -310,6 +316,22 @@ function handleReorderBack() {
                       @click="handleRefundAction(order)"
                     >
                       {{ orderHasRefund(order.id) ? '退款详情' : '申请退款' }}
+                    </button>
+                  </template>
+                  <template v-else-if="order.status === '待支付'">
+                    <button
+                      type="button"
+                      class="order-center-action-btn order-center-action-btn--primary"
+                      @click="handleOrderDetail(order)"
+                    >
+                      订单详情
+                    </button>
+                    <button
+                      type="button"
+                      class="order-center-action-btn order-center-action-btn--secondary"
+                      @click="handleProceedPayment(order)"
+                    >
+                      前往支付
                     </button>
                   </template>
                   <template v-else-if="order.status === '已取消'">
@@ -421,6 +443,11 @@ function handleReorderBack() {
 .order-center-status-badge--signed {
   background-color: rgba(161, 213, 115, 0.18);
   color: #163300;
+}
+
+.order-center-status-badge--pending {
+  background-color: rgba(14, 165, 233, 0.14);
+  color: #0369a1;
 }
 
 .order-center-status-badge--service {

@@ -43,6 +43,8 @@ export const useAppStore = defineStore('app', () => {
   const cart = ref<CartItem[]>([]);
   const cartSelectedKeys = ref<string[]>([]);
   const cartAnnualDisplayMode = ref<CartDisplayMode>('card');
+  /** 加入购物车时递增，供顶栏购物车图标抖动 */
+  const cartIconShakeToken = ref(0);
   const wishlist = ref<Product[]>([]);
   const wishlistAnnualDisplayMode = ref<WishlistDisplayMode>('card');
   const shopPage = ref(1);
@@ -164,6 +166,7 @@ export const useAppStore = defineStore('app', () => {
     );
     if (existingItem) existingItem.quantity += count;
     else cart.value.push({ ...product, quantity: count });
+    cartIconShakeToken.value += 1;
   }
 
   function removeFromCart(productId: number, productKind?: Product['productKind']) {
@@ -325,6 +328,7 @@ export const useAppStore = defineStore('app', () => {
     cart,
     cartSelectedKeys,
     cartAnnualDisplayMode,
+    cartIconShakeToken,
     wishlist,
     wishlistAnnualDisplayMode,
     shopPage,

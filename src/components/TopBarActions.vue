@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { ref, watch, onUnmounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Search, ShoppingBag, Star, Bell, ClipboardList } from 'lucide-vue-next';
+import { useAppStore } from '../stores/appStore';
 
 const router = useRouter();
+const appStore = useAppStore();
 
 const props = withDefaults(defineProps<{
   isShop?: boolean;
@@ -21,6 +24,28 @@ const props = withDefaults(defineProps<{
 });
 
 defineEmits(['cartClick', 'wishlistClick', 'messageClick', 'bellClick', 'orderCenterClick']);
+
+const cartShaking = ref(false);
+let shakeTimer: ReturnType<typeof setTimeout> | undefined;
+
+watch(
+  () => appStore.cartIconShakeToken,
+  (token, prev) => {
+    if (!props.isShop || token === prev) return;
+    cartShaking.value = false;
+    requestAnimationFrame(() => {
+      cartShaking.value = true;
+      clearTimeout(shakeTimer);
+      shakeTimer = setTimeout(() => {
+        cartShaking.value = false;
+      }, 600);
+    });
+  },
+);
+
+onUnmounted(() => {
+  clearTimeout(shakeTimer);
+});
 
 function goPersonalCenter() {
   router.push({ name: 'personal-center' });
@@ -41,6 +66,7 @@ function goPersonalCenter() {
       <div v-if="isShop" 
         @click="$emit('cartClick')"
         class="relative cursor-pointer hover:text-black transition-colors"
+        :class="{ 'cart-icon-shake': cartShaking }"
       >
         <ShoppingBag :size="20" class="text-gray-600" />
         <span v-if="cartCount > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] w-3.5 h-3.5 flex items-center justify-center rounded-full border border-white font-bold">
@@ -75,3 +101,31 @@ function goPersonalCenter() {
     </button>
   </div>
 </template>
+
+<style scoped>
+.cart-icon-shake {
+  animation: cart-icon-bounce 0.6s ease-in-out;
+}
+
+@keyframes cart-icon-bounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  16% {
+    transform: translateY(-5px);
+  }
+  32% {
+    transform: translateY(3px);
+  }
+  48% {
+    transform: translateY(-4px);
+  }
+  64% {
+    transform: translateY(2px);
+  }
+  80% {
+    transform: translateY(-2px);
+  }
+}
+</style>
